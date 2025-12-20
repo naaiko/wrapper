@@ -11,6 +11,7 @@ let currentProject = null;
 let scenes = [];
 let currentDate = new Date();
 let draggedScene = null;
+let dragSourceDate = null; // Track where the scene came from
 
 // =================================================================
 // INITIALIZATION
@@ -134,7 +135,7 @@ function createDayElement(date, currentMonth) {
     const scenesContainer = document.createElement('div');
     scenesContainer.className = 'space-y-1';
     scenesForDay.forEach(scene => {
-        const sceneCard = createCalendarSceneCard(scene);
+        const sceneCard = createCalendarSceneCard(scene, dateStr); // Pass the date
         scenesContainer.appendChild(sceneCard);
     });
     div.appendChild(scenesContainer);
@@ -145,7 +146,7 @@ function createDayElement(date, currentMonth) {
     return div;
 }
 
-function createCalendarSceneCard(scene) {
+function createCalendarSceneCard(scene, sourceDate = null) {
     const div = document.createElement('div');
     div.innerHTML = SceneRenderer.renderCalendarCard(scene);
     const card = div.firstElementChild;
@@ -155,6 +156,7 @@ function createCalendarSceneCard(scene) {
     
     card.addEventListener('dragstart', (e) => {
         draggedScene = scene;
+        dragSourceDate = sourceDate; // Remember where it came from
         e.currentTarget.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', scene.id);
@@ -163,6 +165,7 @@ function createCalendarSceneCard(scene) {
     card.addEventListener('dragend', (e) => {
         e.currentTarget.classList.remove('dragging');
         draggedScene = null;
+        dragSourceDate = null;
     });
     
     return card;
@@ -190,33 +193,52 @@ function setupDayDropZone(dayElement) {
             return;
         }
         
-        const date = dayElement.dataset.date;
+        const targetDate = dayElement.dataset.date;
         const sceneId = draggedScene.id;
         
-        // Add date to scene's shooting_dates
+        // Don't do anything if dropping on the same date
+        if (dragSourceDate === targetDate) {
+            draggedScene = null;
+            dragSourceDate = null;
+            return;
+        }
+        
         try {
-            await SceneService.addShootingDate(sceneId, date);
-            
-            // Update local scenes array
             const scene = scenes.find(s => s.id === sceneId);
-            if (scene) {
-                if (!scene.shooting_dates) scene.shooting_dates = [];
-                if (!scene.shooting_dates.includes(date)) {
-                    scene.shooting_dates.push(date);
-                    scene.shooting_dates.sort();
-                }
+            if (!scene) return;
+            
+            const currentDates = scene.shooting_dates || [];
+            let newDates = [...currentDates];
+            
+            // If coming from another date, remove the old date
+            if (dragSourceDate && newDates.includes(dragSourceDate)) {
+                newDates = newDates.filter(d => d !== dragSourceDate);
             }
             
-            // Clear draggedScene
+            // Add new date if not already there
+            if (!newDates.includes(targetDate)) {
+                newDates.push(targetDate);
+                newDates.sort();
+            }
+            
+            // Update in database
+            await SceneService.setShootingDates(sceneId, newDates);
+            
+            // Update local array
+            scene.shooting_dates = newDates;
+            
+            // Clear drag state
             draggedScene = null;
+            dragSourceDate = null;
             
             // Re-render
             renderCalendar();
             renderUnscheduledScenes();
         } catch (error) {
-            console.error('Error adding shooting date:', error);
-            alert('Failed to add shooting date');
+            console.error('Error moving scene:', error);
+            alert('Failed to move scene');
             draggedScene = null;
+            dragSourceDate = null;
         }
     });
 }
