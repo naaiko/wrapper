@@ -351,10 +351,6 @@ function renderStoryOrder(container) {
             class="card bg-base-100 shadow-md flex-shrink-0 w-80 min-h-[200px] scene-card cursor-move" 
             draggable="true"
             data-scene-id="${scene.id}"
-            ondragstart="handleDragStart(event)"
-            ondragover="handleDragOver(event)"
-            ondrop="handleDrop(event)"
-            ondragend="handleDragEnd(event)"
         >
             <div class="card-body p-4">
                 <div class="flex items-start justify-between">
@@ -371,7 +367,7 @@ function renderStoryOrder(container) {
                     </div>
                     <div class="flex flex-col gap-2 items-end">
                         <div class="badge badge-outline">Story #${scene.story_order}</div>
-                        <button class="btn btn-ghost btn-xs btn-square" onclick="deleteSceneById('${scene.id}')" title="Delete scene">
+                        <button class="btn btn-ghost btn-xs btn-square delete-scene-btn" data-scene-id="${scene.id}" title="Delete scene">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -386,6 +382,25 @@ function renderStoryOrder(container) {
     `).join('');
     
     container.innerHTML = html;
+    
+    // Add event listeners for drag and drop
+    const sceneCards = container.querySelectorAll('.scene-card');
+    sceneCards.forEach(card => {
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragend', handleDragEnd);
+    });
+    
+    // Add event listeners for delete buttons
+    const deleteButtons = container.querySelectorAll('.delete-scene-btn');
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sceneId = btn.getAttribute('data-scene-id');
+            deleteSceneById(sceneId);
+        });
+    });
 }
 
 /**
@@ -686,4 +701,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     renderTimeline();
     enableDragScroll();
+    
+    // Setup event listeners
+    document.getElementById('addSceneBtn').addEventListener('click', showAddSceneModal);
+    document.getElementById('addSceneForm').addEventListener('submit', addScene);
+    document.getElementById('cancelSceneBtn').addEventListener('click', () => {
+        document.getElementById('addSceneModal').close();
+    });
 });
