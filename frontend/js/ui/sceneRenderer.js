@@ -117,15 +117,32 @@ export class SceneRenderer {
     /**
      * Render scene card for calendar view (compact)
      */
-    static renderCalendarCard(scene) {
+    static renderCalendarCard(scene, options = {}) {
+        const { showRemoveButton = false, sourceDate = null } = options;
+        
+        const removeButton = showRemoveButton ? `
+            <button class="btn btn-ghost btn-circle btn-xs ml-auto remove-from-date-btn" 
+                    data-scene-id="${scene.id}" 
+                    data-date="${sourceDate || ''}"
+                    title="Remove from this date"
+                    onclick="event.stopPropagation();">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        ` : '';
+        
         return `
             <div 
-                class="calendar-scene-card bg-base-100 p-2 mb-1 rounded shadow-sm border-l-4 border-primary cursor-move text-xs"
+                class="calendar-scene-card bg-base-100 p-2 mb-1 rounded shadow-sm border-l-4 border-primary cursor-move text-xs flex items-start gap-1"
                 draggable="true"
                 data-scene-id="${scene.id}"
             >
-                <div class="font-semibold">Scene ${scene.scene_number}</div>
-                <div class="text-base-content/70 truncate">${scene.description}</div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-semibold">Scene ${scene.scene_number}</div>
+                    <div class="text-base-content/70 truncate">${scene.description}</div>
+                </div>
+                ${removeButton}
             </div>
         `;
     }

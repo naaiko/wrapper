@@ -1,0 +1,104 @@
+/* Toast UI Calendar Custom Styling */
+
+/* Calendar container background to match page */
+.toastui-calendar-month {
+    background: hsl(var(--b2)) !important;
+}
+
+/* Make events look like the unscheduled scene cards - white with badge */
+.toastui-calendar-month .toastui-calendar-weekday-event {
+    background: #ffffff !important;
+    border: 1px solid hsl(var(--b3)) !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s !important;
+    min-height: 28px !important;
+}
+
+.toastui-calendar-month .toastui-calendar-weekday-event:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    transform: translateY(-1px);
+    border-color: hsl(var(--p)) !important;
+}
+
+/* Event title styling - dark text like cards */
+.toastui-calendar-weekday-event-title {
+    font-weight: 400 !important;
+    font-size: 11px !important;
+    color: hsl(var(--bc) / 0.8) !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    padding: 0 !important;
+}
+
+/* Resize handles - subtle but visible */
+.toastui-calendar-weekday-resize-handle {
+    background: hsl(var(--b3)) !important;
+    opacity: 0.5 !important;
+    width: 6px !important;
+    height: 100% !important;
+}
+
+.toastui-calendar-weekday-event:hover .toastui-calendar-weekday-resize-handle {
+    opacity: 1 !important;
+    background: hsl(var(--p)) !important;
+}
+
+/* Day grid cells */
+.toastui-calendar-month-daygrid-cell {
+    background: transparent !important;
+    border: none !important;
+}
+
+.toastui-calendar-month-daygrid-cell:hover {
+    background: hsl(var(--b1) / 0.3) !important;
+}
+
+/* Grid lines */
+.toastui-calendar-month-daygrid {
+    border: none !important;
+}
+
+.toastui-calendar-month-week-item {
+    border: none !important;
+}
+
+/* Today highlight */
+.toastui-calendar-month-daygrid-cell.toastui-calendar-today {
+    background: hsl(var(--p) / 0.05) !important;
+}
+
+/* Multi-day event spanning */
+.toastui-calendar-weekday-event-block {
+    margin: 2px 0 !important;
+}
+
+/* Drag & drop visual feedback */
+.toastui-calendar-dragging-event {
+    opacity: 0.7 !important;
+}
+
+.toastui-calendar-grid-selection {
+    background: hsl(var(--p) / 0.2) !important;
+    border: 2px dashed hsl(var(--p)) !important;
+}
+
+/* Event dot for overflow indicator */
+.toastui-calendar-weekday-event-dot {
+    background: hsl(var(--p)) !important;
+}
+
+/* More events button */
+.toastui-calendar-see-more-button {
+    background: hsl(var(--b2)) !important;
+    color: hsl(var(--bc)) !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+}
+
+.toastui-calendar-see-more-button:hover {
+    background: hsl(var(--b3)) !important;
+}

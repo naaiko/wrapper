@@ -3,21 +3,25 @@
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 0;
-    border: 1px solid hsl(var(--b3));
-    min-height: 600px;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: hsl(var(--b2));
+    height: 100%;
+    position: relative; /* For absolute positioned overlay */
 }
 
 .calendar-day {
     background: hsl(var(--b1));
-    min-height: 120px;
-    max-height: 120px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible; /* Allow cards to be visible outside */
     padding: 0.5rem;
-    border: 1px solid hsl(var(--b3));
+    border: none;
+    border-radius: 0.5rem;
     position: relative;
     transition: background-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    z-index: 10; /* Above multi-day scenes */
 }
 
 .calendar-day:hover {
@@ -68,7 +72,7 @@
     font-weight: 600;
     font-size: 0.875rem;
     color: hsl(var(--bc) / 0.7);
-    border: 1px solid hsl(var(--b3));
+    border: none;
 }
 
 .calendar-scene-card {
@@ -76,6 +80,8 @@
     margin-bottom: 0.25rem;
     cursor: move;
     user-select: none;
+    flex-shrink: 0;
+    position: relative;
 }
 
 .calendar-scene-card:hover {
@@ -85,6 +91,98 @@
 
 .calendar-scene-card.dragging {
     opacity: 0.4;
+}
+
+/* Scenes container within a day */
+.scenes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    position: relative;
+    z-index: 10; /* Above multi-day overlay */
+}
+
+/* Collapsed day state */
+.calendar-day.collapsed .scenes-container {
+    gap: 2px;
+}
+
+/* Multi-day overlay container */
+.multi-day-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Uniform scene cards */
+.scene-card-container {
+    position: relative;
+    cursor: default;
+    z-index: 10; /* Single-day scenes above multi-day */
+}
+
+/* Multi-day scenes in overlay - lower z-index */
+.multi-day-overlay .scene-card-container {
+    z-index: 5;
+}
+
+.scene-card-container .card {
+    /* Don't force height - let content determine it */
+}
+
+.scene-card-container .card-body {
+    padding: 0.5rem !important;
+    min-height: auto !important;
+}
+
+.scene-card-container .compact-card .card-body {
+    gap: 0.25rem !important;
+}
+
+.scene-card-container .resize-handle {
+    opacity: 0;
+}
+
+.scene-card-container:hover .resize-handle {
+    opacity: 0.7;
+}
+
+/* Resize handles */
+.resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    cursor: ew-resize;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: hsl(var(--p) / 0.2);
+}
+
+.resize-handle:hover,
+.calendar-scene-card:hover .resize-handle {
+    opacity: 0.7;
+}
+
+.resize-handle-left {
+    left: -6px;
+    border-radius: 0.25rem 0 0 0.25rem;
+}
+
+.resize-handle-right {
+    right: -6px;
+    border-radius: 0 0.25rem 0.25rem 0;
+}
+
+.resize-handle.resizing {
+    opacity: 1;
+    background: hsl(var(--p) / 0.5);
 }
 
 /* Unscheduled scenes panel */
