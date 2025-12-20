@@ -92,22 +92,23 @@ function initializeCalendar() {
         },
         month: {
             startDayOfWeek: 1, // Monday start for month view
+            visibleEventCount: 2, // Max 2 events visible per day
         },
         template: {
             monthGridHeaderExceed(hiddenEvents) {
-                return `<span class="text-xs text-base-content/50">+${hiddenEvents} more</span>`;
+                return `<span class="text-sm text-base-content/60">+${hiddenEvents} more</span>`;
             },
             monthDayName(model) {
-                return `<span class="text-xs font-semibold text-base-content/60">${model.label}</span>`;
+                return `<span class="text-sm font-semibold text-base-content/60">${model.label}</span>`;
             },
             time(event) {
                 // Custom rendering for events to show badge + description
                 const sceneNumber = event.raw?.sceneNumber || event.title.split(':')[0];
                 const description = event.raw?.description || event.title.split(':').slice(1).join(':').trim();
                 
-                return `<div class="flex items-start gap-1.5 w-full">
-                    <span class="badge badge-primary badge-xs flex-shrink-0" style="font-size: 9px; padding: 2px 4px;">${sceneNumber}</span>
-                    <span class="text-xs line-clamp-2 flex-1" style="font-size: 11px; line-height: 1.3;">${description}</span>
+                return `<div class="flex items-start gap-2 w-full">
+                    <span class="badge badge-primary badge-xs flex-shrink-0" style="font-size: 11.25px; padding: 3px 6px;">${sceneNumber}</span>
+                    <span class="text-sm line-clamp-2 flex-1" style="font-size: 13.75px; line-height: 1.4;">${description}</span>
                 </div>`;
             },
             allday(event) {
@@ -119,8 +120,8 @@ function initializeCalendar() {
                 let timeIconHtml = '';
                 if (event.raw?.timeIcon) {
                     timeIconHtml = `
-                        <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.85);">
-                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 12px; height: 12px; color: #ffffff; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 25px; height: 25px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.85);">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 15px; height: 15px; color: #ffffff; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 ${event.raw.timeIcon}
                             </svg>
                         </div>
@@ -132,13 +133,13 @@ function initializeCalendar() {
                 if (event.raw?.conditionIcons && event.raw.conditionIcons.length > 0) {
                     const isSingle = event.raw.conditionIcons.length === 1;
                     const iconSvgs = event.raw.conditionIcons.map(icon => `
-                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 12px; height: 12px; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 15px; height: 15px; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             ${icon}
                         </svg>
                     `).join('');
                     const containerStyle = isSingle 
-                        ? 'display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.05);' 
-                        : 'display: flex; align-items: center; justify-content: center; gap: 3px; flex-shrink: 0; padding: 4px 8px; border-radius: 10px; background-color: rgba(0, 0, 0, 0.05);';
+                        ? 'display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 25px; height: 25px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.05);' 
+                        : 'display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; padding: 5px 10px; border-radius: 12.5px; background-color: rgba(0, 0, 0, 0.05);';
                     conditionIconsHtml = `
                         <div style="${containerStyle}">
                             ${iconSvgs}
@@ -146,9 +147,9 @@ function initializeCalendar() {
                     `;
                 }
                 
-                return `<div style="display: flex; align-items: center; gap: 4px; width: 100%; height: 100%;">
-                    <span class="badge badge-primary badge-xs" style="font-size: 9px; padding: 2px 4px; flex-shrink: 0;">${sceneNumber}</span>
-                    <span style="font-size: 11px; line-height: 1.3; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${description}</span>
+                return `<div style="display: flex; align-items: center; gap: 5px; width: 100%; height: 100%;">
+                    <span class="badge badge-primary badge-xs" style="font-size: 11.25px; padding: 3px 6px; flex-shrink: 0;">${sceneNumber}</span>
+                    <span style="font-size: 13.75px; line-height: 1.4; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${description}</span>
                     ${timeIconHtml}
                     ${conditionIconsHtml}
                 </div>`;

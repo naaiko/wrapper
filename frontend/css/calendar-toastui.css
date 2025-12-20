@@ -9,11 +9,11 @@
 .toastui-calendar-month .toastui-calendar-weekday-event {
     background: #ffffff !important;
     border: 1px solid rgba(0, 0, 0, 0.08) !important;
-    border-radius: 6px !important;
-    padding: 5px 6px !important;
+    border-radius: 7.5px !important;
+    padding: 6.25px 7.5px !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
     transition: all 0.2s !important;
-    min-height: 32px !important;
+    min-height: 40px !important;
 }
 
 .toastui-calendar-month .toastui-calendar-weekday-event:hover {
@@ -25,7 +25,7 @@
 /* Event title styling - dark text like cards */
 .toastui-calendar-weekday-event-title {
     font-weight: 400 !important;
-    font-size: 12px !important;
+    font-size: 15px !important;
     color: hsl(var(--bc) / 0.8) !important;
     line-height: 1.4 !important;
     white-space: nowrap !important;
@@ -39,7 +39,7 @@
 .toastui-calendar-weekday-resize-handle {
     background: hsl(var(--b3)) !important;
     opacity: 0.5 !important;
-    width: 6px !important;
+    width: 7.5px !important;
     height: 100% !important;
 }
 
@@ -74,7 +74,7 @@
 
 /* Multi-day event spanning */
 .toastui-calendar-weekday-event-block {
-    margin: 2px 0 !important;
+    margin: 2.5px 0 !important;
 }
 
 /* Z-index stacking - events further down in DOM get higher z-index */
@@ -115,9 +115,9 @@
 .toastui-calendar-see-more-button {
     background: hsl(var(--b2)) !important;
     color: hsl(var(--bc)) !important;
-    border-radius: 4px !important;
-    font-size: 11px !important;
-    padding: 2px 6px !important;
+    border-radius: 5px !important;
+    font-size: 13.75px !important;
+    padding: 2.5px 7.5px !important;
 }
 
 .toastui-calendar-see-more-button:hover {
