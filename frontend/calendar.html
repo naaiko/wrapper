@@ -17,6 +17,7 @@
     <!-- Custom Styles -->
     <link rel="stylesheet" href="css/timeline.css">
     <link rel="stylesheet" href="css/calendar-toastui.css">
+    <link rel="stylesheet" href="css/hatched-backgrounds.css">
     
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -359,6 +360,29 @@
             
             <div class="modal-action">
                 <button type="button" class="btn" id="closeConditionsConfigBtn">Close</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <!-- Non-Shooting Day Toggle Modal -->
+    <dialog id="nonShootingDayModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">Non-Shooting Day</h3>
+            <p class="mb-4" id="nonShootingDayDate"></p>
+            
+            <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" id="nonShootingDayToggle" class="toggle toggle-primary" />
+                    <span class="label-text">Mark as non-shooting day</span>
+                </label>
+            </div>
+            
+            <div class="modal-action">
+                <button type="button" class="btn" id="closeNonShootingDayBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveNonShootingDayBtn">Save</button>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop">

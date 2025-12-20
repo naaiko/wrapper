@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cupcake">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hatched Backgrounds Demo</title>
+    
+    <!-- Tailwind CSS + DaisyUI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" />
+    
+    <!-- Hatched Backgrounds System -->
+    <link rel="stylesheet" href="css/hatched-backgrounds.css">
+    
+    <style>
+        .demo-box {
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="p-8 bg-base-200">
+    <div class="max-w-4xl mx-auto space-y-8">
+        <h1 class="text-4xl font-bold mb-8">Hatched Backgrounds</h1>
+        
+        <!-- Angle Variants -->
+        <section>
+            <h2 class="text-2xl font-semibold mb-4">Richtingen</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="demo-box bg-base-100 bg-hatched border border-base-300">
+                    <span class="text-sm font-medium">45° (default)</span>
+                </div>
+                <div class="demo-box bg-base-100 bg-hatched-reverse border border-base-300">
+                    <span class="text-sm font-medium">-45° (reverse)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Custom Colors -->
+        <section>
+            <h2 class="text-2xl font-semibold mb-4">DaisyUI Kleuren</h2>
+            <div class="grid grid-cols-4 gap-4">
+                <div class="demo-box bg-base-100 bg-hatched bg-hatched-primary border border-primary">
+                    <span class="text-sm font-medium text-primary">Primary</span>
+                </div>
+                <div class="demo-box bg-base-100 bg-hatched bg-hatched-secondary border border-secondary">
+                    <span class="text-sm font-medium text-secondary">Secondary</span>
+                </div>
+                <div class="demo-box bg-base-100 bg-hatched bg-hatched-accent border border-accent">
+                    <span class="text-sm font-medium text-accent">Accent</span>
+                </div>
+                <div class="demo-box bg-base-100 bg-hatched bg-hatched-neutral border border-neutral">
+                    <span class="text-sm font-medium text-neutral">Neutral</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inline Color Customization -->
+        <section>
+            <h2 class="text-2xl font-semibold mb-4">Custom Kleuren (inline)</h2>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="demo-box bg-rose-50 bg-hatched border border-rose-300" style="--hatch-color: #f43f5e;">
+                    <span class="text-sm font-medium text-rose-700">Rood</span>
+                </div>
+                <div class="demo-box bg-emerald-50 bg-hatched-reverse border border-emerald-300" style="--hatch-color: #10b981;">
+                    <span class="text-sm font-medium text-emerald-700">Groen</span>
+                </div>
+                <div class="demo-box bg-purple-50 bg-hatched border border-purple-300" style="--hatch-color: #a855f7;">
+                    <span class="text-sm font-medium text-purple-700">Paars</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code Examples -->
+        <section class="mt-8">
+            <h2 class="text-2xl font-semibold mb-4">Voorbeelden</h2>
+            <div class="mockup-code">
+                <pre><code>&lt;!-- Basis --&gt;
+&lt;div class="bg-hatched"&gt;...&lt;/div&gt;
+
+&lt;!-- Omgekeerde richting --&gt;
+&lt;div class="bg-hatched-reverse"&gt;...&lt;/div&gt;
+
+&lt;!-- Met DaisyUI kleur --&gt;
+&lt;div class="bg-hatched bg-hatched-primary"&gt;...&lt;/div&gt;
+
+&lt;!-- Custom kleur --&gt;
+&lt;div class="bg-hatched" style="--hatch-color: #ff0000;"&gt;...&lt;/div&gt;</code></pre>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

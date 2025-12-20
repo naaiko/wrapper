@@ -1,0 +1,92 @@
+/* =================================================================
+   HATCHED BACKGROUNDS - Subtle Diagonal Striping
+   ================================================================= */
+
+/* Base pattern - 45° diagonal */
+.bg-hatched {
+    --hatch-color: currentColor;
+    --hatch-opacity: 0.05;
+    --hatch-spacing: 12px;
+    
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent calc(var(--hatch-spacing) - 1px),
+        rgb(from var(--hatch-color) r g b / var(--hatch-opacity)) calc(var(--hatch-spacing) - 1px),
+        rgb(from var(--hatch-color) r g b / var(--hatch-opacity)) var(--hatch-spacing)
+    );
+}
+
+/* Reverse angle - (-45°) */
+.bg-hatched-reverse {
+    --hatch-color: currentColor;
+    --hatch-opacity: 0.05;
+    --hatch-spacing: 12px;
+    
+    background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent calc(var(--hatch-spacing) - 1px),
+        rgb(from var(--hatch-color) r g b / var(--hatch-opacity)) calc(var(--hatch-spacing) - 1px),
+        rgb(from var(--hatch-color) r g b / var(--hatch-opacity)) var(--hatch-spacing)
+    );
+}
+
+/* =================================================================
+   COLOR UTILITIES (DaisyUI integration)
+   ================================================================= */
+
+.bg-hatched-primary {
+    --hatch-color: hsl(var(--p));
+}
+
+.bg-hatched-secondary {
+    --hatch-color: hsl(var(--s));
+}
+
+.bg-hatched-accent {
+    --hatch-color: hsl(var(--a));
+}
+
+.bg-hatched-neutral {
+    --hatch-color: hsl(var(--n));
+}
+
+.bg-hatched-base {
+    --hatch-color: hsl(var(--bc));
+}
+
+/* =================================================================
+   USAGE EXAMPLES
+   ================================================================= 
+   
+   <!-- Default (45°, uses currentColor) -->
+   <div class="bg-hatched">...</div>
+   
+   <!-- Reverse angle (-45°) -->
+   <div class="bg-hatched-reverse">...</div>
+   
+   <!-- With DaisyUI theme color -->
+   <div class="bg-hatched bg-hatched-primary">...</div>
+   <div class="bg-hatched-reverse bg-hatched-accent">...</div>
+   
+   <!-- Custom color via inline style -->
+   <div class="bg-hatched" style="--hatch-color: #ff0000;">...</div>
+   
+   ================================================================= */
+
+/* =================================================================
+   NON-SHOOTING DAY CALENDAR STYLING
+   ================================================================= */
+
+.non-shooting-day {
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 11px,
+        rgba(0, 0, 0, 0.05) 11px,
+        rgba(0, 0, 0, 0.05) 12px
+    ) !important;
+    background-color: rgba(0, 0, 0, 0.1) !important;
+    opacity: 0.7;
+}

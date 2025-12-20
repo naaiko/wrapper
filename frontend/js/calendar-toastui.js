@@ -162,6 +162,7 @@ function initializeCalendar() {
     calendar.on('beforeCreateEvent', handleBeforeCreateEvent);
     calendar.on('beforeDeleteEvent', handleEventDelete);
     calendar.on('clickEvent', handleEventClick);
+    calendar.on('selectDateTime', handleSelectDateTime); // Click on empty day
     
     console.log('📅 Toast UI Calendar initialized with defaults');
 }
@@ -183,6 +184,9 @@ function renderCalendarEvents() {
     
     // Create events
     calendar.createEvents(events);
+    
+    // Apply non-shooting day styling after render
+    setTimeout(() => applyNonShootingDayStyling(), 100);
 }
 
 function sceneToEvent(scene) {
@@ -350,6 +354,13 @@ async function handleBeforeCreateEvent({ start, end, isAllday, state }) {
         draggedSceneId,
     });
     
+    // Check if trying to drop on a non-shooting day
+    if (draggedSceneId && isNonShootingDay(dropDate)) {
+        alert('Cannot schedule scenes on non-shooting days');
+        draggedSceneId = null;
+        return false;
+    }
+    
     // If we have a dragged scene, schedule it
     if (draggedSceneId) {
         console.log('🎬 Scheduling scene:', draggedSceneId, 'on', dropDate);
@@ -393,6 +404,15 @@ function handleEventClick({ event }) {
     
     // Open drawer with scene details
     openSceneDrawer(event);
+}
+
+function handleSelectDateTime({ start, end }) {
+    // User clicked on an empty day cell
+    const clickedDate = formatDateFromCalendar(start);
+    console.log('📅 Empty day clicked:', clickedDate);
+    
+    // Open non-shooting day modal
+    openNonShootingDayModal(clickedDate);
 }
 
 let currentDrawerEvent = null;
@@ -641,6 +661,13 @@ function setupCalendarDropZone() {
             fullDate: dateStr,
         });
         
+        // Check if trying to drop on a non-shooting day
+        if (isNonShootingDay(dateStr)) {
+            alert('Cannot schedule scenes on non-shooting days');
+            draggedSceneId = null;
+            return;
+        }
+        
         // Schedule the scene
         const sceneIdToSchedule = draggedSceneId;
         draggedSceneId = null;
@@ -657,16 +684,19 @@ function setupEventListeners() {
     document.getElementById('prevMonth').addEventListener('click', () => {
         calendar.prev();
         updateCalendarTitle();
+        setTimeout(() => applyNonShootingDayStyling(), 100);
     });
     
     document.getElementById('nextMonth').addEventListener('click', () => {
         calendar.next();
         updateCalendarTitle();
+        setTimeout(() => applyNonShootingDayStyling(), 100);
     });
     
     document.getElementById('todayBtn').addEventListener('click', () => {
         calendar.today();
         updateCalendarTitle();
+        setTimeout(() => applyNonShootingDayStyling(), 100);
     });
     
     // Add scene modal
@@ -697,6 +727,20 @@ function setupEventListeners() {
         document.getElementById('conditionsConfigModal').close();
     });
     document.getElementById('addConditionForm').addEventListener('submit', handleAddCondition);
+    
+    // Non-shooting day modal
+    document.getElementById('closeNonShootingDayBtn').addEventListener('click', () => {
+        document.getElementById('nonShootingDayModal').close();
+    });
+    document.getElementById('saveNonShootingDayBtn').addEventListener('click', async () => {
+        if (!currentNonShootingDate) return;
+        
+        const isNonShooting = document.getElementById('nonShootingDayToggle').checked;
+        await toggleNonShootingDay(currentNonShootingDate, isNonShooting);
+        
+        document.getElementById('nonShootingDayModal').close();
+        currentNonShootingDate = null;
+    });
     
     // Icon picker button (time)
     document.getElementById('chooseIconBtn').addEventListener('click', () => {
@@ -1252,4 +1296,222 @@ async function handleAddCondition(e) {
     btn.classList.add('btn-outline');
     const svgElement = document.getElementById('selectedConditionIconSvg');
     svgElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />';
+}
+
+// =================================================================
+// NON-SHOOTING DAYS MANAGEMENT
+// =================================================================
+
+function getNonShootingDays() {
+    const days = currentProject.non_shooting_days || [];
+    console.log('📅 getNonShootingDays:', days);
+    return days;
+}
+
+function isNonShootingDay(dateStr) {
+    return getNonShootingDays().includes(dateStr);
+}
+
+async function toggleNonShootingDay(dateStr, isNonShooting) {
+    console.log('🔄 toggleNonShootingDay:', { dateStr, isNonShooting });
+    const nonShootingDays = [...getNonShootingDays()];
+    console.log('  → Current non-shooting days:', nonShootingDays);
+    
+    if (isNonShooting && !nonShootingDays.includes(dateStr)) {
+        nonShootingDays.push(dateStr);
+        console.log('  → Added date to non-shooting days');
+    } else if (!isNonShooting && nonShootingDays.includes(dateStr)) {
+        const index = nonShootingDays.indexOf(dateStr);
+        nonShootingDays.splice(index, 1);
+        console.log('  → Removed date from non-shooting days');
+    }
+    
+    console.log('  → New non-shooting days:', nonShootingDays);
+    
+    try {
+        console.log('  → Updating database...');
+        const { error } = await window.supabase
+            .from('projects')
+            .update({ non_shooting_days: nonShootingDays })
+            .eq('id', currentProject.id);
+        
+        if (error) throw error;
+        console.log('  → Database updated successfully');
+        
+        currentProject.non_shooting_days = nonShootingDays;
+        console.log('  → Local project updated:', currentProject.non_shooting_days);
+        
+        // Split any multi-day events that cross this non-shooting day if needed
+        if (isNonShooting) {
+            await splitEventsOnNonShootingDay(dateStr);
+        }
+        
+        // Re-render calendar to show updated styling
+        console.log('  → Re-rendering calendar...');
+        renderCalendarEvents();
+        console.log('  → Applying non-shooting day styling...');
+        // Use longer timeout to ensure DOM is fully rendered
+        setTimeout(() => applyNonShootingDayStyling(), 200);
+    } catch (error) {
+        console.error('❌ Error updating non-shooting days:', error);
+        alert('Failed to update non-shooting day');
+    }
+}
+
+async function splitEventsOnNonShootingDay(nonShootingDate) {
+    // Find all scenes that have this date in their shooting_dates
+    const affectedScenes = scenes.filter(scene => 
+        scene.shooting_dates && 
+        scene.shooting_dates.length > 1 &&
+        scene.shooting_dates.includes(nonShootingDate)
+    );
+    
+    for (const scene of affectedScenes) {
+        const dates = [...scene.shooting_dates].sort();
+        const nonShootingIndex = dates.indexOf(nonShootingDate);
+        
+        // If non-shooting day is in the middle, we need to split
+        if (nonShootingIndex > 0 && nonShootingIndex < dates.length - 1) {
+            // Keep only dates before the non-shooting day
+            const newDates = dates.slice(0, nonShootingIndex);
+            await SceneService.setShootingDates(scene.id, newDates);
+            scene.shooting_dates = newDates;
+            console.log(`✂️ Split scene ${scene.scene_number}: removed dates after ${nonShootingDate}`);
+        } else if (nonShootingIndex === 0 || nonShootingIndex === dates.length - 1) {
+            // Non-shooting day is at the edge, just remove it
+            const newDates = dates.filter(d => d !== nonShootingDate);
+            await SceneService.setShootingDates(scene.id, newDates);
+            scene.shooting_dates = newDates;
+            console.log(`✂️ Removed ${nonShootingDate} from scene ${scene.scene_number}`);
+        }
+    }
+}
+
+let currentNonShootingDate = null;
+
+function openNonShootingDayModal(dateStr) {
+    currentNonShootingDate = dateStr;
+    
+    // Set modal content
+    document.getElementById('nonShootingDayDate').textContent = formatDateReadable(dateStr);
+    
+    // Set toggle state
+    const toggle = document.getElementById('nonShootingDayToggle');
+    toggle.checked = isNonShootingDay(dateStr);
+    
+    // Show modal
+    document.getElementById('nonShootingDayModal').showModal();
+}
+
+function formatDateFromCalendar(d) {
+    let date;
+    if (d.toDate && typeof d.toDate === 'function') {
+        date = d.toDate();
+    } else if (d instanceof Date) {
+        date = d;
+    } else {
+        return d;
+    }
+    
+    // Extract local date components to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const localDateStr = `${year}-${month}-${day}`;
+    
+    console.log('📅 formatDateFromCalendar:', { 
+        input: d, 
+        date, 
+        localDateStr,
+        isoString: date.toISOString().split('T')[0]
+    });
+    
+    return localDateStr;
+}
+
+function applyNonShootingDayStyling() {
+    const nonShootingDays = getNonShootingDays();
+    console.log('🎨 applyNonShootingDayStyling called - non-shooting days:', nonShootingDays);
+    
+    // Get all day cells in the month view
+    const dayCells = document.querySelectorAll('.toastui-calendar-daygrid-cell');
+    console.log('📦 Found calendar cells:', dayCells.length);
+    
+    if (dayCells.length === 0) {
+        console.log('❌ No calendar cells found! Selector may be wrong.');
+        return;
+    }
+    
+    let styledCount = 0;
+    let removedCount = 0;
+    
+    dayCells.forEach((cell, index) => {
+        // Extract day number from the cell's date header
+        const dateHeader = cell.querySelector('.toastui-calendar-template-monthGridHeader');
+        if (!dateHeader) {
+            console.log(`⚠️ Cell ${index}: No date header found`);
+            return;
+        }
+        
+        const dayNumber = parseInt(dateHeader.textContent.trim(), 10);
+        if (isNaN(dayNumber)) {
+            console.log(`⚠️ Cell ${index}: Invalid day number from '${dateHeader.textContent.trim()}'`);
+            return;
+        }
+        
+        // Check if this is a "grayed out" day from another month
+        // Toast UI adds 'toastui-calendar-extra-date' class for other month days
+        const isOtherMonth = cell.classList.contains('toastui-calendar-extra-date');
+        
+        // For cells in other months, we need to calculate the correct month/year
+        // Based on position: if day > 20 in first week = previous month, if day < 15 in last week = next month
+        const currentDate = calendar.getDate();
+        let year = currentDate.getFullYear();
+        let month = currentDate.getMonth() + 1;
+        
+        if (isOtherMonth) {
+            // Check if it's start or end of month grid
+            const row = cell.closest('tr');
+            const allRows = cell.closest('tbody').querySelectorAll('tr');
+            const rowIndex = Array.from(allRows).indexOf(row);
+            
+            if (rowIndex === 0 && dayNumber > 15) {
+                // Previous month
+                month = month - 1;
+                if (month === 0) {
+                    month = 12;
+                    year = year - 1;
+                }
+            } else if (rowIndex >= 4 && dayNumber < 15) {
+                // Next month
+                month = month + 1;
+                if (month === 13) {
+                    month = 1;
+                    year = year + 1;
+                }
+            }
+        }
+        
+        // Construct the full date string
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+        
+        if (nonShootingDays.includes(dateStr)) {
+            console.log(`✅ Cell ${index}: Styling non-shooting day:`, dateStr);
+            styledCount++;
+            
+            // Simply add the CSS class - all styling is handled by CSS
+            cell.classList.add('non-shooting-day');
+            
+            console.log('  → Added class: non-shooting-day');
+        } else {
+            // Remove styling from cells that are NOT non-shooting days
+            if (cell.classList.contains('non-shooting-day')) {
+                console.log(`🧹 Cell ${index}: Removing styling from:`, dateStr);
+                removedCount++;
+                cell.classList.remove('non-shooting-day');
+            }
+        }
+    });
+    
+    console.log(`🎨 Finished styling - applied to ${styledCount} cells, removed from ${removedCount} cells`);
 }
