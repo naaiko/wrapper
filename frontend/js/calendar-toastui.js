@@ -36,6 +36,9 @@ const DEFAULT_CONDITIONS = [
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 Calendar App v1.2.3 - Non-Shooting Days Feature');
+    console.log('📅 Timestamp:', new Date().toISOString());
+    
     const projectId = localStorage.getItem(CURRENT_PROJECT_KEY);
     if (!projectId) {
         window.location.href = 'projects.html';
