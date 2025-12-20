@@ -162,7 +162,9 @@ function initializeCalendar() {
     calendar.on('beforeCreateEvent', handleBeforeCreateEvent);
     calendar.on('beforeDeleteEvent', handleEventDelete);
     calendar.on('clickEvent', handleEventClick);
-    calendar.on('selectDateTime', handleSelectDateTime); // Click on empty day
+    
+    // Setup click handler for empty days
+    setupEmptyDayClickHandler();
     
     console.log('📅 Toast UI Calendar initialized with defaults');
 }
@@ -406,13 +408,71 @@ function handleEventClick({ event }) {
     openSceneDrawer(event);
 }
 
-function handleSelectDateTime({ start, end }) {
-    // User clicked on an empty day cell
-    const clickedDate = formatDateFromCalendar(start);
-    console.log('📅 Empty day clicked:', clickedDate);
+function setupEmptyDayClickHandler() {
+    const calendarEl = document.getElementById('calendar');
     
-    // Open non-shooting day modal
-    openNonShootingDayModal(clickedDate);
+    calendarEl.addEventListener('click', (e) => {
+        // Check if click is on a day cell (not on an event)
+        const cell = e.target.closest('.toastui-calendar-daygrid-cell');
+        
+        if (!cell) return;
+        
+        // Check if clicked on an event (we want to ignore those)
+        if (e.target.closest('.toastui-calendar-weekday-event')) {
+            return;
+        }
+        
+        console.log('📅 Clicked on calendar cell:', cell);
+        
+        // Extract day number from the cell's date header
+        const dateHeader = cell.querySelector('.toastui-calendar-template-monthGridHeader');
+        if (!dateHeader) {
+            console.log('⚠️ No date header found');
+            return;
+        }
+        
+        const dayNumber = parseInt(dateHeader.textContent.trim(), 10);
+        if (isNaN(dayNumber)) {
+            console.log('⚠️ Invalid day number');
+            return;
+        }
+        
+        // Calculate the full date
+        const currentDate = calendar.getDate();
+        let year = currentDate.getFullYear();
+        let month = currentDate.getMonth() + 1;
+        
+        // Check if this is a day from another month
+        const isOtherMonth = cell.classList.contains('toastui-calendar-extra-date');
+        
+        if (isOtherMonth) {
+            const row = cell.closest('tr');
+            const allRows = cell.closest('tbody').querySelectorAll('tr');
+            const rowIndex = Array.from(allRows).indexOf(row);
+            
+            if (rowIndex === 0 && dayNumber > 15) {
+                // Previous month
+                month = month - 1;
+                if (month === 0) {
+                    month = 12;
+                    year = year - 1;
+                }
+            } else if (rowIndex >= 4 && dayNumber < 15) {
+                // Next month
+                month = month + 1;
+                if (month === 13) {
+                    month = 1;
+                    year = year + 1;
+                }
+            }
+        }
+        
+        const clickedDate = `${year}-${String(month).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+        console.log('📅 Calculated clicked date:', clickedDate);
+        
+        // Open non-shooting day modal
+        openNonShootingDayModal(clickedDate);
+    });
 }
 
 let currentDrawerEvent = null;
