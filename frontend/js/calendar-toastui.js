@@ -11,6 +11,7 @@ let currentProject = null;
 let scenes = [];
 let calendar = null;
 let selectedTime = null; // Currently selected time in drawer
+let selectedConditions = []; // Currently selected conditions in drawer (array)
 
 // Default times if project doesn't have times configured
 const DEFAULT_TIMES = [
@@ -18,6 +19,16 @@ const DEFAULT_TIMES = [
     { id: 'day', label: 'Day', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />', enabled: true },
     { id: 'evening', label: 'Evening', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />', enabled: true },
     { id: 'night', label: 'Night', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />', enabled: true },
+];
+
+// Default conditions if project doesn't have conditions configured
+const DEFAULT_CONDITIONS = [
+    { id: 'sunny', label: 'Sunny', icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>', enabled: true },
+    { id: 'rainy', label: 'Rainy', icon: '<path d="M16 13v8"/><path d="M8 13v8"/><path d="M12 15v8"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>', enabled: true },
+    { id: 'stormy', label: 'Stormy', icon: '<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>', enabled: true },
+    { id: 'cold', label: 'Cold', icon: '<path d="M2 12h20"/><path d="M12 2v20"/><path d="m4.93 4.93 14.14 14.14"/><path d="m4.93 19.07 14.14-14.14"/>', enabled: true },
+    { id: 'hot', label: 'Hot', icon: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>', enabled: true },
+    { id: 'chilly', label: 'Chilly', icon: '<path d="M2 12h20"/><path d="M12 2v20"/><path d="m4.93 4.93 14.14 14.14"/><path d="m4.93 19.07 14.14-14.14"/>', enabled: true },
 ];
 
 // =================================================================
@@ -47,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Load scenes
     scenes = await SceneService.getAll(currentProject.id);
-    console.log('📋 Loaded scenes:', scenes.map(s => ({ id: s.id, number: s.scene_number, time: s.time })));
+    console.log('📋 Loaded scenes:', scenes.map(s => ({ id: s.id, number: s.scene_number, time: s.time, conditions: s.conditions })));
     
     // Update navbar
     document.querySelector('.navbar .btn-ghost.text-xl').textContent = currentProject.name;
@@ -108,16 +119,38 @@ function initializeCalendar() {
                 let timeIconHtml = '';
                 if (event.raw?.timeIcon) {
                     timeIconHtml = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" style="width: 14px; height: 14px; opacity: 0.6;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            ${event.raw.timeIcon}
-                        </svg>
+                        <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.85);">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 12px; height: 12px; color: #ffffff; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                ${event.raw.timeIcon}
+                            </svg>
+                        </div>
                     `;
                 }
                 
-                return `<div class="flex items-start gap-1.5 w-full px-1">
-                    <span class="badge badge-primary badge-xs flex-shrink-0" style="font-size: 9px; padding: 2px 4px;">${sceneNumber}</span>
-                    <span class="text-xs line-clamp-1 flex-1" style="font-size: 11px; line-height: 1.3;">${description}</span>
+                // Get condition icons if available
+                let conditionIconsHtml = '';
+                if (event.raw?.conditionIcons && event.raw.conditionIcons.length > 0) {
+                    const isSingle = event.raw.conditionIcons.length === 1;
+                    const iconSvgs = event.raw.conditionIcons.map(icon => `
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 12px; height: 12px; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            ${icon}
+                        </svg>
+                    `).join('');
+                    const containerStyle = isSingle 
+                        ? 'display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.05);' 
+                        : 'display: flex; align-items: center; justify-content: center; gap: 3px; flex-shrink: 0; padding: 4px 8px; border-radius: 10px; background-color: rgba(0, 0, 0, 0.05);';
+                    conditionIconsHtml = `
+                        <div style="${containerStyle}">
+                            ${iconSvgs}
+                        </div>
+                    `;
+                }
+                
+                return `<div style="display: flex; align-items: center; gap: 4px; width: 100%; height: 100%;">
+                    <span class="badge badge-primary badge-xs" style="font-size: 9px; padding: 2px 4px; flex-shrink: 0;">${sceneNumber}</span>
+                    <span style="font-size: 11px; line-height: 1.3; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${description}</span>
                     ${timeIconHtml}
+                    ${conditionIconsHtml}
                 </div>`;
             },
         },
@@ -176,6 +209,18 @@ function sceneToEvent(scene) {
         }
     }
     
+    // Get condition icons if available
+    let conditionIcons = [];
+    if (scene.conditions && scene.conditions.length > 0) {
+        const conditions = getProjectConditions();
+        conditionIcons = scene.conditions
+            .map(condId => {
+                const condData = conditions.find(c => c.id === condId);
+                return condData ? condData.icon : null;
+            })
+            .filter(icon => icon !== null);
+    }
+    
     return {
         id: scene.id,
         calendarId: 'scenes',
@@ -192,6 +237,7 @@ function sceneToEvent(scene) {
             description: scene.description,
             shootingDates: scene.shooting_dates,
             timeIcon: timeIcon,
+            conditionIcons: conditionIcons,
         },
     };
 }
@@ -359,12 +405,18 @@ function openSceneDrawer(event) {
     // Set selected time
     selectedTime = scene.time || null;
     
+    // Set selected conditions (copy array to avoid reference issues)
+    selectedConditions = scene.conditions ? [...scene.conditions] : [];
+    
     // Populate editable fields
     document.getElementById('drawerSceneNumberInput').value = scene.scene_number;
     document.getElementById('drawerSceneDescriptionInput').value = scene.description;
     
     // Render time selector
     renderTimeSelector();
+    
+    // Render conditions selector
+    renderConditionsSelector();
     
     // Format dates (read-only)
     const dates = scene.shooting_dates || [];
@@ -454,7 +506,7 @@ function createUnscheduledSceneCard(scene) {
     card.draggable = true;
     card.dataset.sceneId = scene.id;
     
-    console.log('🎬 Creating card for scene:', scene.scene_number, 'time:', scene.time);
+    console.log('🎬 Creating card for scene:', scene.scene_number, 'time:', scene.time, 'conditions:', scene.conditions);
     
     // Get time icon if available
     let timeIconHtml = '';
@@ -464,8 +516,8 @@ function createUnscheduledSceneCard(scene) {
         console.log('⏰ Time data found:', timeData);
         if (timeData) {
             timeIconHtml = `
-                <div class="flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="flex-shrink-0 flex items-center justify-center" style="width: 24px; height: 24px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.85);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" style="width: 14px; height: 14px; color: #ffffff;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         ${timeData.icon}
                     </svg>
                 </div>
@@ -473,12 +525,42 @@ function createUnscheduledSceneCard(scene) {
         }
     }
     
+    // Get condition icons if available
+    let conditionIconsHtml = '';
+    if (scene.conditions && scene.conditions.length > 0) {
+        const conditions = getProjectConditions();
+        const icons = scene.conditions
+            .map(condId => {
+                const condData = conditions.find(c => c.id === condId);
+                return condData ? condData.icon : null;
+            })
+            .filter(icon => icon !== null);
+        
+        if (icons.length > 0) {
+            const isSingle = icons.length === 1;
+            const iconSvgs = icons.map(icon => `
+                <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    ${icon}
+                </svg>
+            `).join('');
+            const containerStyle = isSingle 
+                ? 'width: 24px; height: 24px; border-radius: 50%;' 
+                : 'padding: 3px 8px; border-radius: 12px;';
+            conditionIconsHtml = `
+                <div class="flex-shrink-0 flex items-center justify-center gap-1" style="${containerStyle} background-color: rgba(0, 0, 0, 0.05);">
+                    ${iconSvgs}
+                </div>
+            `;
+        }
+    }
+    
     card.innerHTML = `
         <div class="card-body p-1.5">
-            <div class="flex items-start gap-2">
+            <div class="flex items-center gap-2">
                 <div class="badge badge-primary badge-xs flex-shrink-0" style="padding: 2px 6px; font-size: 10px;">${scene.scene_number}</div>
                 <p class="text-xs flex-1 line-clamp-2 text-base-content/80">${scene.description}</p>
                 ${timeIconHtml}
+                ${conditionIconsHtml}
             </div>
         </div>
     `;
@@ -608,7 +690,14 @@ function setupEventListeners() {
     });
     document.getElementById('addTimeForm').addEventListener('submit', handleAddTime);
     
-    // Icon picker button
+    // Conditions config button
+    document.getElementById('conditionsConfigBtn').addEventListener('click', openConditionsConfig);
+    document.getElementById('closeConditionsConfigBtn').addEventListener('click', () => {
+        document.getElementById('conditionsConfigModal').close();
+    });
+    document.getElementById('addConditionForm').addEventListener('submit', handleAddCondition);
+    
+    // Icon picker button (time)
     document.getElementById('chooseIconBtn').addEventListener('click', () => {
         const picker = new IconPicker((selectedIcon) => {
             // Set the hidden input value
@@ -620,6 +709,24 @@ function setupEventListeners() {
             
             // Change button style to show it's selected
             const btn = document.getElementById('chooseIconBtn');
+            btn.classList.remove('btn-outline');
+            btn.classList.add('btn-primary');
+        });
+        picker.open();
+    });
+    
+    // Icon picker button (conditions)
+    document.getElementById('chooseConditionIconBtn').addEventListener('click', () => {
+        const picker = new IconPicker((selectedIcon) => {
+            // Set the hidden input value
+            document.getElementById('newConditionIcon').value = selectedIcon.path;
+            
+            // Update the icon in the round button
+            const svgElement = document.getElementById('selectedConditionIconSvg');
+            svgElement.innerHTML = selectedIcon.path;
+            
+            // Change button style to show it's selected
+            const btn = document.getElementById('chooseConditionIconBtn');
             btn.classList.remove('btn-outline');
             btn.classList.add('btn-primary');
         });
@@ -642,11 +749,12 @@ function setupEventListeners() {
         if (!sceneNumber || !description) return;
         
         try {
-            console.log('💾 Saving scene with time:', selectedTime);
+            console.log('💾 Saving scene with time:', selectedTime, 'and conditions:', selectedConditions);
             await SceneService.update(sceneId, {
                 scene_number: sceneNumber,
                 description: description,
                 time: selectedTime,
+                conditions: selectedConditions,
             });
             
             // Update local data
@@ -655,6 +763,7 @@ function setupEventListeners() {
                 scene.scene_number = sceneNumber;
                 scene.description = description;
                 scene.time = selectedTime;
+                scene.conditions = [...selectedConditions];
             }
             
             // Re-render calendar and unscheduled scenes
@@ -928,5 +1037,218 @@ async function handleAddTime(e) {
     btn.classList.remove('btn-primary');
     btn.classList.add('btn-outline');
     const svgElement = document.getElementById('selectedIconSvg');
+    svgElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />';
+}
+
+// =================================================================
+// CONDITIONS MANAGEMENT
+// =================================================================
+
+function getProjectConditions() {
+    return currentProject.conditions || DEFAULT_CONDITIONS;
+}
+
+function getEnabledConditions() {
+    return getProjectConditions().filter(c => c.enabled);
+}
+
+function renderConditionsSelector() {
+    const container = document.getElementById('drawerConditionsSelector');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    const enabledConditions = getEnabledConditions();
+    
+    enabledConditions.forEach(condition => {
+        const isSelected = selectedConditions.includes(condition.id);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `btn btn-sm gap-2 ${isSelected ? 'btn-primary' : 'btn-outline'}`;
+        btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                ${condition.icon}
+            </svg>
+            ${condition.label}
+        `;
+        btn.onclick = () => {
+            if (isSelected) {
+                // Remove from selection
+                selectedConditions = selectedConditions.filter(id => id !== condition.id);
+            } else {
+                // Add to selection
+                selectedConditions.push(condition.id);
+            }
+            renderConditionsSelector();
+        };
+        container.appendChild(btn);
+    });
+    
+    // Add clear button
+    if (selectedConditions.length > 0) {
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'btn btn-sm btn-ghost';
+        clearBtn.innerHTML = '✕ Clear All';
+        clearBtn.onclick = () => {
+            selectedConditions = [];
+            renderConditionsSelector();
+        };
+        container.appendChild(clearBtn);
+    }
+}
+
+async function openConditionsConfig() {
+    renderConditionsList();
+    document.getElementById('conditionsConfigModal').showModal();
+}
+
+function renderConditionsList() {
+    const container = document.getElementById('conditionsList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    const conditions = getProjectConditions();
+    
+    conditions.forEach((condition, index) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-3 bg-base-200 rounded-lg cursor-move';
+        item.draggable = true;
+        item.dataset.index = index;
+        
+        item.innerHTML = `
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    ${condition.icon}
+                </svg>
+                <span class="font-medium">${condition.label}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <input 
+                    type="checkbox" 
+                    class="toggle toggle-primary" 
+                    ${condition.enabled ? 'checked' : ''}
+                    onchange="toggleCondition(${index})"
+                />
+                ${!isDefaultCondition(condition.id) ? `<button class="btn btn-ghost btn-xs btn-circle" onclick="deleteCondition(${index})">✕</button>` : ''}
+            </div>
+        `;
+        
+        // Drag and drop event listeners
+        item.addEventListener('dragstart', handleConditionDragStart);
+        item.addEventListener('dragover', handleConditionDragOver);
+        item.addEventListener('drop', handleConditionDrop);
+        item.addEventListener('dragend', handleConditionDragEnd);
+        
+        container.appendChild(item);
+    });
+}
+
+let draggedConditionIndex = null;
+
+function handleConditionDragStart(e) {
+    draggedConditionIndex = parseInt(e.currentTarget.dataset.index);
+    e.currentTarget.style.opacity = '0.4';
+}
+
+function handleConditionDragOver(e) {
+    e.preventDefault();
+    return false;
+}
+
+function handleConditionDrop(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const dropIndex = parseInt(e.currentTarget.dataset.index);
+    
+    if (draggedConditionIndex !== null && draggedConditionIndex !== dropIndex) {
+        const conditions = [...getProjectConditions()];
+        const draggedItem = conditions[draggedConditionIndex];
+        
+        // Remove from old position
+        conditions.splice(draggedConditionIndex, 1);
+        
+        // Insert at new position
+        conditions.splice(dropIndex, 0, draggedItem);
+        
+        // Update in database
+        updateProjectConditions(conditions);
+    }
+    
+    return false;
+}
+
+function handleConditionDragEnd(e) {
+    e.currentTarget.style.opacity = '1';
+    draggedConditionIndex = null;
+}
+
+function isDefaultCondition(id) {
+    return ['sunny', 'rainy', 'stormy', 'cold', 'hot', 'chilly'].includes(id);
+}
+
+window.toggleCondition = async function(index) {
+    const conditions = [...getProjectConditions()];
+    conditions[index].enabled = !conditions[index].enabled;
+    await updateProjectConditions(conditions);
+};
+
+window.deleteCondition = async function(index) {
+    if (!confirm('Delete this condition?')) return;
+    const conditions = [...getProjectConditions()];
+    conditions.splice(index, 1);
+    await updateProjectConditions(conditions);
+};
+
+async function updateProjectConditions(conditions) {
+    try {
+        const { error } = await window.supabase
+            .from('projects')
+            .update({ conditions })
+            .eq('id', currentProject.id);
+        
+        if (error) throw error;
+        
+        currentProject.conditions = conditions;
+        renderConditionsList();
+        renderConditionsSelector();
+    } catch (error) {
+        console.error('Error updating conditions:', error);
+        alert('Failed to update conditions');
+    }
+}
+
+async function handleAddCondition(e) {
+    e.preventDefault();
+    
+    const icon = document.getElementById('newConditionIcon').value.trim();
+    const label = document.getElementById('newConditionLabel').value.trim();
+    
+    if (!icon || !label) return;
+    
+    const conditions = [...getProjectConditions()];
+    const id = label.toLowerCase().replace(/\s+/g, '_');
+    
+    // Check if ID already exists
+    if (conditions.some(c => c.id === id)) {
+        alert('A condition with this name already exists');
+        return;
+    }
+    
+    conditions.push({ id, label, icon, enabled: true });
+    await updateProjectConditions(conditions);
+    
+    // Clear form
+    document.getElementById('newConditionIcon').value = '';
+    document.getElementById('newConditionLabel').value = '';
+    
+    // Reset icon button to default state
+    const btn = document.getElementById('chooseConditionIconBtn');
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-outline');
+    const svgElement = document.getElementById('selectedConditionIconSvg');
     svgElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />';
 }
