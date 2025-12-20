@@ -160,12 +160,6 @@ async function updateSceneOrders(sceneUpdates) {
         throw error;
     }
 }
-        return data;
-    } catch (error) {
-        console.error('Error creating demo scenes:', error);
-        return [];
-    }
-}
 
 // Load scenes from current project
 let currentProject = null;
