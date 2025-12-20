@@ -1,0 +1,397 @@
+// =================================================================
+// DATA MODEL
+// =================================================================
+
+const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
+
+/**
+ * Get current project ID from localStorage
+ */
+function getCurrentProjectId() {
+    return localStorage.getItem(CURRENT_PROJECT_KEY);
+}
+
+/**
+ * Get current project from Supabase
+ */
+async function getCurrentProject() {
+    const projectId = getCurrentProjectId();
+    if (!projectId) {
+        // No project selected, redirect to projects page
+        window.location.href = 'projects.html';
+        return null;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', projectId)
+            .single();
+        
+        if (error) throw error;
+        
+        if (!data) {
+            // Project not found, redirect to projects page
+            window.location.href = 'projects.html';
+            return null;
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Error fetching project:', error);
+        window.location.href = 'projects.html';
+        return null;
+    }
+}
+
+/**
+ * Get all scenes for current project from Supabase
+ */
+async function getProjectScenes(projectId) {
+    try {
+        const { data, error } = await supabase
+            .from('scenes')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('story_order');
+        
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching scenes:', error);
+        return [];
+    }
+}
+
+/**
+ * Save/update scene in Supabase
+ */
+async function saveScene(scene) {
+    try {
+        const { data, error } = await supabase
+            .from('scenes')
+            .upsert(scene)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error saving scene:', error);
+        throw error;
+    }
+}
+
+/**
+ * Create multiple demo scenes for a new project
+ */
+async function createDemoScenes(projectId) {
+    const demoScenes = [
+        {
+            project_id: projectId,
+            scene_number: "1",
+            description: "EXT. CITY STREET - DAY",
+            story_order: 1,
+            shooting_days: [3, 7]
+        },
+        {
+            project_id: projectId,
+            scene_number: "2",
+            description: "INT. COFFEE SHOP - DAY",
+            story_order: 2,
+            shooting_days: [1]
+        },
+        {
+            project_id: projectId,
+            scene_number: "3",
+            description: "EXT. PARK - DAY",
+            story_order: 3,
+            shooting_days: [2]
+        }
+    ];
+    
+    try {
+        const { data, error } = await supabase
+            .from('scenes')
+            .insert(demoScenes)
+            .select();
+        
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error creating demo scenes:', error);
+        return [];
+    }
+}
+
+// Load scenes from current project
+let currentProject = null;
+let scenes = [];
+
+// =================================================================
+// STATE MANAGEMENT
+// =================================================================
+
+let currentMode = 'story'; // 'story' or 'shooting'
+
+// =================================================================
+// VIEW LOGIC
+// =================================================================
+
+/**
+ * Switch between story order and shooting order modes.
+ */
+function switchMode(mode) {
+    currentMode = mode;
+    
+    // Update button states
+    const btnStory = document.getElementById('btnStoryOrder');
+    const btnShooting = document.getElementById('btnShootingOrder');
+    
+    if (mode === 'story') {
+        btnStory.classList.add('btn-active');
+        btnShooting.classList.remove('btn-active');
+        document.getElementById('timelineTitle').textContent = 'Story Timeline';
+    } else {
+        btnShooting.classList.add('btn-active');
+        btnStory.classList.remove('btn-active');
+        document.getElementById('timelineTitle').textContent = 'Shooting Schedule';
+    }
+    
+    // Re-render timeline
+    renderTimeline();
+}
+
+/**
+ * Main render function - delegates to appropriate view renderer.
+ */
+function renderTimeline() {
+    const container = document.getElementById('sceneContainer');
+    
+    if (currentMode === 'story') {
+        renderStoryOrder(container);
+    } else {
+        renderShootingOrder(container);
+    }
+}
+
+/**
+ * Render scenes in story order (simple list, sorted by storyOrder).
+ */
+function renderStoryOrder(container) {
+    // Sort by story order
+    const sortedScenes = [...scenes].sort((a, b) => a.story_order - b.story_order);
+    
+    // Build HTML with horizontal cards
+    const html = sortedScenes.map(scene => `
+        <div class="card bg-base-100 shadow-md flex-shrink-0 w-80 min-h-[200px] scene-card">
+            <div class="card-body p-4">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h3 class="card-title text-lg">
+                            Scene ${scene.scene_number}
+                        </h3>
+                        <p class="text-sm text-base-content/70">${scene.description}</p>
+                    </div>
+                    <div class="badge badge-outline">Story #${scene.story_order}</div>
+                </div>
+                <div class="text-xs text-base-content/60 mt-2">
+                    Shooting: Day ${scene.shooting_days.join(', Day ')}
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+/**
+ * Render scenes in shooting order.
+ * 
+ * Key logic: "explode" scenes by shooting days, then group by day.
+ * A scene shot on days [3, 7] appears twice in the output.
+ */
+function renderShootingOrder(container) {
+    // Step 1: Create (scene, day) pairs
+    const sceneDayPairs = [];
+    scenes.forEach(scene => {
+        scene.shooting_days.forEach(day => {
+            sceneDayPairs.push({ scene, day });
+        });
+    });
+    
+    // Step 2: Group by shooting day
+    const groupedByDay = {};
+    sceneDayPairs.forEach(pair => {
+        if (!groupedByDay[pair.day]) {
+            groupedByDay[pair.day] = [];
+        }
+        groupedByDay[pair.day].push(pair.scene);
+    });
+    
+    // Step 3: Sort days numerically
+    const sortedDays = Object.keys(groupedByDay).map(Number).sort((a, b) => a - b);
+    
+    // Step 4: Build HTML with day sections in horizontal layout
+    const html = sortedDays.map(day => {
+        const scenesForDay = groupedByDay[day];
+        
+        // Sort scenes within each day by story order for consistency
+        scenesForDay.sort((a, b) => a.story_order - b.story_order);
+        
+        const sceneCards = scenesForDay.map(scene => {
+            // Visual indicator if scene spans multiple days
+            const isMultiDay = scene.shooting_days.length > 1;
+            const multiDayBadge = isMultiDay 
+                ? `<span class="badge badge-warning badge-sm">Multi-day shoot</span>`
+                : '';
+            
+            return `
+                <div class="card bg-base-100 shadow-md flex-shrink-0 w-80 min-h-[200px]">
+                    <div class="card-body p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h3 class="card-title text-lg">
+                                    Scene ${scene.scene_number}
+                                </h3>
+                                <p class="text-sm text-base-content/70">${scene.description}</p>
+                            </div>
+                            <div class="flex flex-col gap-1 items-end">
+                                <div class="badge badge-outline">Story #${scene.story_order}</div>
+                                ${multiDayBadge}
+                            </div>
+                        </div>
+                        ${isMultiDay ? `
+                            <div class="text-xs text-base-content/60 mt-2">
+                                Full schedule: Day ${scene.shooting_days.join(', Day ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Each day is a section with badge and horizontal cards
+        return `
+            <div class="flex-shrink-0">
+                <div class="badge badge-lg badge-primary mb-3">Shooting Day ${day}</div>
+                <div class="flex gap-3">
+                    ${sceneCards}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = html;
+}
+
+// =================================================================
+// DRAG-TO-SCROLL FUNCTIONALITY (iPad-like smooth scrolling)
+// =================================================================
+
+/**
+ * Enable ultra-smooth drag-to-scroll with momentum, like iOS Safari.
+ */
+function enableDragScroll() {
+    const container = document.getElementById('sceneContainer');
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+    let velocity = 0;
+    let lastX = 0;
+    let lastTime = Date.now();
+    let animationId = null;
+    
+    // Momentum scrolling after release (iOS-like physics)
+    function applyMomentum() {
+        if (Math.abs(velocity) > 0.1) {
+            container.scrollLeft -= velocity;
+            velocity *= 0.92; // Smoother friction (iOS uses ~0.92)
+            animationId = requestAnimationFrame(applyMomentum);
+        } else {
+            velocity = 0;
+        }
+    }
+    
+    container.addEventListener('mousedown', (e) => {
+        isDown = true;
+        container.style.cursor = 'grabbing';
+        container.style.userSelect = 'none';
+        startX = e.pageX;
+        scrollLeft = container.scrollLeft;
+        lastX = e.pageX;
+        lastTime = Date.now();
+        velocity = 0;
+        
+        // Cancel any ongoing momentum
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+    });
+    
+    container.addEventListener('mouseleave', () => {
+        if (isDown) {
+            isDown = false;
+            container.style.cursor = 'grab';
+            applyMomentum();
+        }
+    });
+    
+    container.addEventListener('mouseup', () => {
+        if (isDown) {
+            isDown = false;
+            container.style.cursor = 'grab';
+            applyMomentum();
+        }
+    });
+    
+    container.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        
+        // Direct 1:1 pixel-perfect scrolling
+        const x = e.pageX;
+        const deltaX = x - lastX;
+        container.scrollLeft -= deltaX;
+        
+        // Calculate velocity for momentum (with time-based smoothing)
+        const now = Date.now();
+        const dt = Math.max(now - lastTime, 1);
+        velocity = deltaX / dt * 16; // Normalize to 60fps
+        
+        lastX = x;
+        lastTime = now;
+    });
+    
+    // Set initial cursor
+    container.style.cursor = 'grab';
+}
+
+// =================================================================
+// INITIALIZATION
+// =================================================================
+
+// Render initial view on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    currentProject = await getCurrentProject();
+    
+    if (!currentProject) {
+        return; // Redirected to projects page
+    }
+    
+    // Load scenes from database
+    scenes = await getProjectScenes(currentProject.id);
+    
+    // If no scenes exist, create demo data
+    if (scenes.length === 0) {
+        scenes = await createDemoScenes(currentProject.id);
+    }
+    
+    // Update navbar with project name
+    document.querySelector('.navbar .btn-ghost.text-xl').textContent = currentProject.name;
+    
+    renderTimeline();
+    enableDragScroll();
+});

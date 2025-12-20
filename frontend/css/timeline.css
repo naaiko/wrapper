@@ -1,0 +1,23 @@
+/* Hide scrollbar while maintaining functionality */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Ultra-smooth scrolling for timeline */
+#sceneContainer {
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+    will-change: scroll-position;
+}
+
+/* Hardware acceleration for cards */
+.scene-card {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+}

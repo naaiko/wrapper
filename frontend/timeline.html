@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cupcake">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeline - Continuity Manager</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- DaisyUI CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/timeline.css">
+    
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="overflow-hidden">
+    <div class="min-h-screen bg-base-200">
+        <!-- Navbar -->
+        <div class="navbar bg-base-100 shadow-lg">
+            <div class="flex-1">
+                <a href="projects.html" class="btn btn-ghost text-xl">Continuity Manager</a>
+            </div>
+            <div class="flex-none">
+                <a href="projects.html" class="btn btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Projects
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex flex-col h-[calc(100vh-4rem-4rem)]">
+            <!-- Mode Toggle -->
+            <div class="flex justify-center py-6 bg-base-200">
+                <div class="btn-group">
+                    <button 
+                        id="btnStoryOrder" 
+                        class="btn btn-active"
+                        onclick="switchMode('story')"
+                    >
+                        Story Order
+                    </button>
+                    <button 
+                        id="btnShootingOrder" 
+                        class="btn"
+                        onclick="switchMode('shooting')"
+                    >
+                        Shooting Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timeline Container (Full Viewport) -->
+            <div class="flex-1 px-4">
+                <h2 class="text-2xl font-bold mb-4" id="timelineTitle">Story Timeline</h2>
+                
+                <!-- Horizontal Scrollable Timeline -->
+                <div id="sceneContainer" class="flex items-center overflow-x-auto gap-4 pb-4 h-[calc(100%-3rem)] scrollbar-hide">
+                    <!-- Scenes will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Dock (Actions) -->
+        <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div class="flex gap-2 bg-base-100 p-3 rounded-box shadow-xl">
+                <button class="btn btn-square">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+                <button class="btn btn-square">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                </button>
+                <button class="btn btn-square">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </button>
+                <button class="btn btn-square">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Scripts -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/timeline.js"></script>
+</body>
+</html>
