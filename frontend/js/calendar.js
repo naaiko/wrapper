@@ -150,10 +150,14 @@ function createCalendarSceneCard(scene) {
     div.innerHTML = SceneRenderer.renderCalendarCard(scene);
     const card = div.firstElementChild;
     
+    // Store scene id as data attribute
+    card.dataset.sceneId = scene.id;
+    
     card.addEventListener('dragstart', (e) => {
         draggedScene = scene;
         e.currentTarget.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', scene.id);
     });
     
     card.addEventListener('dragend', (e) => {
@@ -181,16 +185,20 @@ function setupDayDropZone(dayElement) {
         e.preventDefault();
         dayElement.classList.remove('drag-over');
         
-        if (!draggedScene) return;
+        if (!draggedScene) {
+            console.warn('Drop event fired but no draggedScene found');
+            return;
+        }
         
         const date = dayElement.dataset.date;
+        const sceneId = draggedScene.id;
         
         // Add date to scene's shooting_dates
         try {
-            await SceneService.addShootingDate(draggedScene.id, date);
+            await SceneService.addShootingDate(sceneId, date);
             
             // Update local scenes array
-            const scene = scenes.find(s => s.id === draggedScene.id);
+            const scene = scenes.find(s => s.id === sceneId);
             if (scene) {
                 if (!scene.shooting_dates) scene.shooting_dates = [];
                 if (!scene.shooting_dates.includes(date)) {
@@ -199,12 +207,16 @@ function setupDayDropZone(dayElement) {
                 }
             }
             
+            // Clear draggedScene
+            draggedScene = null;
+            
             // Re-render
             renderCalendar();
             renderUnscheduledScenes();
         } catch (error) {
             console.error('Error adding shooting date:', error);
             alert('Failed to add shooting date');
+            draggedScene = null;
         }
     });
 }
