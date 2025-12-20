@@ -125,15 +125,162 @@ async function createDemoScenes(projectId) {
     }
 }
 
+/**
+ * Delete a scene from Supabase
+ */
+async function deleteScene(sceneId) {
+    try {
+        const { error } = await supabase
+            .from('scenes')
+            .delete()
+            .eq('id', sceneId);
+        
+        if (error) throw error;
+    } catch (error) {
+        console.error('Error deleting scene:', error);
+        throw error;
+    }
+}
+
+/**
+ * Update story order for multiple scenes
+ */
+async function updateSceneOrders(sceneUpdates) {
+    try {
+        const promises = sceneUpdates.map(update => 
+            supabase
+                .from('scenes')
+                .update({ story_order: update.story_order })
+                .eq('id', update.id)
+        );
+        
+        await Promise.all(promises);
+    } catch (error) {
+        console.error('Error updating scene orders:', error);
+        throw error;
+    }
+}
+        return data;
+    } catch (error) {
+        console.error('Error creating demo scenes:', error);
+        return [];
+    }
+}
+
 // Load scenes from current project
 let currentProject = null;
 let scenes = [];
+
+// =================================================================
+// SCENE CRUD OPERATIONS
+// =================================================================
+
+/**
+ * Show add scene modal
+ */
+function showAddSceneModal() {
+    document.getElementById('sceneNumber').value = '';
+    document.getElementById('sceneDescription').value = '';
+    document.getElementById('sceneShootingDays').value = '';
+    document.getElementById('addSceneModal').showModal();
+}
+
+/**
+ * Add a new scene
+ */
+async function addScene(event) {
+    event.preventDefault();
+    
+    const sceneNumber = document.getElementById('sceneNumber').value.trim();
+    const description = document.getElementById('sceneDescription').value.trim();
+    const shootingDaysInput = document.getElementById('sceneShootingDays').value.trim();
+    
+    // Parse shooting days
+    const shootingDays = shootingDaysInput
+        .split(',')
+        .map(d => parseInt(d.trim()))
+        .filter(d => !isNaN(d));
+    
+    if (shootingDays.length === 0) {
+        alert('Please enter at least one valid shooting day');
+        return;
+    }
+    
+    try {
+        // Get next story order
+        const maxOrder = scenes.length > 0 
+            ? Math.max(...scenes.map(s => s.story_order))
+            : 0;
+        
+        // Create new scene
+        const newScene = {
+            project_id: currentProject.id,
+            scene_number: sceneNumber,
+            description: description,
+            story_order: maxOrder + 1,
+            shooting_days: shootingDays
+        };
+        
+        // Show loading
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading loading-spinner"></span> Adding...';
+        
+        // Save to database
+        const savedScene = await saveScene(newScene);
+        
+        // Add to local scenes array
+        scenes.push(savedScene);
+        
+        // Re-render timeline
+        renderTimeline();
+        
+        // Close modal
+        document.getElementById('addSceneModal').close();
+        
+        // Reset button
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Add Scene';
+    } catch (error) {
+        console.error('Error adding scene:', error);
+        alert('Failed to add scene: ' + error.message);
+        
+        // Reset button
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Add Scene';
+    }
+}
+
+/**
+ * Delete a scene
+ */
+async function deleteSceneById(sceneId) {
+    if (!confirm('Are you sure you want to delete this scene?')) {
+        return;
+    }
+    
+    try {
+        await deleteScene(sceneId);
+        
+        // Remove from local array
+        scenes = scenes.filter(s => s.id !== sceneId);
+        
+        // Re-render
+        renderTimeline();
+    } catch (error) {
+        console.error('Error deleting scene:', error);
+        alert('Failed to delete scene');
+    }
+}
 
 // =================================================================
 // STATE MANAGEMENT
 // =================================================================
 
 let currentMode = 'story'; // 'story' or 'shooting'
+let draggedElement = null;
+let draggedScene = null;
 
 // =================================================================
 // VIEW LOGIC
@@ -183,18 +330,53 @@ function renderStoryOrder(container) {
     // Sort by story order
     const sortedScenes = [...scenes].sort((a, b) => a.story_order - b.story_order);
     
+    if (sortedScenes.length === 0) {
+        container.innerHTML = `
+            <div class="flex items-center justify-center w-full h-full text-base-content/50">
+                <div class="text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                    </svg>
+                    <p class="text-xl">No scenes yet</p>
+                    <p class="text-sm mt-2">Click the + button to add your first scene</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
     // Build HTML with horizontal cards
     const html = sortedScenes.map(scene => `
-        <div class="card bg-base-100 shadow-md flex-shrink-0 w-80 min-h-[200px] scene-card">
+        <div 
+            class="card bg-base-100 shadow-md flex-shrink-0 w-80 min-h-[200px] scene-card cursor-move" 
+            draggable="true"
+            data-scene-id="${scene.id}"
+            ondragstart="handleDragStart(event)"
+            ondragover="handleDragOver(event)"
+            ondrop="handleDrop(event)"
+            ondragend="handleDragEnd(event)"
+        >
             <div class="card-body p-4">
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
-                        <h3 class="card-title text-lg">
-                            Scene ${scene.scene_number}
-                        </h3>
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                            <h3 class="card-title text-lg">
+                                Scene ${scene.scene_number}
+                            </h3>
+                        </div>
                         <p class="text-sm text-base-content/70">${scene.description}</p>
                     </div>
-                    <div class="badge badge-outline">Story #${scene.story_order}</div>
+                    <div class="flex flex-col gap-2 items-end">
+                        <div class="badge badge-outline">Story #${scene.story_order}</div>
+                        <button class="btn btn-ghost btn-xs btn-square" onclick="deleteSceneById('${scene.id}')" title="Delete scene">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="text-xs text-base-content/60 mt-2">
                     Shooting: Day ${scene.shooting_days.join(', Day ')}
@@ -367,6 +549,116 @@ function enableDragScroll() {
     
     // Set initial cursor
     container.style.cursor = 'grab';
+}
+
+// =================================================================
+// DRAG AND DROP FOR REORDERING
+// =================================================================
+
+/**
+ * Handle drag start
+ */
+function handleDragStart(event) {
+    if (currentMode !== 'story') {
+        event.preventDefault();
+        return;
+    }
+    
+    draggedElement = event.currentTarget;
+    const sceneId = draggedElement.getAttribute('data-scene-id');
+    draggedScene = scenes.find(s => s.id === sceneId);
+    
+    event.currentTarget.style.opacity = '0.4';
+    event.dataTransfer.effectAllowed = 'move';
+}
+
+/**
+ * Handle drag over
+ */
+function handleDragOver(event) {
+    if (event.preventDefault) {
+        event.preventDefault();
+    }
+    
+    event.dataTransfer.dropEffect = 'move';
+    
+    const targetElement = event.currentTarget;
+    if (targetElement !== draggedElement) {
+        targetElement.style.borderLeft = '3px solid #ff6ec7';
+    }
+    
+    return false;
+}
+
+/**
+ * Handle drop
+ */
+async function handleDrop(event) {
+    if (event.stopPropagation) {
+        event.stopPropagation();
+    }
+    
+    const targetElement = event.currentTarget;
+    targetElement.style.borderLeft = 'none';
+    
+    if (draggedElement !== targetElement) {
+        const targetSceneId = targetElement.getAttribute('data-scene-id');
+        const targetScene = scenes.find(s => s.id === targetSceneId);
+        
+        if (draggedScene && targetScene) {
+            // Reorder the scenes array
+            const draggedOrder = draggedScene.story_order;
+            const targetOrder = targetScene.story_order;
+            
+            // Update orders in local array
+            if (draggedOrder < targetOrder) {
+                // Moving forward
+                scenes.forEach(scene => {
+                    if (scene.story_order > draggedOrder && scene.story_order <= targetOrder) {
+                        scene.story_order--;
+                    }
+                });
+                draggedScene.story_order = targetOrder;
+            } else {
+                // Moving backward
+                scenes.forEach(scene => {
+                    if (scene.story_order >= targetOrder && scene.story_order < draggedOrder) {
+                        scene.story_order++;
+                    }
+                });
+                draggedScene.story_order = targetOrder;
+            }
+            
+            // Save to database
+            try {
+                const updates = scenes.map(s => ({ id: s.id, story_order: s.story_order }));
+                await updateSceneOrders(updates);
+                
+                // Re-render
+                renderTimeline();
+            } catch (error) {
+                console.error('Error updating scene order:', error);
+                alert('Failed to update scene order');
+            }
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Handle drag end
+ */
+function handleDragEnd(event) {
+    event.currentTarget.style.opacity = '1';
+    
+    // Remove all border highlights
+    document.querySelectorAll('.scene-card').forEach(card => {
+        card.style.borderLeft = 'none';
+    });
+    
+    draggedElement = null;
+    draggedScene = null;
 }
 
 // =================================================================
