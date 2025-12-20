@@ -4,6 +4,7 @@
 
 import { SceneService } from './services/sceneService.js';
 import { IconPicker } from './components/iconPicker.js';
+import { calculateScenePlacement, deleteSplitGroupScenes, getSceneShootingDaysCount } from './calendar-scene-placement.js';
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 
@@ -118,13 +119,23 @@ function initializeCalendar() {
                 // Same for allday events
                 const sceneNumber = event.raw?.sceneNumber || event.title.split(':')[0];
                 const description = event.raw?.description || event.title.split(':').slice(1).join(':').trim();
+                const isSplitScene = !!event.raw?.splitGroupId;
+                
+                console.log('🎨 Template rendering for:', sceneNumber, {
+                    hasTimeIcon: !!event.raw?.timeIcon,
+                    timeIconPreview: event.raw?.timeIcon ? event.raw.timeIcon.substring(0, 50) : 'none',
+                    isSplitScene
+                });
+                
+                // Split indicator
+                const splitIndicator = isSplitScene ? `<span style="font-size: 10px; opacity: 0.6; flex-shrink: 0;">🔗</span>` : '';
                 
                 // Get time icon if available
                 let timeIconHtml = '';
                 if (event.raw?.timeIcon) {
                     timeIconHtml = `
-                        <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 25px; height: 25px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.85);">
-                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 15px; height: 15px; color: #ffffff; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 25px; height: 25px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.1);">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 15px; height: 15px; color: rgba(0, 0, 0, 0.7); flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 ${event.raw.timeIcon}
                             </svg>
                         </div>
@@ -152,6 +163,7 @@ function initializeCalendar() {
                 
                 return `<div style="display: flex; align-items: center; gap: 5px; width: 100%; height: 100%;">
                     <span class="badge badge-primary badge-xs" style="font-size: 11.25px; padding: 3px 6px; flex-shrink: 0;">${sceneNumber}</span>
+                    ${splitIndicator}
                     <span style="font-size: 13.75px; line-height: 1.4; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${description}</span>
                     ${timeIconHtml}
                     ${conditionIconsHtml}
@@ -219,6 +231,13 @@ function sceneToEvent(scene) {
         }
     }
     
+    console.log('🎨 sceneToEvent:', {
+        sceneNumber: scene.scene_number,
+        hasTime: !!scene.time,
+        timeValue: scene.time,
+        timeIcon: timeIcon ? 'present' : 'missing'
+    });
+    
     // Get condition icons if available
     let conditionIcons = [];
     if (scene.conditions && scene.conditions.length > 0) {
@@ -248,6 +267,7 @@ function sceneToEvent(scene) {
             shootingDates: scene.shooting_dates,
             timeIcon: timeIcon,
             conditionIcons: conditionIcons,
+            splitGroupId: scene.split_group_id,
         },
     };
 }
@@ -278,61 +298,153 @@ async function handleEventUpdate({ event, changes }) {
         return d;
     };
     
-    console.log('📅 EVENT UPDATE:', {
-        scene: event.title,
-        originalStart: formatDate(event.start),
-        originalEnd: formatDate(event.end),
-        newStart: changes.start ? formatDate(changes.start) : 'unchanged',
-        newEnd: changes.end ? formatDate(changes.end) : 'unchanged',
-    });
+    // Check if moving to a different month
+    if (changes.start) {
+        const newStartDate = changes.start?.toDate ? changes.start.toDate() : new Date(changes.start);
+        const currentDate = calendar.getDate();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        const newMonth = newStartDate.getMonth();
+        const newYear = newStartDate.getFullYear();
+        
+        if (newMonth !== currentMonth || newYear !== currentYear) {
+            console.log('🔄 Moving to other month, navigating...');
+            calendar.setDate(new Date(newYear, newMonth, 1));
+            updateCalendarTitle();
+            setTimeout(() => applyNonShootingDayStyling(), 100);
+            return; // Prevent the update, let user drop again in the new month
+        }
+    }
     
     const scene = scenes.find(s => s.id === event.id);
     if (!scene) return;
     
+    // Remember original number of shooting days
+    const originalShootingDays = scene.shooting_dates ? scene.shooting_dates.length : 1;
+    
     // Calculate new dates based on changes
     let newDates = [...scene.shooting_dates];
+    let isResize = false; // Track if this is a resize operation
     
     if (changes.start || changes.end) {
-        const startDate = changes.start?.toDate ? changes.start.toDate() : new Date(event.start);
-        const endDate = changes.end?.toDate ? changes.end.toDate() : new Date(event.end);
+        const originalStart = event.start.toDate ? event.start.toDate() : new Date(event.start);
+        const originalEnd = event.end.toDate ? event.end.toDate() : new Date(event.end);
+        const startDate = changes.start?.toDate ? changes.start.toDate() : originalStart;
+        const endDate = changes.end?.toDate ? changes.end.toDate() : originalEnd;
         
-        console.log('🕐 Date range:', {
-            start: formatDate(startDate),
-            end: formatDate(endDate),
+        // Determine if this is a MOVE or RESIZE:
+        // MOVE = both start AND end are provided in changes (dragging the event)
+        // RESIZE = only end is provided (dragging the resize handle)
+        const isMove = !!(changes.start && changes.end);
+        isResize = !!(changes.end && !changes.start);
+        
+        console.log('🔄 Event update type:', isMove ? 'MOVE' : (isResize ? 'RESIZE' : 'UNKNOWN'), {
+            changesStart: !!changes.start,
+            changesEnd: !!changes.end,
+            originalDays: originalShootingDays,
+            shootingDaysCount: scene.shooting_days_count,
+            splitGroupId: scene.split_group_id
         });
         
-        // Generate date range using local dates (no timezone conversion)
-        newDates = [];
-        const currentYear = startDate.getFullYear();
-        const currentMonth = startDate.getMonth();
-        const currentDay = startDate.getDate();
-        const endYear = endDate.getFullYear();
-        const endMonth = endDate.getMonth();
-        const endDay = endDate.getDate();
-        
-        let loopDate = new Date(currentYear, currentMonth, currentDay);
-        const loopEndDate = new Date(endYear, endMonth, endDay);
-        
-        while (loopDate <= loopEndDate) {
-            const dateStr = formatDate(loopDate);
-            newDates.push(dateStr);
-            loopDate.setDate(loopDate.getDate() + 1);
+        if (isMove) {
+            // MOVE: Delete all linked scenes, recalculate placement with shooting_days_count
+            
+            // First, delete all other scenes in the split group
+            if (scene.split_group_id) {
+                const linkedScenes = scenes.filter(s => 
+                    s.split_group_id === scene.split_group_id && s.id !== scene.id
+                );
+                
+                console.log('🗑️ Deleting', linkedScenes.length, 'linked scenes in split group');
+                
+                for (const linkedScene of linkedScenes) {
+                    await SceneService.delete(linkedScene.id);
+                }
+                
+                // Remove from local array
+                scenes = scenes.filter(s => 
+                    s.split_group_id !== scene.split_group_id || s.id === scene.id
+                );
+            }
+            
+            // Use shooting_days_count (or fall back to original shooting days)
+            const totalShootingDays = scene.shooting_days_count || originalShootingDays;
+            
+            console.log('📦 MOVE: Recalculating placement for', totalShootingDays, 'shooting days', {
+                sceneShootingDaysCount: scene.shooting_days_count,
+                originalShootingDays: originalShootingDays,
+                usingValue: totalShootingDays
+            });
+            
+            // Calculate new placement
+            const placement = calculateScenePlacement(startDate, totalShootingDays, isNonShootingDay);
+            newDates = placement.shootingDates;
+            
+            console.log('📦 MOVE result:', newDates.length, 'shooting days, needsSplit:', placement.needsSplit, 
+                placement.needsSplit ? `into ${placement.splitInfo.totalParts} parts` : '');
+            
+            // If split is needed, execute multi-part split directly
+            if (placement.needsSplit) {
+                await executeMultiPartSplit(scene, placement.splitInfo.parts, totalShootingDays);
+                return;
+            }
+        } else {
+            // RESIZE: Use the new selected range, filter out non-shooting days
+            const fullRange = [];
+            let loopDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+            const loopEndDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+            
+            while (loopDate <= loopEndDate) {
+                const dateStr = formatDate(loopDate);
+                fullRange.push(dateStr);
+                loopDate.setDate(loopDate.getDate() + 1);
+            }
+            
+            console.log('📏 RESIZE selected range:', fullRange.length, 'calendar days');
+            
+            newDates = fullRange.filter(date => !isNonShootingDay(date));
+            
+            if (newDates.length === 0) {
+                alert('Cannot schedule scenes on non-shooting days');
+                return;
+            }
+            
+            console.log('📏 RESIZE after filtering non-shooting:', newDates.length, 'shooting days');
+            
+            // Check for splits using the placement helper
+            const resizePlacement = calculateScenePlacement(startDate, newDates.length, isNonShootingDay);
+            
+            if (resizePlacement.needsSplit) {
+                console.log(`📏 RESIZE needs split into ${resizePlacement.splitInfo.totalParts} parts`);
+                await executeMultiPartSplit(scene, resizePlacement.splitInfo.parts, newDates.length);
+                return;
+            }
         }
         
         newDates.sort();
     }
     
-    console.log('✅ New dates:', newDates);
-    
     try {
-        await SceneService.setShootingDates(event.id, newDates);
+        // Update shooting_days_count when resizing
+        const updates = {
+            shooting_dates: newDates
+        };
+        
+        if (isResize) {
+            // On resize, update the shooting_days_count
+            updates.shooting_days_count = newDates.length;
+            scene.shooting_days_count = newDates.length;
+        }
+        
+        await SceneService.update(event.id, updates);
         scene.shooting_dates = newDates;
+        // Only re-render after successful save
         renderCalendarEvents();
         renderUnscheduledScenes();
     } catch (error) {
         console.error('❌ Error updating event:', error);
         alert('Failed to update scene dates');
-        renderCalendarEvents(); // Revert
+        renderCalendarEvents(); // Revert on error
     }
 }
 
@@ -387,11 +499,48 @@ async function handleEventDelete({ event }) {
     });
     
     try {
-        await SceneService.setShootingDates(event.id, []);
         const scene = scenes.find(s => s.id === event.id);
-        if (scene) {
-            scene.shooting_dates = [];
+        if (!scene) return;
+        
+        // If this scene is part of a split group, unschedule all parts
+        if (scene.split_group_id) {
+            const splitGroupScenes = scenes.filter(s => 
+                s.split_group_id === scene.split_group_id
+            );
+            
+            if (splitGroupScenes.length > 1) {
+                console.log(`🔗 Unscheduling ${splitGroupScenes.length} split scenes`);
+                
+                // Keep the shooting_days_count but clear shooting_dates for all parts
+                for (const linkedScene of splitGroupScenes) {
+                    if (linkedScene.id !== scene.id) {
+                        // Delete the other parts entirely
+                        await SceneService.delete(linkedScene.id);
+                        scenes = scenes.filter(s => s.id !== linkedScene.id);
+                    }
+                }
+                
+                // Update this scene: clear dates, remove split_group_id, keep shooting_days_count
+                await SceneService.update(scene.id, { 
+                    shooting_dates: [],
+                    split_group_id: null
+                    // shooting_days_count is preserved
+                });
+                scene.shooting_dates = [];
+                scene.split_group_id = null;
+                // scene.shooting_days_count stays the same
+                
+                console.log(`📅 Unscheduled with shooting_days_count preserved:`, scene.shooting_days_count);
+                
+                renderCalendarEvents();
+                renderUnscheduledScenes();
+                return;
+            }
         }
+        
+        // Normal unschedule - just remove dates
+        await SceneService.setShootingDates(event.id, []);
+        scene.shooting_dates = [];
         renderCalendarEvents();
         renderUnscheduledScenes();
     } catch (error) {
@@ -427,54 +576,57 @@ function setupEmptyDayClickHandler() {
         
         console.log('📅 Clicked on calendar cell:', cell);
         
-        // Extract day number from the cell's date header
-        const dateHeader = cell.querySelector('.toastui-calendar-template-monthGridHeader');
-        if (!dateHeader) {
-            console.log('⚠️ No date header found');
+        // Get all cells to calculate index
+        const dayCells = document.querySelectorAll('.toastui-calendar-daygrid-cell');
+        const cellIndex = Array.from(dayCells).indexOf(cell);
+        
+        if (cellIndex === -1) {
+            console.log('⚠️ Could not find cell index');
             return;
         }
         
-        const dayNumber = parseInt(dateHeader.textContent.trim(), 10);
-        if (isNaN(dayNumber)) {
-            console.log('⚠️ Invalid day number');
-            return;
-        }
-        
-        // Calculate the full date
+        // Calculate the exact date using same logic as applyNonShootingDayStyling
         const currentDate = calendar.getDate();
-        let year = currentDate.getFullYear();
-        let month = currentDate.getMonth() + 1;
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth(); // 0-indexed
         
-        // Check if this is a day from another month
-        const isOtherMonth = cell.classList.contains('toastui-calendar-extra-date');
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+        const startDayOfWeek = firstDayOfMonth.getDay();
+        const daysFromPrevMonth = (startDayOfWeek === 0 ? 6 : startDayOfWeek - 1);
+        const gridStartDate = new Date(currentYear, currentMonth, 1 - daysFromPrevMonth);
         
-        if (isOtherMonth) {
-            const row = cell.closest('tr');
-            const allRows = cell.closest('tbody').querySelectorAll('tr');
-            const rowIndex = Array.from(allRows).indexOf(row);
-            
-            if (rowIndex === 0 && dayNumber > 15) {
-                // Previous month
-                month = month - 1;
-                if (month === 0) {
-                    month = 12;
-                    year = year - 1;
-                }
-            } else if (rowIndex >= 4 && dayNumber < 15) {
-                // Next month
-                month = month + 1;
-                if (month === 13) {
-                    month = 1;
-                    year = year + 1;
-                }
-            }
+        // Calculate the actual date for this cell
+        const cellDate = new Date(gridStartDate);
+        cellDate.setDate(gridStartDate.getDate() + cellIndex);
+        
+        const clickedYear = cellDate.getFullYear();
+        const clickedMonth = cellDate.getMonth(); // 0-indexed
+        const clickedDay = cellDate.getDate();
+        const clickedDateStr = `${clickedYear}-${String(clickedMonth + 1).padStart(2, '0')}-${String(clickedDay).padStart(2, '0')}`;
+        
+        console.log('📅 Calculated clicked date:', clickedDateStr);
+        
+        // Check if this date has any scenes scheduled
+        const hasSceneOnDate = scenes.some(scene => 
+            scene.shooting_dates && scene.shooting_dates.includes(clickedDateStr)
+        );
+        
+        if (hasSceneOnDate) {
+            console.log('⚠️ Cannot mark as non-shooting day: scenes are scheduled on this date');
+            return;
         }
         
-        const clickedDate = `${year}-${String(month).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
-        console.log('📅 Calculated clicked date:', clickedDate);
+        // Check if clicked date is in a different month
+        if (clickedMonth !== currentMonth || clickedYear !== currentYear) {
+            console.log('🔄 Clicked on other month, navigating...');
+            calendar.setDate(new Date(clickedYear, clickedMonth, 1));
+            updateCalendarTitle();
+            setTimeout(() => applyNonShootingDayStyling(), 100);
+            return;
+        }
         
-        // Open non-shooting day modal
-        openNonShootingDayModal(clickedDate);
+        // Open non-shooting day modal for current month days
+        openNonShootingDayModal(clickedDateStr);
     });
 }
 
@@ -552,8 +704,37 @@ async function scheduleScene(sceneId, dateStr) {
     });
     
     try {
-        await SceneService.setShootingDates(sceneId, [dateStr]);
-        scene.shooting_dates = [dateStr];
+        // Only set shooting_days_count to 1 if it doesn't exist yet
+        // Otherwise use the existing placement calculation with the preserved count
+        const existingCount = scene.shooting_days_count;
+        
+        if (existingCount && existingCount > 1) {
+            // Scene was previously scheduled with multiple days, recalculate placement
+            console.log('📦 Rescheduling scene with preserved count:', existingCount);
+            const startDate = new Date(dateStr);
+            const placement = calculateScenePlacement(startDate, existingCount, isNonShootingDay);
+            
+            if (placement.needsSplit) {
+                // Need to split immediately
+                await executeMultiPartSplit(scene, placement.splitInfo.parts, existingCount);
+            } else {
+                // Simple placement without split
+                await SceneService.update(sceneId, {
+                    shooting_dates: placement.shootingDates
+                    // Keep existing shooting_days_count
+                });
+                scene.shooting_dates = placement.shootingDates;
+            }
+        } else {
+            // First time scheduling or was a 1-day scene
+            await SceneService.update(sceneId, {
+                shooting_dates: [dateStr],
+                shooting_days_count: 1
+            });
+            scene.shooting_dates = [dateStr];
+            scene.shooting_days_count = 1;
+        }
+        
         renderCalendarEvents();
         renderUnscheduledScenes();
     } catch (error) {
@@ -592,6 +773,14 @@ function createUnscheduledSceneCard(scene) {
     
     console.log('🎬 Creating card for scene:', scene.scene_number, 'time:', scene.time, 'conditions:', scene.conditions);
     
+    // Add visual indicator if scene is part of a split group
+    const isSplitScene = !!scene.split_group_id;
+    const splitIndicator = isSplitScene ? `
+        <div class="tooltip tooltip-right" data-tip="Part of a split scene group">
+            <div class="badge badge-xs badge-outline badge-info flex-shrink-0">🔗</div>
+        </div>
+    ` : '';
+    
     // Get time icon if available
     let timeIconHtml = '';
     if (scene.time) {
@@ -600,8 +789,8 @@ function createUnscheduledSceneCard(scene) {
         console.log('⏰ Time data found:', timeData);
         if (timeData) {
             timeIconHtml = `
-                <div class="flex-shrink-0 flex items-center justify-center" style="width: 24px; height: 24px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.85);">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" style="width: 14px; height: 14px; color: #ffffff;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="flex-shrink-0 flex items-center justify-center" style="width: 25px; height: 25px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.1);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" style="width: 15px; height: 15px; color: rgba(0, 0, 0, 0.7);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         ${timeData.icon}
                     </svg>
                 </div>
@@ -642,6 +831,7 @@ function createUnscheduledSceneCard(scene) {
         <div class="card-body p-1.5">
             <div class="flex items-center gap-2">
                 <div class="badge badge-primary badge-xs flex-shrink-0" style="padding: 2px 6px; font-size: 10px;">${scene.scene_number}</div>
+                ${splitIndicator}
                 <p class="text-xs flex-1 line-clamp-2 text-base-content/80">${scene.description}</p>
                 ${timeIconHtml}
                 ${conditionIconsHtml}
@@ -699,30 +889,52 @@ function setupCalendarDropZone() {
         
         console.log('📍 Found cell!');
         
-        // Extract the day number from the cell
-        const dateHeader = cell.querySelector('.toastui-calendar-template-monthGridHeader');
-        if (!dateHeader) {
-            console.log('⚠️ Could not find date header');
+        // Get all cells to calculate index
+        const dayCells = document.querySelectorAll('.toastui-calendar-daygrid-cell');
+        const cellIndex = Array.from(dayCells).indexOf(cell);
+        
+        if (cellIndex === -1) {
+            console.log('⚠️ Could not find cell index');
             draggedSceneId = null;
             return;
         }
         
-        const dayNumber = parseInt(dateHeader.textContent.trim(), 10);
-        
-        // Get the current month/year from the calendar
+        // Calculate the exact date using same logic as applyNonShootingDayStyling
         const currentDate = calendar.getDate();
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth() + 1; // Convert to 1-indexed
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth(); // 0-indexed
         
-        // Construct date string directly to avoid timezone issues
-        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+        const startDayOfWeek = firstDayOfMonth.getDay();
+        const daysFromPrevMonth = (startDayOfWeek === 0 ? 6 : startDayOfWeek - 1);
+        const gridStartDate = new Date(currentYear, currentMonth, 1 - daysFromPrevMonth);
+        
+        // Calculate the actual date for this cell
+        const cellDate = new Date(gridStartDate);
+        cellDate.setDate(gridStartDate.getDate() + cellIndex);
+        
+        const dropYear = cellDate.getFullYear();
+        const dropMonth = cellDate.getMonth(); // 0-indexed
+        const dropDay = cellDate.getDate();
+        const dateStr = `${dropYear}-${String(dropMonth + 1).padStart(2, '0')}-${String(dropDay).padStart(2, '0')}`;
         
         console.log('📅 Drop date calculated:', {
-            dayNumber,
-            month,
-            year,
+            cellIndex,
+            dropYear,
+            dropMonth: dropMonth + 1,
+            dropDay,
             fullDate: dateStr,
         });
+        
+        // Check if dropping on a different month - navigate there instead
+        if (dropMonth !== currentMonth || dropYear !== currentYear) {
+            console.log('🔄 Dropped on other month, navigating...');
+            calendar.setDate(new Date(dropYear, dropMonth, 1));
+            updateCalendarTitle();
+            setTimeout(() => applyNonShootingDayStyling(), 100);
+            draggedSceneId = null;
+            return;
+        }
         
         // Check if trying to drop on a non-shooting day
         if (isNonShootingDay(dateStr)) {
@@ -805,6 +1017,19 @@ function setupEventListeners() {
         currentNonShootingDate = null;
     });
     
+    // Split scene modal
+    document.getElementById('cancelSplitBtn').addEventListener('click', () => {
+        document.getElementById('splitSceneModal').close();
+        pendingSplitData = null;
+    });
+    document.getElementById('confirmSplitBtn').addEventListener('click', async () => {
+        if (pendingSplitData) {
+            await executeSplitScene(pendingSplitData);
+            document.getElementById('splitSceneModal').close();
+            pendingSplitData = null;
+        }
+    });
+    
     // Icon picker button (time)
     document.getElementById('chooseIconBtn').addEventListener('click', () => {
         const picker = new IconPicker((selectedIcon) => {
@@ -858,20 +1083,57 @@ function setupEventListeners() {
         
         try {
             console.log('💾 Saving scene with time:', selectedTime, 'and conditions:', selectedConditions);
-            await SceneService.update(sceneId, {
-                scene_number: sceneNumber,
-                description: description,
-                time: selectedTime,
-                conditions: selectedConditions,
-            });
             
             // Update local data
             const scene = scenes.find(s => s.id === sceneId);
             if (scene) {
+                const updates = {
+                    scene_number: sceneNumber,
+                    description: description,
+                    time: selectedTime,
+                    conditions: selectedConditions,
+                };
+                
+                // Update this scene
+                await SceneService.update(sceneId, updates);
                 scene.scene_number = sceneNumber;
                 scene.description = description;
                 scene.time = selectedTime;
                 scene.conditions = [...selectedConditions];
+                
+                // If this scene is part of a split group, update all scenes in the group
+                if (scene.split_group_id) {
+                    const splitGroupScenes = scenes.filter(s => 
+                        s.split_group_id === scene.split_group_id && s.id !== scene.id
+                    );
+                    
+                    for (const splitScene of splitGroupScenes) {
+                        // Update all properties with the same values
+                        await SceneService.update(splitScene.id, {
+                            scene_number: sceneNumber,
+                            description: description,
+                            time: selectedTime,
+                            conditions: selectedConditions,
+                            location: scene.location,
+                            int_ext: scene.int_ext,
+                            day_night: scene.day_night,
+                            script_day: scene.script_day,
+                            pages: scene.pages
+                        });
+                        
+                        splitScene.scene_number = sceneNumber;
+                        splitScene.description = description;
+                        splitScene.time = selectedTime;
+                        splitScene.conditions = [...selectedConditions];
+                        splitScene.location = scene.location;
+                        splitScene.int_ext = scene.int_ext;
+                        splitScene.day_night = scene.day_night;
+                        splitScene.script_day = scene.script_day;
+                        splitScene.pages = scene.pages;
+                    }
+                    
+                    console.log(`🔗 Updated ${splitGroupScenes.length} linked scene(s) in split group with synced properties`);
+                }
             }
             
             // Re-render calendar and unscheduled scenes
@@ -897,6 +1159,48 @@ function setupEventListeners() {
         if (confirmDelete) {
             await handleEventDelete({ event: currentDrawerEvent });
             closeSceneDrawer();
+        }
+    });
+    
+    document.getElementById('drawerDeleteBtn').addEventListener('click', async () => {
+        if (!currentDrawerEvent) return;
+        
+        const scene = scenes.find(s => s.id === currentDrawerEvent.id);
+        if (!scene) return;
+        
+        // Check if this scene is part of a split group
+        let confirmMessage = `Permanently delete scene "${scene.scene_number}: ${scene.description}"?\n\nThis action cannot be undone.`;
+        let scenesToDelete = [scene];
+        
+        if (scene.split_group_id) {
+            const splitGroupScenes = scenes.filter(s => s.split_group_id === scene.split_group_id);
+            if (splitGroupScenes.length > 1) {
+                const sceneNumbers = splitGroupScenes.map(s => s.scene_number).join(', ');
+                confirmMessage = `This scene is part of a split group (${sceneNumbers}).\n\nDelete ALL scenes in this group?\n\nThis action cannot be undone.`;
+                scenesToDelete = splitGroupScenes;
+            }
+        }
+        
+        const confirmDelete = confirm(confirmMessage);
+        if (confirmDelete) {
+            try {
+                // Delete all scenes in the group
+                for (const sceneToDelete of scenesToDelete) {
+                    await SceneService.delete(sceneToDelete.id);
+                }
+                
+                // Remove from local array
+                const deleteIds = scenesToDelete.map(s => s.id);
+                scenes = scenes.filter(s => !deleteIds.includes(s.id));
+                
+                renderCalendarEvents();
+                renderUnscheduledScenes();
+                closeSceneDrawer();
+                console.log(`✅ Deleted ${scenesToDelete.length} scene(s) successfully`);
+            } catch (error) {
+                console.error('❌ Error deleting scene:', error);
+                alert('Failed to delete scene');
+            }
         }
     });
     
@@ -1451,6 +1755,185 @@ async function splitEventsOnNonShootingDay(nonShootingDate) {
 }
 
 let currentNonShootingDate = null;
+let pendingSplitData = null;
+
+async function showSplitSceneModal(scene, shootingDates, nonShootingDays, allDatesInSpan) {
+    // shootingDates = only the actual shooting dates (non-shooting already filtered out)
+    // allDatesInSpan = all dates from first to last (including non-shooting)
+    // nonShootingDays = the non-shooting dates in between
+    
+    console.log('🔪 showSplitSceneModal called:', {
+        sceneNumber: scene.scene_number,
+        originalDates: scene.shooting_dates,
+        shootingDates,
+        nonShootingDays,
+        allDatesInSpan
+    });
+    
+    // Find where the split should happen (at first non-shooting day)
+    const firstNonShootingDate = nonShootingDays[0];
+    
+    // Split the shooting dates based on the first non-shooting day
+    const beforeDates = shootingDates.filter(d => d < firstNonShootingDate);
+    const afterDates = shootingDates.filter(d => d > firstNonShootingDate);
+    
+    console.log('🔪 Split result:', {
+        firstNonShootingDate,
+        beforeDates,
+        afterDates,
+        totalBefore: beforeDates.length,
+        totalAfter: afterDates.length
+    });
+    
+    // Store data for later execution
+    pendingSplitData = {
+        scene,
+        beforeDates,
+        afterDates,
+        nonShootingDays
+    };
+    
+    // Update modal content
+    const totalOriginal = scene.shooting_dates ? scene.shooting_dates.length : 0;
+    const totalAfterSplit = beforeDates.length + afterDates.length;
+    const message = `Scene "${scene.scene_number}: ${scene.description}" would span across ${nonShootingDays.length} non-shooting day(s). Original: ${totalOriginal} shooting days → Split: ${totalAfterSplit} shooting days total.`;
+    document.getElementById('splitSceneMessage').textContent = message;
+    
+    // Show preview
+    const preview = document.getElementById('splitScenePreview');
+    preview.innerHTML = `
+        <div>• Scene ${scene.scene_number}: ${formatDateRange(beforeDates)}</div>
+        <div class="text-base-content/50">• Non-shooting: ${formatDateRange(nonShootingDays)}</div>
+        <div>• Scene ${scene.scene_number}B: ${formatDateRange(afterDates)}</div>
+    `;
+    
+    // Revert calendar to original state immediately
+    renderCalendarEvents();
+    
+    // Show modal
+    document.getElementById('splitSceneModal').showModal();
+}
+
+async function executeSplitScene(data) {
+    const { scene, beforeDates, afterDates } = data;
+    
+    try {
+        // Generate a split_group_id if scene doesn't have one yet
+        const splitGroupId = scene.split_group_id || crypto.randomUUID();
+        
+        // Calculate total shooting_days_count
+        // If scene already has a count (from previous split), use that
+        // Otherwise, sum the current dates being split
+        const totalShootingDaysCount = scene.shooting_days_count || (beforeDates.length + afterDates.length);
+        
+        console.log('✂️ Splitting scene with total shooting days:', totalShootingDaysCount, {
+            beforeDates: beforeDates.length,
+            afterDates: afterDates.length,
+            existingCount: scene.shooting_days_count
+        });
+        
+        // Update original scene with split_group_id and first part dates
+        await SceneService.update(scene.id, {
+            shooting_dates: beforeDates,
+            split_group_id: splitGroupId,
+            shooting_days_count: totalShootingDaysCount
+        });
+        scene.shooting_dates = beforeDates;
+        scene.split_group_id = splitGroupId;
+        scene.shooting_days_count = totalShootingDaysCount;
+        
+        // Create duplicate scene for second part with same split_group_id and count
+        const newSceneData = {
+            scene_number: scene.scene_number,
+            description: scene.description,
+            location: scene.location,
+            int_ext: scene.int_ext,
+            day_night: scene.day_night,
+            script_day: scene.script_day,
+            pages: scene.pages,
+            shooting_dates: afterDates,
+            split_group_id: splitGroupId,
+            shooting_days_count: totalShootingDaysCount
+        };
+        
+        // Copy time and conditions if they exist
+        if (scene.time) newSceneData.time = scene.time;
+        if (scene.conditions) newSceneData.conditions = scene.conditions;
+        
+        const createdScene = await SceneService.create(currentProject.id, newSceneData);
+        scenes.push(createdScene);
+        
+        console.log('✂️ Scene split successfully:', {
+            splitGroupId,
+            original: `${scene.scene_number} (${beforeDates.length} days)`,
+            new: `${newSceneData.scene_number} (${afterDates.length} days)`
+        });
+        
+        renderCalendarEvents();
+        renderUnscheduledScenes();
+    } catch (error) {
+        console.error('❌ Error splitting scene:', error);
+        alert('Failed to split scene');
+    }
+}
+
+async function executeMultiPartSplit(scene, parts, totalShootingDaysCount) {
+    try {
+        // Generate a split_group_id if scene doesn't have one yet
+        const splitGroupId = scene.split_group_id || crypto.randomUUID();
+        
+        console.log(`✂️ Splitting scene into ${parts.length} parts with total shooting days:`, totalShootingDaysCount);
+        
+        // Update original scene with first part
+        await SceneService.update(scene.id, {
+            shooting_dates: parts[0],
+            split_group_id: splitGroupId,
+            shooting_days_count: totalShootingDaysCount
+        });
+        scene.shooting_dates = parts[0];
+        scene.split_group_id = splitGroupId;
+        scene.shooting_days_count = totalShootingDaysCount;
+        
+        // Create additional scenes for remaining parts
+        for (let i = 1; i < parts.length; i++) {
+            const newSceneData = {
+                scene_number: scene.scene_number,
+                description: scene.description,
+                location: scene.location,
+                int_ext: scene.int_ext,
+                day_night: scene.day_night,
+                script_day: scene.script_day,
+                pages: scene.pages,
+                shooting_dates: parts[i],
+                split_group_id: splitGroupId,
+                shooting_days_count: totalShootingDaysCount
+            };
+            
+            // Copy time and conditions if they exist
+            if (scene.time) newSceneData.time = scene.time;
+            if (scene.conditions) newSceneData.conditions = scene.conditions;
+            
+            const createdScene = await SceneService.create(currentProject.id, newSceneData);
+            scenes.push(createdScene);
+            
+            console.log(`✂️ Created part ${i + 1}/${parts.length}:`, `${newSceneData.scene_number} (${parts[i].length} days)`);
+        }
+        
+        console.log('✂️ Multi-part split completed:', parts.length, 'parts');
+        
+        renderCalendarEvents();
+        renderUnscheduledScenes();
+    } catch (error) {
+        console.error('❌ Error in multi-part split:', error);
+        alert('Failed to split scene into multiple parts');
+    }
+}
+
+function formatDateRange(dates) {
+    if (!dates || dates.length === 0) return 'none';
+    if (dates.length === 1) return formatDateReadable(dates[0]);
+    return `${formatDateReadable(dates[0])} - ${formatDateReadable(dates[dates.length - 1])} (${dates.length} days)`;
+}
 
 function openNonShootingDayModal(dateStr) {
     currentNonShootingDate = dateStr;
@@ -1508,6 +1991,29 @@ function applyNonShootingDayStyling() {
     let styledCount = 0;
     let removedCount = 0;
     
+    // Get the current calendar date context
+    const currentDate = calendar.getDate();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth(); // 0-indexed
+    
+    // Calculate the first day shown in the calendar grid (might be from previous month)
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Toast UI uses Monday as first day (startDayOfWeek: 1), so adjust
+    const daysFromPrevMonth = (startDayOfWeek === 0 ? 6 : startDayOfWeek - 1);
+    
+    // Start date is first day shown in grid
+    const gridStartDate = new Date(currentYear, currentMonth, 1 - daysFromPrevMonth);
+    
+    console.log('📆 Grid calculation:', {
+        currentMonth: currentMonth + 1,
+        firstDayOfMonth: firstDayOfMonth.toISOString().split('T')[0],
+        startDayOfWeek,
+        daysFromPrevMonth,
+        gridStartDate: gridStartDate.toISOString().split('T')[0]
+    });
+    
     dayCells.forEach((cell, index) => {
         // Extract day number from the cell's date header
         const dateHeader = cell.querySelector('.toastui-calendar-template-monthGridHeader');
@@ -1522,44 +2028,19 @@ function applyNonShootingDayStyling() {
             return;
         }
         
-        // Check if this is a "grayed out" day from another month
-        // Toast UI adds 'toastui-calendar-extra-date' class for other month days
-        const isOtherMonth = cell.classList.contains('toastui-calendar-extra-date');
+        // Calculate the actual date for this cell based on grid position
+        const cellDate = new Date(gridStartDate);
+        cellDate.setDate(gridStartDate.getDate() + index);
         
-        // For cells in other months, we need to calculate the correct month/year
-        // Based on position: if day > 20 in first week = previous month, if day < 15 in last week = next month
-        const currentDate = calendar.getDate();
-        let year = currentDate.getFullYear();
-        let month = currentDate.getMonth() + 1;
-        
-        if (isOtherMonth) {
-            // Check if it's start or end of month grid
-            const row = cell.closest('tr');
-            const allRows = cell.closest('tbody').querySelectorAll('tr');
-            const rowIndex = Array.from(allRows).indexOf(row);
-            
-            if (rowIndex === 0 && dayNumber > 15) {
-                // Previous month
-                month = month - 1;
-                if (month === 0) {
-                    month = 12;
-                    year = year - 1;
-                }
-            } else if (rowIndex >= 4 && dayNumber < 15) {
-                // Next month
-                month = month + 1;
-                if (month === 13) {
-                    month = 1;
-                    year = year + 1;
-                }
-            }
-        }
+        const year = cellDate.getFullYear();
+        const month = cellDate.getMonth() + 1; // Convert to 1-indexed
+        const day = cellDate.getDate();
         
         // Construct the full date string
-        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         
         if (nonShootingDays.includes(dateStr)) {
-            console.log(`✅ Cell ${index}: Styling non-shooting day:`, dateStr);
+            console.log(`✅ Cell ${index}: Styling non-shooting day:`, dateStr, `(grid day ${day})`);
             styledCount++;
             
             // Simply add the CSS class - all styling is handled by CSS

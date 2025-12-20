@@ -241,12 +241,20 @@
                 
                 <!-- Actions -->
                 <div class="flex gap-2 justify-between">
-                    <button type="button" id="drawerRemoveBtn" class="btn btn-error btn-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Remove from Calendar
-                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" id="drawerRemoveBtn" class="btn btn-warning btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Unschedule
+                        </button>
+                        <button type="button" id="drawerDeleteBtn" class="btn btn-error btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Delete Scene
+                        </button>
+                    </div>
                     <button type="submit" class="btn btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -383,6 +391,28 @@
             <div class="modal-action">
                 <button type="button" class="btn" id="closeNonShootingDayBtn">Cancel</button>
                 <button type="button" class="btn btn-primary" id="saveNonShootingDayBtn">Save</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <!-- Split Scene Modal -->
+    <dialog id="splitSceneModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">⚠️ Non-Shooting Day in Range</h3>
+            <p class="mb-4" id="splitSceneMessage"></p>
+            <p class="text-sm text-base-content/70 mb-4">Do you want to split this scene into two separate scenes?</p>
+            
+            <div class="bg-base-200 p-3 rounded-lg mb-4">
+                <div class="text-sm font-semibold mb-2">Result:</div>
+                <div id="splitScenePreview" class="text-sm space-y-1"></div>
+            </div>
+            
+            <div class="modal-action">
+                <button type="button" class="btn" id="cancelSplitBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmSplitBtn">Split Scene</button>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop">

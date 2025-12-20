@@ -28,7 +28,17 @@ export class SceneService {
             description: sceneData.description,
             story_order: maxOrder + 1,
             shooting_days: sceneData.shooting_days || [],
-            shooting_dates: sceneData.shooting_dates || []
+            shooting_dates: sceneData.shooting_dates || [],
+            // Include all optional fields
+            ...(sceneData.time && { time: sceneData.time }),
+            ...(sceneData.conditions && { conditions: sceneData.conditions }),
+            ...(sceneData.location && { location: sceneData.location }),
+            ...(sceneData.int_ext && { int_ext: sceneData.int_ext }),
+            ...(sceneData.day_night && { day_night: sceneData.day_night }),
+            ...(sceneData.script_day && { script_day: sceneData.script_day }),
+            ...(sceneData.pages && { pages: sceneData.pages }),
+            ...(sceneData.split_group_id && { split_group_id: sceneData.split_group_id }),
+            ...(sceneData.shooting_days_count != null && { shooting_days_count: sceneData.shooting_days_count })
         };
 
         return await supabaseClient.createScene(scene);

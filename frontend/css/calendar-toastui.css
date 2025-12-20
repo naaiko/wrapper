@@ -38,14 +38,21 @@
 /* Resize handles - subtle but visible */
 .toastui-calendar-weekday-resize-handle {
     background: hsl(var(--b3)) !important;
-    opacity: 0.5 !important;
-    width: 7.5px !important;
+    opacity: 0.3 !important;
+    width: 10px !important;
     height: 100% !important;
+    transition: opacity 0.15s ease, background 0.15s ease !important;
+    cursor: ew-resize !important;
+    pointer-events: auto !important;
 }
 
 .toastui-calendar-weekday-event:hover .toastui-calendar-weekday-resize-handle {
-    opacity: 1 !important;
+    opacity: 0.7 !important;
     background: hsl(var(--p)) !important;
+}
+
+.toastui-calendar-weekday-resize-handle:hover {
+    opacity: 1 !important;
 }
 
 /* Day grid cells */
