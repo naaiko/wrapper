@@ -146,9 +146,25 @@ function initializeSceneEditScreen() {
             renderUnscheduledScenes();
         },
         
-        onSceneDeleted: async (sceneId) => {
+        onSceneDeleted: async (sceneId, splitGroupId) => {
+            // If split group ID is provided, delete all scenes in the group
+            if (splitGroupId) {
+                const splitGroupScenes = scenes.filter(s => 
+                    s.split_group_id === splitGroupId
+                );
+                
+                for (const linkedScene of splitGroupScenes) {
+                    await SceneService.delete(linkedScene.id);
+                }
+            }
+            
             // Reload scenes and refresh UI
             scenes = await SceneService.getAll(currentProject.id);
+            
+            // Clean up any orphaned split groups (after reload)
+            await cleanupOrphanedSplitGroups();
+            
+            // Always re-render after delete
             renderCalendarEvents();
             renderUnscheduledScenes();
         },
@@ -156,6 +172,11 @@ function initializeSceneEditScreen() {
         onSceneUnscheduled: async (sceneId) => {
             // Reload scenes and refresh UI
             scenes = await SceneService.getAll(currentProject.id);
+            
+            // Clean up any orphaned split groups (after reload)
+            await cleanupOrphanedSplitGroups();
+            
+            // Always re-render after unschedule
             renderCalendarEvents();
             renderUnscheduledScenes();
         }
@@ -163,12 +184,30 @@ function initializeSceneEditScreen() {
 }
 
 function initializeAddSceneScreen() {
+    if (!currentProject || !currentProject.id) {
+        console.error('Cannot initialize AddSceneScreen: currentProject not loaded');
+        return;
+    }
+    
     addSceneScreen = new AddSceneScreen({
         projectId: currentProject.id,
         locations: locations,
         times: getProjectTimes(),
         conditions: getProjectConditions(),
         continuityOptions: settingsService.getContinuityOptions(),
+        
+        onSceneScheduled: async (scene, startDate, totalShootingDays) => {
+            // Convert string to Date object if needed
+            const startDateObj = typeof startDate === 'string' ? new Date(startDate) : startDate;
+            
+            // Use placeSceneWithSplitHandling for automatic split detection
+            await placeSceneWithSplitHandling(scene, startDateObj, totalShootingDays);
+            
+            // Reload and refresh
+            scenes = await SceneService.getAll(currentProject.id);
+            renderCalendarEvents();
+            renderUnscheduledScenes();
+        },
         
         onSceneAdded: async (newScene) => {
             // Reload scenes and refresh UI
@@ -316,6 +355,9 @@ function renderCalendarEvents() {
     
     // Apply non-shooting day styling after render
     setTimeout(() => applyNonShootingDayStyling(), 100);
+    
+    // Clean up orphaned split groups after rendering
+    setTimeout(() => cleanupOrphanedSplitGroups(), 150);
 }
 
 function sceneToEvent(scene) {
@@ -399,6 +441,87 @@ function sceneToEvent(scene) {
 // =================================================================
 // EVENT HANDLERS
 // =================================================================
+
+// Helper function to clean up orphaned split groups (groups with only 1 scene left)
+async function cleanupOrphanedSplitGroups() {
+    const splitGroups = {};
+    
+    // Group scenes by split_group_id
+    scenes.forEach(scene => {
+        if (scene.split_group_id) {
+            if (!splitGroups[scene.split_group_id]) {
+                splitGroups[scene.split_group_id] = [];
+            }
+            splitGroups[scene.split_group_id].push(scene);
+        }
+    });
+    
+    // Find groups with only 1 scene
+    let cleanedUp = false;
+    for (const [splitGroupId, groupScenes] of Object.entries(splitGroups)) {
+        if (groupScenes.length === 1) {
+            const scene = groupScenes[0];
+            console.log(`🧹 Cleaning up orphaned split group for scene ${scene.scene_number}`);
+            
+            // Remove split_group_id from this scene
+            await SceneService.update(scene.id, {
+                split_group_id: null
+            });
+            scene.split_group_id = null;
+            cleanedUp = true;
+        }
+    }
+    
+    // Re-render if we cleaned up anything
+    if (cleanedUp) {
+        console.log('🧹 Re-rendering after cleanup');
+        renderCalendarEvents();
+        renderUnscheduledScenes();
+    }
+}
+
+// Helper function to place a scene with automatic split handling
+// This is the SINGLE source of truth for all scene placement operations
+async function placeSceneWithSplitHandling(scene, startDate, totalShootingDays) {
+    // Calculate placement - this accounts for non-shooting days and determines if split is needed
+    const placement = calculateScenePlacement(startDate, totalShootingDays, isNonShootingDay);
+    
+    // If split is needed, execute multi-part split
+    if (placement.needsSplit) {
+        await executeMultiPartSplit(scene, placement.splitInfo.parts, totalShootingDays);
+        return { success: true, wasSplit: true };
+    }
+    
+    // No split needed - simple update with calculated shooting dates
+    await SceneService.update(scene.id, {
+        shooting_dates: placement.shootingDates,
+        shooting_days_count: totalShootingDays
+    });
+    scene.shooting_dates = placement.shootingDates;
+    scene.shooting_days_count = totalShootingDays;
+    
+    renderCalendarEvents();
+    renderUnscheduledScenes();
+    return { success: true, wasSplit: false };
+}
+
+// Wrapper for backward compatibility and simple single-day scheduling
+async function scheduleScene(sceneId, dateStr) {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+    
+    const totalShootingDays = scene.shooting_days_count || 1;
+    const startDate = new Date(dateStr);
+    
+    console.log('🎯 SCHEDULE SCENE:', {
+        scene: `${scene.scene_number} - ${scene.description}`,
+        startDate: dateStr,
+        totalShootingDays: totalShootingDays
+    });
+    
+    // Always use the centralized placement function
+    await placeSceneWithSplitHandling(scene, startDate, totalShootingDays);
+}
 
 async function handleEventUpdate({ event, changes }) {
     const formatDate = (d) => {
@@ -494,24 +617,9 @@ async function handleEventUpdate({ event, changes }) {
             // Use shooting_days_count (or fall back to original shooting days)
             const totalShootingDays = scene.shooting_days_count || originalShootingDays;
             
-            console.log('📦 MOVE: Recalculating placement for', totalShootingDays, 'shooting days', {
-                sceneShootingDaysCount: scene.shooting_days_count,
-                originalShootingDays: originalShootingDays,
-                usingValue: totalShootingDays
-            });
-            
-            // Calculate new placement
-            const placement = calculateScenePlacement(startDate, totalShootingDays, isNonShootingDay);
-            newDates = placement.shootingDates;
-            
-            console.log('📦 MOVE result:', newDates.length, 'shooting days, needsSplit:', placement.needsSplit, 
-                placement.needsSplit ? `into ${placement.splitInfo.totalParts} parts` : '');
-            
-            // If split is needed, execute multi-part split directly
-            if (placement.needsSplit) {
-                await executeMultiPartSplit(scene, placement.splitInfo.parts, totalShootingDays);
-                return;
-            }
+            // Use helper function to place scene with split handling
+            await placeSceneWithSplitHandling(scene, startDate, totalShootingDays);
+            return;
         } else {
             // RESIZE: Use the new selected range, filter out non-shooting days
             const fullRange = [];
@@ -596,19 +704,92 @@ async function handleBeforeCreateEvent({ start, end, isAllday, state }) {
     });
     
     // Check if trying to drop on a non-shooting day
-    if (draggedSceneId && isNonShootingDay(dropDate)) {
-        alert('Cannot schedule scenes on non-shooting days');
-        draggedSceneId = null;
-        return false;
+    if (draggedSceneId) {
+        const scene = scenes.find(s => s.id === draggedSceneId);
+        const dayCount = scene?.shooting_days_count || 1;
+        const nonShootingDays = getNonShootingDays();
+        
+        console.log('🎬 DROP SCENE DEBUG:', {
+            sceneId: draggedSceneId,
+            sceneNumber: scene?.scene_number,
+            shooting_days_count: scene?.shooting_days_count,
+            dayCount: dayCount,
+            shooting_dates: scene?.shooting_dates
+        });
+        
+        // Check if drop date itself is non-shooting
+        if (isNonShootingDay(dropDate)) {
+            console.log('⚠️ Attempting to drop on non-shooting day:', dropDate);
+            
+            // Show alternative date prompt
+            const newDate = await promptAlternativeDropDate(dropDate, dayCount);
+            
+            if (!newDate) {
+                // User cancelled
+                draggedSceneId = null;
+                return false;
+            }
+            
+            // Use alternative date - for multi-day scenes, use placement logic
+            console.log('🎬 Scheduling scene on alternative date:', draggedSceneId, 'on', newDate);
+            const sceneIdToSchedule = draggedSceneId;
+            draggedSceneId = null;
+            
+            if (dayCount > 1) {
+                // Multi-day scene - use placement helper
+                const altStartDate = new Date(newDate);
+                await placeSceneWithSplitHandling(scene, altStartDate, dayCount);
+            } else {
+                // Single day scene
+                await scheduleScene(sceneIdToSchedule, newDate);
+            }
+            return false;
+        }
+        
+        // For multi-day scenes, use placement logic to handle splitting
+        if (dayCount > 1) {
+            console.log('📦 Multi-day scene drop: calculating placement for', dayCount, 'shooting days');
+            
+            const startDate = new Date(dropDate);
+            
+            // Clear draggedSceneId before async operation
+            const sceneIdToSchedule = draggedSceneId;
+            draggedSceneId = null;
+            
+            // Delete any existing split group scenes first (like MOVE does)
+            if (scene.split_group_id) {
+                const linkedScenes = scenes.filter(s => 
+                    s.split_group_id === scene.split_group_id && s.id !== scene.id
+                );
+                
+                console.log('🗑️ Deleting', linkedScenes.length, 'linked scenes in split group');
+                
+                for (const linkedScene of linkedScenes) {
+                    await SceneService.delete(linkedScene.id);
+                }
+                
+                // Remove from local array
+                scenes = scenes.filter(s => 
+                    s.split_group_id !== scene.split_group_id || s.id === scene.id
+                );
+                
+                // Clear split_group_id from this scene
+                scene.split_group_id = null;
+            }
+            
+            // Use helper function to place scene with split handling
+            await placeSceneWithSplitHandling(scene, startDate, dayCount);
+            return false;
+        }
     }
     
-    // If we have a dragged scene, schedule it
+    // If we have a dragged scene (single day), schedule it
     if (draggedSceneId) {
         console.log('🎬 Scheduling scene:', draggedSceneId, 'on', dropDate);
         const sceneIdToSchedule = draggedSceneId;
         draggedSceneId = null;
         await scheduleScene(sceneIdToSchedule, dropDate);
-        return false; // Prevent Toast UI from creating event
+        return false; // Prevent Toast UI from created event
     }
     
     // Allow regular calendar interactions to proceed
@@ -635,26 +816,48 @@ async function handleEventDelete({ event }) {
             if (splitGroupScenes.length > 1) {
                 console.log(`🔗 Unscheduling ${splitGroupScenes.length} split scenes`);
                 
-                // Keep the shooting_days_count but clear shooting_dates for all parts
+                // Calculate total shooting days from all parts
+                const totalShootingDays = splitGroupScenes.reduce((sum, s) => {
+                    return sum + (s.shooting_dates ? s.shooting_dates.length : 0);
+                }, 0);
+                
+                console.log('📊 Total shooting days across all parts:', totalShootingDays);
+                
+                // Delete all other parts
                 for (const linkedScene of splitGroupScenes) {
                     if (linkedScene.id !== scene.id) {
-                        // Delete the other parts entirely
                         await SceneService.delete(linkedScene.id);
                         scenes = scenes.filter(s => s.id !== linkedScene.id);
                     }
                 }
                 
-                // Update this scene: clear dates, remove split_group_id, keep shooting_days_count
+                // Update this scene: clear dates, remove split_group_id, set total shooting_days_count
                 await SceneService.update(scene.id, { 
                     shooting_dates: [],
-                    split_group_id: null
-                    // shooting_days_count is preserved
+                    split_group_id: null,
+                    shooting_days_count: totalShootingDays
                 });
                 scene.shooting_dates = [];
                 scene.split_group_id = null;
-                // scene.shooting_days_count stays the same
+                scene.shooting_days_count = totalShootingDays;
                 
-                console.log(`📅 Unscheduled with shooting_days_count preserved:`, scene.shooting_days_count);
+                console.log(`📅 Unscheduled with total shooting_days_count:`, totalShootingDays);
+                
+                renderCalendarEvents();
+                renderUnscheduledScenes();
+                
+                // Clean up any orphaned split groups
+                await cleanupOrphanedSplitGroups();
+                return;
+            } else {
+                // Only 1 scene in split group - remove split_group_id
+                console.log(`🧹 Single scene in split group, removing split_group_id`);
+                await SceneService.update(scene.id, {
+                    shooting_dates: [],
+                    split_group_id: null
+                });
+                scene.shooting_dates = [];
+                scene.split_group_id = null;
                 
                 renderCalendarEvents();
                 renderUnscheduledScenes();
@@ -662,9 +865,16 @@ async function handleEventDelete({ event }) {
             }
         }
         
-        // Normal unschedule - just remove dates
-        await SceneService.setShootingDates(event.id, []);
+        // Normal unschedule - just remove dates, keep shooting_days_count
+        await SceneService.update(event.id, {
+            shooting_dates: []
+            // shooting_days_count is preserved - don't update it
+        });
         scene.shooting_dates = [];
+        // scene.shooting_days_count stays the same
+        
+        console.log(`📅 Unscheduled with shooting_days_count preserved:`, scene.shooting_days_count);
+        
         renderCalendarEvents();
         renderUnscheduledScenes();
     } catch (error) {
@@ -772,55 +982,6 @@ function formatDateReadable(dateStr) {
 }
 
 let draggedSceneId = null;
-
-async function scheduleScene(sceneId, dateStr) {
-    const scene = scenes.find(s => s.id === sceneId);
-    if (!scene) return;
-    
-    console.log('🎯 SCENE SCHEDULED:', {
-        scene: `${scene.scene_number} - ${scene.description}`,
-        onDate: dateStr,
-    });
-    
-    try {
-        // Only set shooting_days_count to 1 if it doesn't exist yet
-        // Otherwise use the existing placement calculation with the preserved count
-        const existingCount = scene.shooting_days_count;
-        
-        if (existingCount && existingCount > 1) {
-            // Scene was previously scheduled with multiple days, recalculate placement
-            console.log('📦 Rescheduling scene with preserved count:', existingCount);
-            const startDate = new Date(dateStr);
-            const placement = calculateScenePlacement(startDate, existingCount, isNonShootingDay);
-            
-            if (placement.needsSplit) {
-                // Need to split immediately
-                await executeMultiPartSplit(scene, placement.splitInfo.parts, existingCount);
-            } else {
-                // Simple placement without split
-                await SceneService.update(sceneId, {
-                    shooting_dates: placement.shootingDates
-                    // Keep existing shooting_days_count
-                });
-                scene.shooting_dates = placement.shootingDates;
-            }
-        } else {
-            // First time scheduling or was a 1-day scene
-            await SceneService.update(sceneId, {
-                shooting_dates: [dateStr],
-                shooting_days_count: 1
-            });
-            scene.shooting_dates = [dateStr];
-            scene.shooting_days_count = 1;
-        }
-        
-        renderCalendarEvents();
-        renderUnscheduledScenes();
-    } catch (error) {
-        console.error('❌ Error scheduling scene:', error);
-        alert('Failed to schedule scene');
-    }
-}
 
 // =================================================================
 // UNSCHEDULED SCENES
@@ -1889,6 +2050,70 @@ function isNonShootingDay(dateStr) {
     return getNonShootingDays().includes(dateStr);
 }
 
+async function promptAlternativeDropDate(originalDate, dayCount = 1) {
+    const original = new Date(originalDate);
+    const nonShootingDays = getNonShootingDays();
+    
+    // Find next shooting day
+    let nextDate = new Date(original);
+    nextDate.setDate(nextDate.getDate() + 1);
+    while (nonShootingDays.includes(nextDate.toISOString().split('T')[0])) {
+        nextDate.setDate(nextDate.getDate() + 1);
+    }
+    
+    // Find previous shooting day
+    let prevDate = new Date(original);
+    prevDate.setDate(prevDate.getDate() - 1);
+    while (nonShootingDays.includes(prevDate.toISOString().split('T')[0])) {
+        prevDate.setDate(prevDate.getDate() - 1);
+    }
+    
+    const dayText = dayCount > 1 ? ` (${dayCount} dagen)` : '';
+    
+    // Create modal
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal modal-open';
+        modal.innerHTML = `
+            <div class="modal-box">
+                <h3 class="font-bold text-lg mb-4">Non-Shooting Day</h3>
+                <p class="mb-6">De geselecteerde datum (${original.toLocaleDateString()}) is een non-shooting day${dayText}.</p>
+                
+                <div class="flex flex-col gap-2">
+                    <button class="btn btn-primary" data-date="${prevDate.toISOString().split('T')[0]}">
+                        Laatste mogelijke dag (${prevDate.toLocaleDateString()})
+                    </button>
+                    <button class="btn btn-primary" data-date="${nextDate.toISOString().split('T')[0]}">
+                        Eerstvolgende mogelijke dag (${nextDate.toLocaleDateString()})
+                    </button>
+                    <button class="btn btn-ghost" data-cancel="true">
+                        Annuleren
+                    </button>
+                </div>
+            </div>
+            <div class="modal-backdrop bg-black/50"></div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            
+            const newDate = btn.dataset.date;
+            const cancelled = btn.dataset.cancel;
+            
+            modal.remove();
+            
+            if (cancelled) {
+                resolve(null);
+            } else {
+                resolve(newDate);
+            }
+        });
+    });
+}
+
 async function toggleNonShootingDay(dateStr, isNonShooting) {
     console.log('🔄 toggleNonShootingDay:', { dateStr, isNonShooting });
     const nonShootingDays = [...getNonShootingDays()];
@@ -2092,8 +2317,6 @@ async function executeMultiPartSplit(scene, parts, totalShootingDaysCount) {
         // Generate a split_group_id if scene doesn't have one yet
         const splitGroupId = scene.split_group_id || crypto.randomUUID();
         
-        console.log(`✂️ Splitting scene into ${parts.length} parts with total shooting days:`, totalShootingDaysCount);
-        
         // Update original scene with first part
         await SceneService.update(scene.id, {
             shooting_dates: parts[0],
@@ -2109,32 +2332,24 @@ async function executeMultiPartSplit(scene, parts, totalShootingDaysCount) {
             const newSceneData = {
                 scene_number: scene.scene_number,
                 description: scene.description,
-                location: scene.location,
+                location_id: scene.location_id,
                 int_ext: scene.int_ext,
-                day_night: scene.day_night,
-                script_day: scene.script_day,
-                pages: scene.pages,
+                time: scene.time,
+                conditions: scene.conditions,
+                continuity: scene.continuity,
                 shooting_dates: parts[i],
                 split_group_id: splitGroupId,
                 shooting_days_count: totalShootingDaysCount
             };
             
-            // Copy time and conditions if they exist
-            if (scene.time) newSceneData.time = scene.time;
-            if (scene.conditions) newSceneData.conditions = scene.conditions;
-            
             const createdScene = await SceneService.create(currentProject.id, newSceneData);
             scenes.push(createdScene);
-            
-            console.log(`✂️ Created part ${i + 1}/${parts.length}:`, `${newSceneData.scene_number} (${parts[i].length} days)`);
         }
-        
-        console.log('✂️ Multi-part split completed:', parts.length, 'parts');
         
         renderCalendarEvents();
         renderUnscheduledScenes();
     } catch (error) {
-        console.error('❌ Error in multi-part split:', error);
+        console.error('Error in multi-part split:', error);
         alert('Failed to split scene into multiple parts');
     }
 }

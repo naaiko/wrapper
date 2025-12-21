@@ -49,6 +49,41 @@
     pointer-events: auto;
 }
 
+/* Modal Mode - Centered modal instead of bottom sheet */
+.edit-screen--modal {
+    /* Override bottom sheet positioning */
+    bottom: auto;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    
+    /* Center the modal */
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0;
+    
+    /* Fixed dimensions */
+    width: 90%;
+    max-width: 800px;
+    height: auto;
+    max-height: 90vh;
+    
+    /* Round all corners */
+    border-radius: 1rem;
+    
+    /* Enhanced shadow */
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.edit-screen--modal.edit-screen--open {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+/* Hide drag handle in modal mode */
+.edit-screen--modal .edit-screen__handle {
+    display: none;
+}
+
 /* =================================================================
    DRAG HANDLE
    ================================================================= */
@@ -212,15 +247,23 @@
 .edit-screen__actions {
     /* Flexbox layout - matches main dock */
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
+    width: 100%;
 }
 
 .edit-screen__actions-secondary {
-    /* Secondary actions (centered in dock) */
+    /* Secondary actions (left side) */
     display: flex;
     gap: 0.5rem;
+}
+
+.edit-screen__actions-primary {
+    /* Primary action (right side) */
+    display: flex;
+    flex: 1;
+    justify-content: flex-end;
 }
 
 /* Inverse button styles for dock - white with colored borders, black icons */

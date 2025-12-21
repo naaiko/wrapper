@@ -33,6 +33,7 @@ export class EditScreen {
         this.id = options.id || 'editScreen';
         this.title = options.title || 'Edit';
         this.height = options.height || '85vh'; // Default height
+        this.mode = options.mode || 'sheet'; // 'sheet' or 'modal'
         this.onChange = options.onChange || null; // Auto-save on change
         this.onCancel = options.onCancel || null;
         this.onDelete = options.onDelete || null;
@@ -77,7 +78,7 @@ export class EditScreen {
         // Create main container
         this.container = document.createElement('div');
         this.container.id = this.id;
-        this.container.className = 'edit-screen';
+        this.container.className = `edit-screen${this.mode === 'modal' ? ' edit-screen--modal' : ''}`;
         this.container.style.height = this.height;
         
         // Build internal structure
@@ -123,6 +124,10 @@ export class EditScreen {
                         <!-- Secondary actions (left) -->
                         <div class="edit-screen__actions-secondary">
                             <!-- Optional delete/remove buttons will be added here -->
+                        </div>
+                        <!-- Primary action (right) -->
+                        <div class="edit-screen__actions-primary">
+                            <!-- Primary action button will be added here -->
                         </div>
                     </div>
                 </div>
@@ -251,6 +256,26 @@ export class EditScreen {
         button.addEventListener('click', () => handler(this.currentData));
         
         secondaryZone.appendChild(button);
+        
+        return button;
+    }
+
+    /**
+     * Add a primary action button (e.g., Save, Add)
+     */
+    addPrimaryAction(label, icon = '', variant = 'primary', handler) {
+        const primaryZone = this.container.querySelector('.edit-screen__actions-primary');
+        
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `btn btn-${variant} btn-sm flex-1`;
+        button.innerHTML = `
+            ${icon}
+            ${label}
+        `;
+        button.addEventListener('click', () => handler(this.currentData));
+        
+        primaryZone.appendChild(button);
         
         return button;
     }

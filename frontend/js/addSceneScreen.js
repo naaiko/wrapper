@@ -17,6 +17,7 @@ export class AddSceneScreen {
         this.conditions = options.conditions || [];
         this.continuityOptions = options.continuityOptions || [];
         this.onSceneAdded = options.onSceneAdded || null;
+        this.onSceneScheduled = options.onSceneScheduled || null;
         
         // Form data
         this.formData = this.getEmptyFormData();
@@ -30,8 +31,9 @@ export class AddSceneScreen {
         this.editScreen = new EditScreen({   
             id: 'addSceneScreen',
             title: 'Add New Scene',
+            mode: 'modal',
             renderFormContent: () => this.renderForm(),
-            renderContextContent: () => '', // No context for add screen
+            renderContextContent: () => this.renderContext(),
             onChange: (field, value) => this.handleChange(field, value),
             onAfterRender: () => this.initializeDropdowns()
         }).init();
@@ -55,16 +57,23 @@ export class AddSceneScreen {
     }
     
     addPrimaryAction() {
-        const actionZone = document.querySelector('#addSceneScreen .edit-screen__action-zone');
-        if (!actionZone) return;
-        
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'btn btn-primary flex-1';
-        button.textContent = 'Voeg toe';
-        button.addEventListener('click', () => this.handleAdd());
-        
-        actionZone.appendChild(button);
+        this.editScreen.addPrimaryAction(
+            'Voeg toe',
+            `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>`,
+            'primary',
+            () => this.handleAdd()
+        );
+    }
+    
+    renderContext() {
+        return `
+            <div class="edit-screen__context-preview">
+                <div class="text-sm font-semibold mb-3">Scene preview</div>
+                <div id="addScenePreviewCard"></div>
+            </div>
+        `;
     }
     
     renderForm() {
@@ -182,12 +191,6 @@ export class AddSceneScreen {
                             class="input input-bordered" 
                         />
                     </div>
-                </div>
-                
-                <!-- Scene Preview -->
-                <div class="edit-screen__context-preview">
-                    <div class="text-sm font-semibold mb-3">Scene preview</div>
-                    <div id="addScenePreviewCard"></div>
                 </div>
             </div>
         `;
@@ -309,10 +312,18 @@ export class AddSceneScreen {
         
         // Continuity Dropdown
         if (features.show_continuity) {
+            const continuityOptions = this.continuityOptions.map(opt => ({
+                value: opt.id,
+                label: opt.label
+            }));
+            
+            // Add "None" option at the start
+            continuityOptions.unshift({ value: '', label: 'None' });
+            
             this.continuityDropdown = new CustomDropdown({
                 containerId: 'continuityDropdownContainer',
                 name: 'continuity',
-                options: this.continuityOptions,
+                options: continuityOptions,
                 value: this.formData.continuity,
                 placeholder: 'Select...',
                 size: 'md',
@@ -724,36 +735,57 @@ export class AddSceneScreen {
         }
         
         try {
-            // Calculate shooting dates if start_date is provided
-            let shooting_dates = [];
-            if (this.formData.start_date) {
-                const startDate = new Date(this.formData.start_date);
-                const daysCount = parseInt(this.formData.shooting_days_count) || 1;
+            let startDateStr = this.formData.start_date;
+            
+            // Check if start date is a non-shooting day
+            if (startDateStr) {
+                const nonShootingDays = await this.getNonShootingDays();
                 
-                for (let i = 0; i < daysCount; i++) {
-                    const date = new Date(startDate);
-                    date.setDate(startDate.getDate() + i);
-                    const dateStr = date.toISOString().split('T')[0];
-                    shooting_dates.push(dateStr);
+                if (nonShootingDays.includes(startDateStr)) {
+                    const newStartDate = await this.promptAlternativeDate(startDateStr, nonShootingDays);
+                    
+                    if (newStartDate === null) {
+                        // User chose "Terug" - stay in modal
+                        return;
+                    }
+                    
+                    // User chose alternative date - update form data
+                    startDateStr = newStartDate;
+                    this.formData.start_date = newStartDate;
+                    
+                    // Update display
+                    const display = document.getElementById('selectedDateDisplay');
+                    if (display) {
+                        display.textContent = new Date(newStartDate).toLocaleDateString();
+                    }
                 }
             }
             
-            // Prepare scene data
+            // Prepare scene data - create UNSCHEDULED first
             const sceneData = {
-                project_id: this.projectId,
                 scene_number: this.formData.scene_number.trim(),
                 int_ext: this.formData.int_ext || null,
                 location_id: this.formData.location_id || null,
-                description: this.formData.description?.trim() || null,
+                description: this.formData.description?.trim() || '', // Empty string instead of null
                 time: this.formData.time || null,
                 conditions: this.formData.conditions || [],
                 continuity: this.formData.continuity || null,
-                shooting_dates: shooting_dates.length > 0 ? shooting_dates : null,
-                shooting_days_count: shooting_dates.length > 0 ? shooting_dates.length : null
+                shooting_dates: null, // Will be set by placeSceneWithSplitHandling if start date provided
+                shooting_days_count: parseInt(this.formData.shooting_days_count) || 1
             };
             
-            // Create scene
-            const newScene = await SceneService.create(sceneData);
+            // Create scene (SceneService.create expects projectId and sceneData separately)
+            const newScene = await SceneService.create(this.projectId, sceneData);
+            
+            // If start date was provided, schedule it (with automatic splitting)
+            if (startDateStr) {
+                const daysCount = parseInt(this.formData.shooting_days_count) || 1;
+                
+                // Call the callback to let calendar handle placement with split detection
+                if (this.onSceneScheduled) {
+                    await this.onSceneScheduled(newScene, startDateStr, daysCount);
+                }
+            }
             
             // Close and reset
             this.close();
@@ -797,5 +829,84 @@ export class AddSceneScreen {
         if (options.times) this.times = options.times;
         if (options.conditions) this.conditions = options.conditions;
         if (options.continuityOptions) this.continuityOptions = options.continuityOptions;
+    }
+    
+    async getNonShootingDays() {
+        // Get non-shooting days from project (via global calendar state)
+        // We need to get this from the calendar-toastui's currentProject
+        // For now, use the service to get project data
+        const { data, error } = await window.supabase
+            .from('projects')
+            .select('non_shooting_days')
+            .eq('id', this.projectId)
+            .single();
+        
+        if (error) {
+            console.error('Error fetching non-shooting days:', error);
+            return [];
+        }
+        
+        return data?.non_shooting_days || [];
+    }
+    
+    async promptAlternativeDate(originalDate, nonShootingDays) {
+        const original = new Date(originalDate);
+        
+        // Find next shooting day
+        let nextDate = new Date(original);
+        nextDate.setDate(nextDate.getDate() + 1);
+        while (nonShootingDays.includes(nextDate.toISOString().split('T')[0])) {
+            nextDate.setDate(nextDate.getDate() + 1);
+        }
+        
+        // Find previous shooting day
+        let prevDate = new Date(original);
+        prevDate.setDate(prevDate.getDate() - 1);
+        while (nonShootingDays.includes(prevDate.toISOString().split('T')[0])) {
+            prevDate.setDate(prevDate.getDate() - 1);
+        }
+        
+        // Create modal
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'modal modal-open';
+            modal.innerHTML = `
+                <div class="modal-box">
+                    <h3 class="font-bold text-lg mb-4">Non-Shooting Day</h3>
+                    <p class="mb-6">De geselecteerde startdatum (${original.toLocaleDateString()}) is een non-shooting day.</p>
+                    
+                    <div class="flex flex-col gap-2">
+                        <button class="btn btn-primary" data-date="${prevDate.toISOString().split('T')[0]}">
+                            Laatste mogelijke dag (${prevDate.toLocaleDateString()})
+                        </button>
+                        <button class="btn btn-primary" data-date="${nextDate.toISOString().split('T')[0]}">
+                            Eerstvolgende mogelijke dag (${nextDate.toLocaleDateString()})
+                        </button>
+                        <button class="btn btn-ghost" data-back="true">
+                            Terug
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-backdrop bg-black/50"></div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                
+                const newDate = btn.dataset.date;
+                const goBack = btn.dataset.back;
+                
+                modal.remove();
+                
+                if (goBack) {
+                    resolve(null); // Return null to stay in modal
+                } else {
+                    resolve(newDate);
+                }
+            });
+        });
     }
 }

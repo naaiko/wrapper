@@ -94,11 +94,20 @@ export function renderSceneCard(scene, options = {}) {
         }
     }
 
+    // Days indicator for unscheduled scenes
+    const daysCount = scene.shooting_days_count || 1;
+    const daysIndicator = daysCount > 1 ? `
+        <div class="badge badge-ghost badge-xs flex-shrink-0" style="padding: 2px 6px; font-size: 10px; opacity: 0.7;">
+            ${daysCount}d
+        </div>
+    ` : '';
+
     card.innerHTML = `
         <div class="card-body p-1.5">
             <div class="flex items-center gap-2">
                 <div class="badge badge-primary badge-xs flex-shrink-0" style="padding: 2px 6px; font-size: 10px;">${scene.scene_number}</div>
                 ${splitIndicator}
+                ${daysIndicator}
                 <p class="text-xs flex-1 line-clamp-2 text-base-content/80" id="scene-heading-${scene.id}">${heading}</p>
                 ${timeIconHtml}
                 ${conditionIconsHtml}

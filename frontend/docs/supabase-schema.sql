@@ -15,7 +15,7 @@ CREATE TABLE scenes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     scene_number TEXT NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     story_order INTEGER NOT NULL,
     shooting_days INTEGER[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

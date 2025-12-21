@@ -475,21 +475,40 @@ export class SceneEditScreen {
         // Unschedule button
         this.editScreen.addSecondaryAction(
             'Unschedule',
-            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-off"><path d="M4.2 4.2A2 2 0 0 0 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 1.82-1.18"/><path d="M21 15.5V6a2 2 0 0 0-2-2H9.5"/><path d="M16 2v4"/><path d="M3 10h7"/><path d="M21 10h-5.5"/><path d="m2 2 20 20"/></svg>`,
+            `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-off"><path d="M4.2 4.2A2 2 0 0 0 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 1.82-1.18"/><path d="M21 15.5V6a2 2 0 0 0-2-2H9.5"/><path d="M16 2v4"/><path d="M3 10h7"/><path d="M21 10h-5.5"/><path d="m2 2 20 20"/></svg>`,
             'warning',
             async (scene) => {
-                if (confirm(`Unschedule scene ${scene.scene_number}?`)) {
-                    await SceneService.update(scene.id, {
-                        shooting_dates: [],
-                        shooting_days_count: null
-                    });
+                // If this scene is part of a split group, we need to DELETE the other parts
+                // and keep only this one (unscheduled)
+                if (scene.split_group_id) {
+                    // Get all scenes in the split group
+                    const allScenes = await SceneService.getAll(scene.project_id);
+                    const splitGroupScenes = allScenes.filter(s => 
+                        s.split_group_id === scene.split_group_id && s.id !== scene.id
+                    );
                     
-                    if (this.onSceneUnscheduled) {
-                        this.onSceneUnscheduled(scene.id);
+                    // Delete all other parts
+                    for (const otherScene of splitGroupScenes) {
+                        await SceneService.delete(otherScene.id);
                     }
                     
-                    this.editScreen.close();
+                    // Unschedule this scene (clear dates and remove split_group_id)
+                    await SceneService.update(scene.id, {
+                        shooting_dates: [],
+                        split_group_id: null
+                    });
+                } else {
+                    // Normal unschedule - just clear the dates
+                    await SceneService.update(scene.id, {
+                        shooting_dates: []
+                    });
                 }
+                
+                if (this.onSceneUnscheduled) {
+                    this.onSceneUnscheduled(scene.id);
+                }
+                
+                this.editScreen.close();
             }
         );
         
@@ -502,10 +521,18 @@ export class SceneEditScreen {
             'error',
             async (scene) => {
                 if (confirm(`Delete scene ${scene.scene_number}? This cannot be undone.`)) {
-                    await SceneService.delete(scene.id);
-                    
-                    if (this.onSceneDeleted) {
-                        this.onSceneDeleted(scene.id);
+                    // If this scene is part of a split group, delete all parts
+                    if (scene.split_group_id) {
+                        if (this.onSceneDeleted) {
+                            this.onSceneDeleted(scene.id, scene.split_group_id);
+                        }
+                    } else {
+                        // Normal delete - just delete this scene
+                        await SceneService.delete(scene.id);
+                        
+                        if (this.onSceneDeleted) {
+                            this.onSceneDeleted(scene.id);
+                        }
                     }
                     
                     this.editScreen.close();
