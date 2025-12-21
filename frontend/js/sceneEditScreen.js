@@ -19,6 +19,7 @@ import { SceneService } from './services/sceneService.js';
 import { LocationService } from './services/locationService.js';
 import settingsService from './services/settingsService.js';
 import { buildSceneHeading } from './components/sceneCardRenderer.js';
+import { renderTimeSelector, renderConditionsSelector } from './utils/formFieldTemplates.js';
 
 export class SceneEditScreen {
     constructor(options = {}) {
@@ -148,73 +149,40 @@ export class SceneEditScreen {
      * Render time of day section
      */
     renderTimeSection(scene) {
-        const enabledTimes = this.times.filter(t => t.enabled);
-        
-        return `
-            <div class="form-control edit-screen__col-span-6">
-                <label class="label">
-                    <span class="label-text font-semibold">Time of Day</span>
-                    <button 
-                        type="button"
-                        class="btn btn-ghost btn-xs text-base-content/70 hover:bg-secondary hover:text-secondary-content ${!scene?.time ? 'invisible pointer-events-none' : ''}"
-                        data-clear-time
-                    >
-                        Clear
-                    </button>
-                </label>
-                <div class="flex flex-wrap gap-2 p-3 rounded-lg border border-base-300 bg-base-100 min-h-[3rem]" id="timeSelector">
-                    ${enabledTimes.map(time => `
-                        <button 
-                            type="button"
-                            class="btn btn-sm ${scene?.time === time.id ? 'btn-primary' : 'border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200'}"
-                            data-time-id="${time.id}"
-                        >
-                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                ${time.icon}
-                            </svg>
-                            ${time.label}
-                        </button>
-                    `).join('')}
-                </div>
-            </div>
-        `;
+        return renderTimeSelector({
+            times: this.times,
+            selectedTime: scene?.time || null,
+            onSelectHandler: '', // Will use event listeners instead
+            onClearHandler: '', // Will use event listeners instead
+            selectorId: 'timeSelector',
+            clearBtnId: 'clearTimeBtn'
+        }).replace(
+            'onclick=""',
+            ''
+        ).replace(
+            'id="clearTimeBtn"',
+            'id="clearTimeBtn" data-clear-time'
+        );
     }
     
     /**
      * Render conditions section
      */
     renderConditionsSection(scene) {
-        const enabledConditions = this.conditions.filter(c => c.enabled);
-        const sceneConditions = scene?.conditions || [];
-        
-        return `
-            <div class="form-control edit-screen__col-span-6">
-                <label class="label">
-                    <span class="label-text font-semibold">Conditions</span>
-                    <button 
-                        type="button"
-                        class="btn btn-ghost btn-xs text-base-content/70 hover:bg-secondary hover:text-secondary-content ${sceneConditions.length === 0 ? 'invisible pointer-events-none' : ''}"
-                        data-clear-conditions
-                    >
-                        Clear All
-                    </button>
-                </label>
-                <div class="flex flex-wrap gap-2 p-3 rounded-lg border border-base-300 bg-base-100 min-h-[3rem]" id="conditionsSelector">
-                    ${enabledConditions.map(condition => `
-                        <button 
-                            type="button"
-                            class="btn btn-sm ${sceneConditions.includes(condition.id) ? 'btn-primary' : 'border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200'}"
-                            data-condition-id="${condition.id}"
-                        >
-                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                ${condition.icon}
-                            </svg>
-                            ${condition.label}
-                        </button>
-                    `).join('')}
-                </div>
-            </div>
-        `;
+        return renderConditionsSelector({
+            conditions: this.conditions,
+            selectedConditions: scene?.conditions || [],
+            onToggleHandler: '', // Will use event listeners instead
+            onClearHandler: '', // Will use event listeners instead
+            selectorId: 'conditionsSelector',
+            clearBtnId: 'clearConditionsBtn'
+        }).replace(
+            'onclick=""',
+            ''
+        ).replace(
+            'id="clearConditionsBtn"',
+            'id="clearConditionsBtn" data-clear-conditions'
+        );
     }
     
     /**

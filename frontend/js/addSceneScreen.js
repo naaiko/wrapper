@@ -7,6 +7,7 @@ import { CustomDropdown } from './components/customDropdown.js';
 import { SceneService } from './services/sceneService.js';
 import { LocationService } from './services/locationService.js';
 import settingsService from './services/settingsService.js';
+import { renderTimeSelector, renderConditionsSelector } from './utils/formFieldTemplates.js';
 
 export class AddSceneScreen {
     constructor(options = {}) {
@@ -233,71 +234,21 @@ export class AddSceneScreen {
     }
     
     renderTimeSection() {
-        const selectedTime = this.formData.time;
-        const hasSelection = selectedTime !== null;
-        
-        return `
-            <div class="edit-screen__col-span-6">
-                <label class="label">
-                    <span class="label-text font-semibold">Time of Day</span>
-                </label>
-                <div class="border border-base-300 bg-base-100 p-3 rounded-lg min-h-[3rem] flex items-center justify-between gap-2">
-                    <div class="flex flex-wrap gap-2 flex-1">
-                        ${this.times.map(time => `
-                            <button 
-                                type="button"
-                                class="btn btn-sm ${selectedTime === time.id ? 'btn-primary' : 'border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200'}"
-                                data-time-id="${time.id}"
-                                onclick="window.addSceneScreen?.selectTime('${time.id}')"
-                            >
-                                ${time.icon_svg ? `<span class="w-4 h-4">${time.icon_svg}</span>` : ''}
-                                ${time.label}
-                            </button>
-                        `).join('')}
-                    </div>
-                    <button 
-                        type="button" 
-                        id="clearTimeBtn"
-                        class="btn btn-ghost btn-xs text-base-content/70 hover:bg-secondary hover:text-secondary-content ${!hasSelection ? 'invisible pointer-events-none' : ''}"
-                        onclick="window.addSceneScreen?.clearTime()"
-                    >Clear</button>
-                </div>
-            </div>
-        `;
+        return renderTimeSelector({
+            times: this.times,
+            selectedTime: this.formData.time,
+            onSelectHandler: "window.addSceneScreen?.selectTime('${timeId}')",
+            onClearHandler: "window.addSceneScreen?.clearTime()"
+        });
     }
     
     renderConditionsSection() {
-        const selectedConditions = this.formData.conditions || [];
-        const hasSelection = selectedConditions.length > 0;
-        
-        return `
-            <div class="edit-screen__col-span-6">
-                <label class="label">
-                    <span class="label-text font-semibold">Conditions</span>
-                </label>
-                <div class="border border-base-300 bg-base-100 p-3 rounded-lg min-h-[3rem] flex items-center justify-between gap-2">
-                    <div class="flex flex-wrap gap-2 flex-1">
-                        ${this.conditions.map(condition => `
-                            <button 
-                                type="button"
-                                class="btn btn-sm ${selectedConditions.includes(condition.id) ? 'btn-primary' : 'border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200'}"
-                                data-condition-id="${condition.id}"
-                                onclick="window.addSceneScreen?.toggleCondition('${condition.id}')"
-                            >
-                                ${condition.icon_svg ? `<span class="w-4 h-4">${condition.icon_svg}</span>` : ''}
-                                ${condition.label}
-                            </button>
-                        `).join('')}
-                    </div>
-                    <button 
-                        type="button"
-                        id="clearConditionsBtn" 
-                        class="btn btn-ghost btn-xs text-base-content/70 hover:bg-secondary hover:text-secondary-content ${!hasSelection ? 'invisible pointer-events-none' : ''}"
-                        onclick="window.addSceneScreen?.clearConditions()"
-                    >Clear All</button>
-                </div>
-            </div>
-        `;
+        return renderConditionsSelector({
+            conditions: this.conditions,
+            selectedConditions: this.formData.conditions || [],
+            onToggleHandler: "window.addSceneScreen?.toggleCondition('${conditionId}')",
+            onClearHandler: "window.addSceneScreen?.clearConditions()"
+        });
     }
     
     initializeDropdowns() {
