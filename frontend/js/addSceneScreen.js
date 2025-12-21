@@ -79,6 +79,36 @@ export class AddSceneScreen {
         
         return `
             <div class="px-8 space-y-4">
+                <!-- Scene Number, INT/EXT, Location, Continuity -->
+                <div class="edit-screen__form-row edit-screen__form-row--grid">
+                    <!-- Scene Number -->
+                    <div class="form-control edit-screen__col-span-${sceneNumCols}">
+                        <label class="label">
+                            <span class="label-text font-semibold">Scene #</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            name="scene_number"
+                            value="${this.formData.scene_number}"
+                            class="input input-bordered" 
+                            placeholder="e.g., 1, 2A"
+                            required 
+                        />
+                    </div>
+                    
+                    ${features.show_int_ext ? this.renderIntExtSection(intExtCols) : `<div class="edit-screen__col-span-${intExtCols}"></div>`}
+                    ${features.show_location ? this.renderLocationSection(locationCols) : `<div class="edit-screen__col-span-${locationCols}"></div>`}
+                    ${hasContinuity ? this.renderContinuitySection(continuityCols) : ''}
+                </div>
+                
+                <!-- Time of Day and Conditions -->
+                ${features.show_time || features.show_conditions ? `
+                    <div class="edit-screen__form-row edit-screen__form-row--grid">
+                        ${features.show_time ? this.renderTimeSection() : '<div class="edit-screen__col-span-6"></div>'}
+                        ${features.show_conditions ? this.renderConditionsSection() : '<div class="edit-screen__col-span-6"></div>'}
+                    </div>
+                ` : ''}
+                
                 <!-- Start Date and Days Count -->
                 <div class="edit-screen__form-row edit-screen__form-row--grid">
                     <div class="form-control edit-screen__col-span-6">
@@ -154,47 +184,10 @@ export class AddSceneScreen {
                     </div>
                 </div>
                 
-                <!-- Scene Number, INT/EXT, Location, Continuity -->
-                <div class="edit-screen__form-row edit-screen__form-row--grid">
-                    <!-- Scene Number -->
-                    <div class="form-control edit-screen__col-span-${sceneNumCols}">
-                        <label class="label">
-                            <span class="label-text font-semibold">Scene #</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            name="scene_number"
-                            value="${this.formData.scene_number}"
-                            class="input input-bordered" 
-                            placeholder="e.g., 1, 2A"
-                            required 
-                        />
-                    </div>
-                    
-                    ${features.show_int_ext ? this.renderIntExtSection(intExtCols) : `<div class="edit-screen__col-span-${intExtCols}"></div>`}
-                    ${features.show_location ? this.renderLocationSection(locationCols) : `<div class="edit-screen__col-span-${locationCols}"></div>`}
-                    ${hasContinuity ? this.renderContinuitySection(continuityCols) : ''}
-                </div>
-                
-                <!-- Time of Day and Conditions -->
-                ${features.show_time || features.show_conditions ? `
-                    <div class="edit-screen__form-row edit-screen__form-row--grid">
-                        ${features.show_time ? this.renderTimeSection() : '<div class="edit-screen__col-span-6"></div>'}
-                        ${features.show_conditions ? this.renderConditionsSection() : '<div class="edit-screen__col-span-6"></div>'}
-                    </div>
-                ` : ''}
-                
-                <!-- Description -->
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-semibold">Description (Optional)</span>
-                    </label>
-                    <textarea 
-                        name="description"
-                        class="textarea textarea-bordered" 
-                        placeholder="Brief scene description..."
-                        rows="2"
-                    >${this.formData.description}</textarea>
+                <!-- Scene Preview -->
+                <div class="edit-screen__context-preview">
+                    <div class="text-sm font-semibold mb-3">Scene preview</div>
+                    <div id="addScenePreviewCard"></div>
                 </div>
             </div>
         `;
@@ -328,10 +321,14 @@ export class AddSceneScreen {
             });
             this.continuityDropdown.render();
         }
+        
+        // Load initial preview
+        this.updatePreview();
     }
     
     handleChange(field, value) {
         this.formData[field] = value;
+        this.updatePreview();
     }
     
     handleDateChange(dateValue) {
@@ -342,6 +339,9 @@ export class AddSceneScreen {
         if (display) {
             display.textContent = dateValue ? new Date(dateValue).toLocaleDateString() : 'Select date...';
         }
+        
+        // Update preview
+        this.updatePreview();
         
         // Close dropdown by removing focus and clicking outside
         const trigger = document.getElementById('datePickerTrigger');
@@ -506,6 +506,9 @@ export class AddSceneScreen {
             display.textContent = 'Select date...';
         }
         
+        // Update preview
+        this.updatePreview();
+        
         // Close dropdown by removing focus
         document.activeElement.blur();
     }
@@ -513,6 +516,7 @@ export class AddSceneScreen {
     selectTime(timeId) {
         this.formData.time = timeId;
         this.updateTimeClearButton();
+        this.updatePreview();
         
         // Update button styles
         const timeButtons = document.querySelectorAll('[data-time-id]');
@@ -528,6 +532,7 @@ export class AddSceneScreen {
     clearTime() {
         this.formData.time = null;
         this.updateTimeClearButton();
+        this.updatePreview();
         
         const timeButtons = document.querySelectorAll('[data-time-id]');
         timeButtons.forEach(btn => {
@@ -558,6 +563,7 @@ export class AddSceneScreen {
         
         this.formData.conditions = conditions;
         this.updateConditionsClearButton();
+        this.updatePreview();
         
         // Update button style
         const btn = document.querySelector(`[data-condition-id="${conditionId}"]`);
@@ -573,6 +579,7 @@ export class AddSceneScreen {
     clearConditions() {
         this.formData.conditions = [];
         this.updateConditionsClearButton();
+        this.updatePreview();
         
         const conditionButtons = document.querySelectorAll('[data-condition-id]');
         conditionButtons.forEach(btn => {
@@ -589,6 +596,43 @@ export class AddSceneScreen {
         } else {
             clearBtn.classList.add('invisible', 'pointer-events-none');
         }
+    }
+    
+    updatePreview() {
+        const previewContainer = document.getElementById('addScenePreviewCard');
+        if (!previewContainer) return;
+        
+        // Import renderSceneCard dynamically
+        import('./components/sceneCardRenderer.js').then(module => {
+            const { renderSceneCard } = module;
+            
+            // Clear previous preview
+            previewContainer.innerHTML = '';
+            
+            // Build temporary scene object from formData
+            const previewScene = {
+                scene_number: this.formData.scene_number || '?',
+                int_ext: this.formData.int_ext,
+                location_id: this.formData.location_id,
+                time: this.formData.time,
+                conditions: this.formData.conditions || [],
+                continuity: this.formData.continuity,
+                // Use first shooting date for preview if available
+                shooting_dates: this.formData.start_date ? [this.formData.start_date] : null
+            };
+            
+            // Render preview card
+            const card = renderSceneCard(previewScene, {
+                locations: this.locations,
+                times: this.times,
+                conditions: this.conditions,
+                settings: settingsService.getAllFeatures(),
+                continuityOptions: this.continuityOptions,
+                hideSplitIndicator: true
+            });
+            
+            previewContainer.appendChild(card);
+        });
     }
     
     async handleAdd() {
