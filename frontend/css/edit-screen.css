@@ -160,6 +160,12 @@
     gap: 1rem;
 }
 
+/* Allow dropdowns to escape form container */
+.edit-screen__form > div,
+.edit-screen__form-zone > div {
+    overflow-y: visible !important;
+}
+
 /* Custom scrollbar styling */
 .edit-screen__form-zone::-webkit-scrollbar {
     width: 0.5rem;

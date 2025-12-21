@@ -115,14 +115,14 @@ export class AddSceneScreen {
                         <label class="label">
                             <span class="label-text font-semibold">Start Date (Optional)</span>
                         </label>
-                        <div class="dropdown dropdown-bottom w-full">
+                        <div class="dropdown w-full">
                             <div tabindex="0" role="button" class="input input-bordered w-full flex items-center gap-2 cursor-pointer" id="datePickerTrigger">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 <span id="selectedDateDisplay" class="flex-1">${this.formData.start_date ? new Date(this.formData.start_date).toLocaleDateString() : 'Select date...'}</span>
                             </div>
-                            <div tabindex="0" class="dropdown-content z-[1] p-4 shadow-lg bg-base-100 rounded-box mt-2 border border-base-300" style="min-width: 300px;" onmousedown="event.preventDefault();">
+                            <div class="hidden bg-base-100 rounded-box border border-base-300 shadow-lg p-4" id="datePickerMenu" style="position: fixed; z-index: 9999; min-width: 300px;" onmousedown="event.preventDefault();">
                                 <div id="calendarViewContainer">
                                     <calendar-date id="callyDatePicker" value="${this.formData.start_date || new Date().toISOString().split('T')[0]}">
                                         <svg slot="previous" aria-label="Previous" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -317,13 +317,35 @@ export class AddSceneScreen {
                 placeholder: 'Select...',
                 size: 'md',
                 dropdownWidth: 'auto',
+                escapeOverflow: true,
                 onChange: (value) => this.handleChange('continuity', value)
             });
             this.continuityDropdown.render();
         }
         
+        // Attach form field listeners
+        this.attachFormListeners();
+        
         // Load initial preview
         this.updatePreview();
+    }
+    
+    attachFormListeners() {
+        // Scene number input
+        const sceneNumberInput = document.querySelector('input[name="scene_number"]');
+        if (sceneNumberInput) {
+            sceneNumberInput.addEventListener('input', (e) => {
+                this.handleChange('scene_number', e.target.value);
+            });
+        }
+        
+        // Shooting days count input
+        const daysInput = document.querySelector('input[name="shooting_days_count"]');
+        if (daysInput) {
+            daysInput.addEventListener('input', (e) => {
+                this.handleChange('shooting_days_count', e.target.value);
+            });
+        }
     }
     
     handleChange(field, value) {
@@ -343,13 +365,8 @@ export class AddSceneScreen {
         // Update preview
         this.updatePreview();
         
-        // Close dropdown by removing focus and clicking outside
-        const trigger = document.getElementById('datePickerTrigger');
-        if (trigger) {
-            trigger.blur();
-            // Simulate click outside to close dropdown
-            document.body.click();
-        }
+        // Close dropdown
+        this.closeDatePicker();
     }
     
     initializeCalendar() {
@@ -362,6 +379,34 @@ export class AddSceneScreen {
         // Update heading text
         this.updateHeadingText();
         
+        // Setup dropdown positioning like CustomDropdown
+        const trigger = document.getElementById('datePickerTrigger');
+        const menu = document.getElementById('datePickerMenu');
+        
+        if (trigger && menu) {
+            // Toggle dropdown on trigger click
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (menu.classList.contains('hidden')) {
+                    this.openDatePicker();
+                } else {
+                    this.closeDatePicker();
+                }
+            });
+            
+            // Prevent clicks inside menu from closing dropdown
+            menu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            // Close on outside click
+            document.addEventListener('click', (e) => {
+                if (!menu.classList.contains('hidden') && !trigger.contains(e.target) && !menu.contains(e.target)) {
+                    this.closeDatePicker();
+                }
+            });
+        }
+        
         // Listen to date changes
         callyPicker.addEventListener('change', (e) => {
             this.handleDateChange(e.target.value);
@@ -372,6 +417,42 @@ export class AddSceneScreen {
             this.currentCalendarDate = e.detail;
             this.updateHeadingText();
         });
+    }
+    
+    openDatePicker() {
+        const trigger = document.getElementById('datePickerTrigger');
+        const menu = document.getElementById('datePickerMenu');
+        
+        if (!trigger || !menu) return;
+        
+        // Move menu to body (portal out of form) to escape overflow constraints
+        if (!menu.hasAttribute('data-portaled')) {
+            document.body.appendChild(menu);
+            menu.setAttribute('data-portaled', 'true');
+        }
+        
+        menu.classList.remove('hidden');
+        
+        // Position menu relative to button (like CustomDropdown does)
+        requestAnimationFrame(() => {
+            const buttonRect = trigger.getBoundingClientRect();
+            
+            // Position above the trigger
+            const top = buttonRect.top - menu.offsetHeight - 4;
+            const left = buttonRect.left;
+            
+            menu.style.top = `${top}px`;
+            menu.style.left = `${left}px`;
+            // Let menu use its natural width (defined in HTML: min-width: 300px)
+        });
+    }
+    
+    closeDatePicker() {
+        const menu = document.getElementById('datePickerMenu');
+        if (menu) {
+            menu.classList.add('hidden');
+            // Note: We keep menu in body (don't move back) for performance
+        }
     }
     
     updateHeadingText() {
@@ -509,8 +590,8 @@ export class AddSceneScreen {
         // Update preview
         this.updatePreview();
         
-        // Close dropdown by removing focus
-        document.activeElement.blur();
+        // Close dropdown
+        this.closeDatePicker();
     }
     
     selectTime(timeId) {
