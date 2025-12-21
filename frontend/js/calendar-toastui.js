@@ -3,6 +3,7 @@
 // =================================================================
 
 import { SceneService } from './services/sceneService.js';
+import { LocationService } from './services/locationService.js';
 import { IconPicker } from './components/iconPicker.js';
 import { calculateScenePlacement, deleteSplitGroupScenes, getSceneShootingDaysCount } from './calendar-scene-placement.js';
 
@@ -10,6 +11,7 @@ const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 
 let currentProject = null;
 let scenes = [];
+let locations = [];
 let calendar = null;
 let selectedTime = null; // Currently selected time in drawer
 let selectedConditions = []; // Currently selected conditions in drawer (array)
@@ -60,9 +62,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     currentProject = data;
     
-    // Load scenes
+    // Load scenes and locations
     scenes = await SceneService.getAll(currentProject.id);
+    locations = await LocationService.getAll(currentProject.id);
     console.log('📋 Loaded scenes:', scenes.map(s => ({ id: s.id, number: s.scene_number, time: s.time, conditions: s.conditions })));
+    console.log('📍 Loaded locations:', locations.length, 'locations');
     
     // Update navbar
     document.querySelector('.navbar .btn-ghost.text-xl').textContent = currentProject.name;
@@ -250,10 +254,23 @@ function sceneToEvent(scene) {
             .filter(icon => icon !== null);
     }
     
+    // Get location name if available
+    let locationName = '';
+    if (scene.location_id) {
+        const location = locations.find(l => l.id === scene.location_id);
+        if (location) {
+            locationName = location.name;
+        }
+    }
+    
+    // Format title with INT./EXT. prefix and location
+    const intExtPrefix = scene.int_ext ? `${scene.int_ext}. - ` : '';
+    const displayTitle = locationName ? `${intExtPrefix}${locationName}` : scene.description || '';
+    
     return {
         id: scene.id,
         calendarId: 'scenes',
-        title: `${scene.scene_number}: ${scene.description}`,
+        title: `${scene.scene_number}: ${displayTitle}`,
         start,
         end,
         category: 'allday',
@@ -263,7 +280,7 @@ function sceneToEvent(scene) {
         color: 'hsl(var(--bc))',
         raw: {
             sceneNumber: scene.scene_number,
-            description: scene.description,
+            description: displayTitle,
             shootingDates: scene.shooting_dates,
             timeIcon: timeIcon,
             conditionIcons: conditionIcons,
@@ -646,7 +663,12 @@ function openSceneDrawer(event) {
     
     // Populate editable fields
     document.getElementById('drawerSceneNumberInput').value = scene.scene_number;
-    document.getElementById('drawerSceneDescriptionInput').value = scene.description;
+    
+    // Populate location dropdown
+    renderLocationDropdown(scene.location_id);
+    
+    // Set INT/EXT toggle
+    updateIntExtToggle(scene.int_ext);
     
     // Render time selector
     renderTimeSelector();
@@ -685,6 +707,63 @@ function closeSceneDrawer() {
         backdrop.classList.add('pointer-events-none');
         currentDrawerEvent = null;
     }, 300);
+}
+
+function updateIntExtToggle(value) {
+    const intBtn = document.getElementById('intExtToggleInt');
+    const extBtn = document.getElementById('intExtToggleExt');
+    
+    if (value === 'INT') {
+        intBtn.classList.remove('btn-outline');
+        intBtn.classList.add('btn-primary');
+        extBtn.classList.remove('btn-primary');
+        extBtn.classList.add('btn-outline');
+    } else if (value === 'EXT') {
+        extBtn.classList.remove('btn-outline');
+        extBtn.classList.add('btn-primary');
+        intBtn.classList.remove('btn-primary');
+        intBtn.classList.add('btn-outline');
+    } else {
+        // No selection
+        intBtn.classList.add('btn-outline');
+        intBtn.classList.remove('btn-primary');
+        extBtn.classList.add('btn-outline');
+        extBtn.classList.remove('btn-primary');
+    }
+}
+
+function getSelectedIntExt() {
+    const intBtn = document.getElementById('intExtToggleInt');
+    if (intBtn.classList.contains('btn-primary')) {
+        return 'INT';
+    }
+    const extBtn = document.getElementById('intExtToggleExt');
+    if (extBtn.classList.contains('btn-primary')) {
+        return 'EXT';
+    }
+    return null;
+}
+
+function renderLocationDropdown(selectedLocationId) {
+    const select = document.getElementById('drawerLocationSelect');
+    select.innerHTML = '<option value="">Select location...</option>';
+    
+    // Add existing locations
+    locations.forEach(location => {
+        const option = document.createElement('option');
+        option.value = location.id;
+        option.textContent = location.name;
+        if (location.id === selectedLocationId) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+    
+    // Add "Create new location" option
+    const newOption = document.createElement('option');
+    newOption.value = 'CREATE_NEW';
+    newOption.textContent = '+ Create new location...';
+    select.appendChild(newOption);
 }
 
 function formatDateReadable(dateStr) {
@@ -827,12 +906,25 @@ function createUnscheduledSceneCard(scene) {
         }
     }
     
+    // Get location name if available
+    let locationName = '';
+    if (scene.location_id) {
+        const location = locations.find(l => l.id === scene.location_id);
+        if (location) {
+            locationName = location.name;
+        }
+    }
+    
+    // Format title with INT./EXT. prefix and location
+    const intExtPrefix = scene.int_ext ? `${scene.int_ext}. - ` : '';
+    const displayTitle = locationName ? `${intExtPrefix}${locationName}` : scene.description || '';
+    
     card.innerHTML = `
         <div class="card-body p-1.5">
             <div class="flex items-center gap-2">
                 <div class="badge badge-primary badge-xs flex-shrink-0" style="padding: 2px 6px; font-size: 10px;">${scene.scene_number}</div>
                 ${splitIndicator}
-                <p class="text-xs flex-1 line-clamp-2 text-base-content/80">${scene.description}</p>
+                <p class="text-xs flex-1 line-clamp-2 text-base-content/80">${displayTitle}</p>
                 ${timeIconHtml}
                 ${conditionIconsHtml}
             </div>
@@ -1003,6 +1095,44 @@ function setupEventListeners() {
     });
     document.getElementById('addConditionForm').addEventListener('submit', handleAddCondition);
     
+    // Locations config button
+    console.log('🔍 Setting up locations config listeners');
+    console.log('🔍 openLocationsConfig function exists?', typeof openLocationsConfig);
+    console.log('🔍 handleAddLocation function exists?', typeof handleAddLocation);
+    document.getElementById('locationsConfigBtn').addEventListener('click', () => {
+        console.log('🔍 Locations config button clicked');
+        openLocationsConfig();
+    });
+    document.getElementById('closeLocationsConfigBtn').addEventListener('click', () => {
+        document.getElementById('locationsConfigModal').close();
+    });
+    document.getElementById('addLocationForm').addEventListener('submit', (e) => {
+        console.log('🔍 Add location form submitted');
+        handleAddLocation(e);
+    });
+    
+    // Location dropdown - create new location on select
+    document.getElementById('drawerLocationSelect').addEventListener('change', async (e) => {
+        if (e.target.value === 'CREATE_NEW') {
+            const name = prompt('Enter new location name:');
+            if (!name) {
+                e.target.value = '';
+                return;
+            }
+            
+            try {
+                const newLocation = await LocationService.create(currentProject.id, { name: name.trim().toUpperCase() });
+                locations.push(newLocation);
+                renderLocationDropdown();
+                e.target.value = newLocation.id;
+            } catch (error) {
+                console.error('Error creating location:', error);
+                alert('Failed to create location');
+                e.target.value = '';
+            }
+        }
+    });
+    
     // Non-shooting day modal
     document.getElementById('closeNonShootingDayBtn').addEventListener('click', () => {
         document.getElementById('nonShootingDayModal').close();
@@ -1066,6 +1196,14 @@ function setupEventListeners() {
         picker.open();
     });
     
+    // INT/EXT toggle buttons
+    document.getElementById('intExtToggleInt').addEventListener('click', () => {
+        updateIntExtToggle('INT');
+    });
+    document.getElementById('intExtToggleExt').addEventListener('click', () => {
+        updateIntExtToggle('EXT');
+    });
+    
     // Drawer controls
     document.getElementById('closeDrawer').addEventListener('click', closeSceneDrawer);
     document.getElementById('drawerBackdrop').addEventListener('click', closeSceneDrawer);
@@ -1077,12 +1215,23 @@ function setupEventListeners() {
         
         const sceneId = currentDrawerEvent.id;
         const sceneNumber = document.getElementById('drawerSceneNumberInput').value.trim();
-        const description = document.getElementById('drawerSceneDescriptionInput').value.trim();
+        const locationId = document.getElementById('drawerLocationSelect').value || null;
+        const intExt = getSelectedIntExt();
         
-        if (!sceneNumber || !description) return;
+        if (!sceneNumber) return;
+        
+        // Get location name for description field (for backward compatibility)
+        let description = '';
+        if (locationId) {
+            const location = locations.find(l => l.id === locationId);
+            if (location) {
+                const prefix = intExt ? `${intExt}. - ` : '';
+                description = `${prefix}${location.name}`;
+            }
+        }
         
         try {
-            console.log('💾 Saving scene with time:', selectedTime, 'and conditions:', selectedConditions);
+            console.log('💾 Saving scene with time:', selectedTime, 'conditions:', selectedConditions, 'location_id:', locationId, 'int_ext:', intExt);
             
             // Update local data
             const scene = scenes.find(s => s.id === sceneId);
@@ -1090,16 +1239,20 @@ function setupEventListeners() {
                 const updates = {
                     scene_number: sceneNumber,
                     description: description,
+                    location_id: locationId,
                     time: selectedTime,
                     conditions: selectedConditions,
+                    int_ext: intExt,
                 };
                 
                 // Update this scene
                 await SceneService.update(sceneId, updates);
                 scene.scene_number = sceneNumber;
                 scene.description = description;
+                scene.location_id = locationId;
                 scene.time = selectedTime;
                 scene.conditions = [...selectedConditions];
+                scene.int_ext = intExt;
                 
                 // If this scene is part of a split group, update all scenes in the group
                 if (scene.split_group_id) {
@@ -1112,6 +1265,7 @@ function setupEventListeners() {
                         await SceneService.update(splitScene.id, {
                             scene_number: sceneNumber,
                             description: description,
+                            location_id: locationId,
                             time: selectedTime,
                             conditions: selectedConditions,
                             location: scene.location,
@@ -1123,6 +1277,7 @@ function setupEventListeners() {
                         
                         splitScene.scene_number = sceneNumber;
                         splitScene.description = description;
+                        splitScene.location_id = locationId;
                         splitScene.time = selectedTime;
                         splitScene.conditions = [...selectedConditions];
                         splitScene.location = scene.location;
@@ -1663,6 +1818,82 @@ async function handleAddCondition(e) {
     btn.classList.add('btn-outline');
     const svgElement = document.getElementById('selectedConditionIconSvg');
     svgElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />';
+}
+
+// =================================================================
+// LOCATIONS CONFIG
+// =================================================================
+
+async function openLocationsConfig() {
+    console.log('🔍 openLocationsConfig called');
+    await renderLocationsList();
+    document.getElementById('locationsConfigModal').showModal();
+}
+
+async function renderLocationsList() {
+    console.log('🔍 renderLocationsList called, locations:', locations);
+    const container = document.getElementById('locationsList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (locations.length === 0) {
+        container.innerHTML = '<p class="text-sm text-base-content/50">No locations yet. Add one below.</p>';
+        return;
+    }
+    
+    locations.forEach((location, index) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-3 bg-base-200 rounded-lg';
+        
+        item.innerHTML = `
+            <div class="flex items-center gap-3">
+                <span class="font-medium">${location.name}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="btn btn-ghost btn-xs btn-circle" onclick="deleteLocation('${location.id}')">✕</button>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+window.deleteLocation = async function(locationId) {
+    if (!confirm('Delete this location? Scenes using it will have no location assigned.')) return;
+    
+    try {
+        await LocationService.delete(locationId);
+        locations = locations.filter(l => l.id !== locationId);
+        await renderLocationsList();
+        renderCalendarEvents();
+        renderUnscheduledScenes();
+    } catch (error) {
+        console.error('Error deleting location:', error);
+        alert('Failed to delete location');
+    }
+};
+
+async function handleAddLocation(e) {
+    console.log('🔍 handleAddLocation called');
+    e.preventDefault();
+    
+    const name = document.getElementById('newLocationName').value.trim().toUpperCase();
+    console.log('🔍 New location name:', name);
+    
+    if (!name) return;
+    
+    try {
+        const newLocation = await LocationService.create(currentProject.id, { name });
+        locations.push(newLocation);
+        await renderLocationsList();
+        
+        // Clear form
+        document.getElementById('newLocationName').value = '';
+    } catch (error) {
+        console.error('Error adding location:', error);
+        alert('Failed to add location');
+    }
 }
 
 // =================================================================

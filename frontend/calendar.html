@@ -113,6 +113,12 @@
                         <path d="M16 13v8"/><path d="M8 13v8"/><path d="M12 15v8"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>
                     </svg>
                 </button>
+                <button id="locationsConfigBtn" class="btn btn-square" title="Locations Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
@@ -193,8 +199,46 @@
                     />
                 </div>
 
-                <!-- Description -->
+                <!-- INT/EXT Toggle -->
                 <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Interior / Exterior</span>
+                    </label>
+                    <div class="flex gap-2">
+                        <button 
+                            type="button" 
+                            id="intExtToggleInt" 
+                            class="btn btn-outline flex-1"
+                        >
+                            INT.
+                        </button>
+                        <button 
+                            type="button" 
+                            id="intExtToggleExt" 
+                            class="btn btn-outline flex-1"
+                        >
+                            EXT.
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Location</span>
+                    </label>
+                    <select 
+                        id="drawerLocationSelect" 
+                        class="select select-bordered w-full"
+                        required
+                    >
+                        <option value="">Select location...</option>
+                        <!-- Locations will be populated here -->
+                    </select>
+                </div>
+
+                <!-- Description (hidden, kept for reference) -->
+                <div class="form-control hidden">
                     <label class="label">
                         <span class="label-text font-semibold">Description</span>
                     </label>
@@ -202,7 +246,6 @@
                         id="drawerSceneDescriptionInput" 
                         class="textarea textarea-bordered w-full h-24" 
                         placeholder="e.g., INT. COFFEE SHOP - DAY"
-                        required
                     ></textarea>
                 </div>
 
@@ -368,6 +411,50 @@
             
             <div class="modal-action">
                 <button type="button" class="btn" id="closeConditionsConfigBtn">Close</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <!-- Locations Configuration Modal -->
+    <dialog id="locationsConfigModal" class="modal">
+        <div class="modal-box max-w-2xl">
+            <h3 class="font-bold text-lg mb-4">Locations Settings</h3>
+            
+            <div class="space-y-4">
+                <!-- Existing Locations -->
+                <div>
+                    <h4 class="font-semibold mb-2">Available Locations</h4>
+                    <div id="locationsList" class="space-y-2">
+                        <!-- Location items will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Add New Location -->
+                <div class="divider">Add New Location</div>
+                <form id="addLocationForm">
+                    <div class="flex gap-2">
+                        <!-- Location Name Input -->
+                        <input 
+                            type="text" 
+                            id="newLocationName" 
+                            class="input input-bordered flex-1" 
+                            placeholder="e.g., COFFEE SHOP, CITY STREET, PARK"
+                            required
+                        />
+                        
+                        <!-- Add Button -->
+                        <button type="submit" class="btn btn-primary">
+                            Add
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-action">
+                <button type="button" class="btn" id="closeLocationsConfigBtn">Close</button>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop">
