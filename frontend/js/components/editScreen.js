@@ -5,17 +5,27 @@
 // Provides consistent structure for all edit screens in the app
 //
 // ARCHITECTURAL PRINCIPLES:
-// 1. Fixed zone structure (form, actions, context, close)
-// 2. Scroll behavior contract (form scrolls, other zones stay visible)
-// 3. DaisyUI-based forms with icon-driven compact design
+// 1. Fixed zone structure with clear visual hierarchy
+// 2. Scroll behavior: only form zone scrolls, all others fixed
+// 3. DaisyUI-based forms with compact design
 // 4. Mobile-first responsive behavior
-// 5. Reusable across different content types
+// 5. Auto-save pattern (onChange callbacks, no save button)
 //
-// ZONE STRUCTURE (top to bottom):
-// - Form Zone: Scrollable content area for all editable fields
-// - Action Zone: Primary/secondary buttons (always visible)
-// - Context Zone: Preview, links, tips, warnings (always visible)
-// - Close Zone: Clear affordance to dismiss (always visible)
+// LAYOUT STRUCTURE (top to bottom):
+// 1. Header (fixed) - Title
+// 2. Separator - Visual divider
+// 3. Form Zone (scrollable) - All editable fields, takes remaining space
+// 4. Separator - Visual divider
+// 5. Context Zone (fixed, variable height) - Preview/tips
+// 6. Action Zone (fixed) - Action buttons
+// 7. Bottom Padding - Spacing from screen edge
+// 8. Close Button (top-right) - Dismiss affordance
+//
+// USAGE:
+// Extend this class and implement:
+// - renderFormContent(): Build form fields
+// - renderContextContent(): Build preview/tips
+// - onChange handler: Auto-save on field changes
 // =================================================================
 
 export class EditScreen {
@@ -85,32 +95,43 @@ export class EditScreen {
                 </button>
             </div>
 
-            <!-- Header -->
+            <!-- Header (fixed) -->
             <div class="edit-screen__header">
                 <h3 class="edit-screen__title">${this.title}</h3>
             </div>
+            
+            <!-- Separator -->
+            <div class="edit-screen__separator"></div>
 
-            <!-- Form Zone (scrollable) -->
+            <!-- Form Zone (scrollable, takes remaining space) -->
             <div class="edit-screen__form-zone">
                 <form class="edit-screen__form" id="${this.id}Form">
                     <!-- Form content will be injected here -->
                 </form>
             </div>
+            
+            <!-- Separator -->
+            <div class="edit-screen__separator"></div>
 
-            <!-- Action Zone (always visible) -->
-            <div class="edit-screen__action-zone">
-                <div class="edit-screen__actions">
-                    <!-- Secondary actions (left) -->
-                    <div class="edit-screen__actions-secondary">
-                        <!-- Optional delete/remove buttons will be added here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Context Zone (always visible, optional content) -->
+            <!-- Context Zone (fixed, variable height) -->
             <div class="edit-screen__context-zone">
                 <!-- Context content (preview, tips, links) will be injected here -->
             </div>
+
+            <!-- Action Zone (fixed) -->
+            <div class="edit-screen__action-zone">
+                <div class="edit-screen__action-dock">
+                    <div class="edit-screen__actions">
+                        <!-- Secondary actions (left) -->
+                        <div class="edit-screen__actions-secondary">
+                            <!-- Optional delete/remove buttons will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom padding -->
+            <div class="edit-screen__bottom-padding"></div>
         `;
 
         document.body.appendChild(this.container);
@@ -212,11 +233,9 @@ export class EditScreen {
         
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = `btn btn-${variant} btn-sm`;
-        button.innerHTML = `
-            ${icon}
-            ${label}
-        `;
+        button.className = `btn btn-${variant} btn-circle btn-lg`;
+        button.title = label; // Tooltip for accessibility
+        button.innerHTML = icon;
         button.addEventListener('click', () => handler(this.currentData));
         
         secondaryZone.appendChild(button);

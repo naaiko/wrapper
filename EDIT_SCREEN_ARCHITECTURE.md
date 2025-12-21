@@ -12,40 +12,49 @@ Dit is geen ad-hoc oplossing, maar een **fundamenteel contract** tussen de UI en
 
 ### 1. **Vaste Zonestructuur**
 
-Elk edit screen heeft altijd dezelfde vier zones, in deze volgorde (van boven naar beneden):
+Elk edit screen heeft altijd dezelfde structuur, in deze volgorde (van boven naar beneden):
 
 ```
 ┌─────────────────────────────────┐
-│   [Handle] [Close Button]       │  ← Sluitzone
-│   TITLE                          │  ← Header
-├─────────────────────────────────┤
+│   TITLE              [X]         │  ← Header (fixed) + Close button
+├─────────────────────────────────┤  ← Separator
 │                                  │
-│   FORMULIER                      │  ← Formulierzone (scrollt)
-│   (alle editvelden)              │
+│   FORMULIER                      │  ← Formulierzone (scrollable)
+│   (alle editvelden)              │     Neemt alle resterende ruimte
 │                                  │
-│   ↓ scroll ↓                     │
+│   ↓ scroll mogelijk ↓            │
 │                                  │
-├─────────────────────────────────┤
-│   CONTEXT                        │  ← Contextzone (altijd zichtbaar)
+├─────────────────────────────────┤  ← Separator
+│   PREVIEW/CONTEXT                │  ← Contextzone (fixed, variabele hoogte)
 │   (preview/tip/waarschuwing)     │
 ├─────────────────────────────────┤
-│   [Cancel]  [Save]               │  ← Actiezone (altijd zichtbaar)
+│   [Delete]  [Other Actions]      │  ← Actiezone (fixed)
+├─────────────────────────────────┤
+│   (bottom padding)               │  ← Padding zone
 └─────────────────────────────────┘
 ```
+
+**Belangrijke kenmerken**:
+- Separators zorgen voor duidelijke visuele scheiding
+- Preview/context heeft variabele hoogte (past zich aan aan content)
+- Actieknoppen staan altijd op dezelfde plek (voorspelbaar)
+- Bottom padding voorkomt dat knoppen tegen de rand kleven
 
 ### 2. **Scroll-gedrag Contract**
 
 Dit gedrag is **niet onderhandelbaar** en geldt voor alle edit screens:
 
-- ✅ **Formulierzone**: mag scrollen (bevat alle editvelden)
+- ✅ **Formulierzone**: scrollt (bevat alle editvelden, neemt resterende ruimte)
+- ❌ **Header**: scrollt NOOIT weg (titel altijd zichtbaar)
+- ❌ **Contextzone**: scrollt NOOIT weg (preview altijd zichtbaar)
 - ❌ **Actiezone**: scrollt NOOIT weg (altijd beschikbaar)
-- ❌ **Contextzone**: scrollt NOOIT weg (altijd zichtbaar)
-- ❌ **Sluitzone**: scrollt NOOIT weg (altijd toegankelijk)
+- ❌ **Close button**: scrollt NOOIT weg (altijd toegankelijk)
 
 **Waarom?** De gebruiker moet altijd kunnen:
-- Opslaan of annuleren (actiezone)
-- Zien wat de impact is (contextzone)
-- Het paneel sluiten (sluitzone)
+- Weten waar ze zijn (header)
+- Zien wat de impact is (contextzone/preview)
+- Acties uitvoeren (actiezone)
+- Het paneel sluiten (close button)
 
 ### 3. **DaisyUI Formulieren**
 
@@ -61,22 +70,16 @@ Alle formuliervelden gebruiken DaisyUI-componenten met deze eigenschappen:
 
 #### Desktop (>1024px)
 - Gecentreerd paneel, max-width 800px (standaard) of 1200px (wide variant)
-- 75% viewport hoogte (standaard)
+- 95vh viewport hoogte (bijna volledig scherm)
 - Afgeronde hoeken boven
 
-#### Tablet (769px - 1024px)
+#### Tablet/Mobiel (<1024px)
 - Full-width paneel
-- 80% viewport hoogte
+- 93vh viewport hoogte
 - Afgeronde hoeken boven
+- Aangepaste padding waar nodig
 
-#### Mobiel (<768px)
-- **Volledig scherm** (100vh)
-- Geen afgeronde hoeken
-- Aangepaste padding
-- Formulieren altijd single-column
-- Actieknoppen kunnen wrappen
-
-**Belangrijk**: Mobiel mag (en moet) het patroon herinterpretren voor betere UX, zolang de kernprincipes behouden blijven.
+**Belangrijk**: De layout blijft consistent over alle schermformaten, alleen sizing en spacing passen aan.
 
 ---
 
@@ -92,7 +95,7 @@ import { EditScreen } from './components/editScreen.js';
 const myEditScreen = new EditScreen({
     id: 'myEditScreen',              // Unieke ID
     title: 'Edit Something',          // Titel in header
-    height: '75vh',                   // Optioneel: custom hoogte
+    height: '93vh',                   // Optioneel: custom hoogte
     
     // Render callbacks
     renderFormContent: (data) => {
@@ -101,20 +104,28 @@ const myEditScreen = new EditScreen({
     },
     
     renderContextContent: (data) => {
-        // Return HTML string voor contextzone
-        return `<div class="alert">...</div>`;
+        // Return HTML string voor contextzone (preview)
+        return `<div class="edit-screen__context-preview">...</div>`;
     },
     
     // Event handlers
-    onSave: async (formData, originalData) => {
-        // Opslag-logica
-        await MyService.update(originalData.id, formData);
+    onChange: async (field, value, data) => {
+        // Auto-save on field change
+        await MyService.update(data.id, { [field]: value });
     },
     
     onCancel: (data) => {
         // Optioneel: cancel-logica
+    },
+    
+    onDelete: async (data) => {
+        // Optioneel: delete-logica
+        await MyService.delete(data.id);
     }
 }).init();
+```
+
+**Belangrijke wijziging**: Geen `onSave` meer - gebruik `onChange` voor auto-save pattern.
 ```
 
 ### Zones in Detail
@@ -173,11 +184,11 @@ renderFormContent: (data) => `
 
 #### 2. Actiezone
 
-**Doel**: Primaire en secundaire acties
+**Doel**: Secundaire acties (primaire actie = auto-save)
 
 **Structuur**:
-- Links: secundaire acties (delete, remove, etc.)
-- Rechts: primaire acties (cancel, save)
+- Links: secundaire acties (delete, duplicate, etc.)
+- **Geen save/cancel buttons** - wijzigingen worden automatisch opgeslagen via onChange
 
 **Secundaire actie toevoegen**:
 
@@ -195,17 +206,30 @@ myEditScreen.addSecondaryAction(
 );
 ```
 
+**Auto-save pattern**:
+```javascript
+// In renderFormContent, attach onChange handlers
+const input = formZone.querySelector('#myField');
+input.addEventListener('change', (e) => {
+    this.triggerChange('fieldName', e.target.value);
+});
+
+// triggerChange() calls the onChange callback passed to constructor
+// onChange saves immediately to database
+```
+
 #### 3. Contextzone
 
 **Doel**: Preview, relevante links, tips, waarschuwingen
 
 **Content is optioneel**, maar de zone is altijd aanwezig in de layout.
+**Variabele hoogte**: past zich aan aan de hoeveelheid content.
 
 **Patterns**:
 
 ```javascript
 renderContextContent: (data) => `
-    <!-- Preview -->
+    <!-- Preview (belangrijkste pattern) -->
     <div class="edit-screen__context-preview">
         <strong>Preview:</strong> ${generatePreview(data)}
     </div>
@@ -229,6 +253,8 @@ renderContextContent: (data) => `
     </a>
 `
 ```
+
+**Spacing**: Context preview heeft automatisch 1.5rem marge bovenaan (vanaf separator).
 
 #### 4. Sluitzone
 
