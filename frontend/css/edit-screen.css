@@ -638,3 +638,123 @@
         width: 95%;
     }
 }
+/* =================================================================
+   CALLY DATE PICKER STYLING
+   ================================================================= */
+
+/* Style Cally calendar to match DaisyUI theme */
+calendar-date {
+    display: block;
+    font-family: inherit;
+    --color-accent: oklch(var(--p));
+    --color-text-on-accent: oklch(var(--pc));
+}
+
+/* Override Cally's CSS custom properties on calendar-month as well */
+calendar-month {
+    --color-accent: oklch(var(--p));
+    --color-text-on-accent: oklch(var(--pc));
+}
+
+calendar-date::part(button) {
+    font-family: inherit;
+    font-size: 0.875rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50% !important;
+    transition: all 0.2s;
+}
+
+calendar-date::part(button):hover:not([aria-pressed="true"]) {
+    background-color: oklch(var(--p) / 0.1) !important;
+}
+
+calendar-date::part(button):focus-visible {
+    outline: 2px solid oklch(var(--p));
+    outline-offset: 2px;
+}
+
+calendar-date::part(day) {
+    color: oklch(var(--bc));
+    border-radius: 50% !important;
+}
+
+calendar-date::part(today) {
+    font-weight: 600;
+    color: oklch(var(--bc) / 0.6);
+}
+
+calendar-date::part(selected) {
+    background-color: oklch(var(--p)) !important;
+    color: oklch(var(--pc)) !important;
+    font-weight: 600;
+}
+
+/* Override Cally's default selected/focused styling with primary colors */
+calendar-month button:is([aria-pressed=true], :focus-visible) {
+    background: oklch(var(--p)) !important;
+    color: oklch(var(--pc)) !important;
+    border-radius: 50% !important;
+}
+
+calendar-month button {
+    border-radius: 50%;
+}
+
+calendar-date::part(outside) {
+    color: oklch(var(--bc) / 0.3);
+}
+
+calendar-date::part(disabled) {
+    color: oklch(var(--bc) / 0.2);
+    cursor: not-allowed;
+}
+
+calendar-date::part(header) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    padding: 0.5rem;
+}
+
+calendar-date::part(heading) {
+    font-weight: 600;
+    font-size: 1rem;
+    color: oklch(var(--bc));
+}
+
+/* Hide the month heading inside calendar-month */
+calendar-month::part(heading) {
+    display: none;
+}
+
+calendar-date::part(previous),
+calendar-date::part(next) {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+}
+
+calendar-date::part(previous):hover,
+calendar-date::part(next):hover {
+    background-color: oklch(var(--b2));
+}
+
+calendar-month table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+calendar-month th {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: oklch(var(--bc) / 0.6);
+}
+
+calendar-month td {
+    padding: 0.25rem;
+}

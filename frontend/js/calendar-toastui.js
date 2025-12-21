@@ -10,6 +10,7 @@ import { calculateScenePlacement, deleteSplitGroupScenes, getSceneShootingDaysCo
 import { renderSceneCard, buildSceneHeading } from './components/sceneCardRenderer.js';
 import demoDataService from './services/demoDataService.js';
 import { SceneEditScreen } from './sceneEditScreen.js';
+import { AddSceneScreen } from './addSceneScreen.js';
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 
@@ -18,6 +19,7 @@ let scenes = [];
 let locations = [];
 let calendar = null;
 let sceneEditScreen = null; // SceneEditScreen component instance
+let addSceneScreen = null; // AddSceneScreen component instance
 let currentSettingsTab = 'scene-headings'; // Currently active tab in settings subdock
 
 // Default times if project doesn't have times configured
@@ -99,8 +101,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('📋 Loaded scenes:', scenes.map(s => ({ id: s.id, number: s.scene_number, time: s.time, conditions: s.conditions })));
     console.log('📍 Loaded locations:', locations.length, 'locations');
     
-    // Initialize SceneEditScreen component
+    // Initialize SceneEditScreen and AddSceneScreen components
     initializeSceneEditScreen();
+    initializeAddSceneScreen();
     
     // Update navbar
     document.querySelector('.navbar .btn-ghost.text-xl').textContent = currentProject.name;
@@ -151,6 +154,23 @@ function initializeSceneEditScreen() {
         },
         
         onSceneUnscheduled: async (sceneId) => {
+            // Reload scenes and refresh UI
+            scenes = await SceneService.getAll(currentProject.id);
+            renderCalendarEvents();
+            renderUnscheduledScenes();
+        }
+    });
+}
+
+function initializeAddSceneScreen() {
+    addSceneScreen = new AddSceneScreen({
+        projectId: currentProject.id,
+        locations: locations,
+        times: getProjectTimes(),
+        conditions: getProjectConditions(),
+        continuityOptions: settingsService.getContinuityOptions(),
+        
+        onSceneAdded: async (newScene) => {
             // Reload scenes and refresh UI
             scenes = await SceneService.getAll(currentProject.id);
             renderCalendarEvents();
@@ -1023,63 +1043,12 @@ function setupEventListeners() {
     
     // Add scene modal
     document.getElementById('addSceneBtn').addEventListener('click', () => {
-        populateAddSceneLocationDropdown();
-        document.getElementById('addSceneModal').showModal();
+        addSceneScreen.open();
     });
     
     document.getElementById('addSceneFromCalendar').addEventListener('click', () => {
-        populateAddSceneLocationDropdown();
-        document.getElementById('addSceneModal').showModal();
+        addSceneScreen.open();
     });
-    
-    document.getElementById('cancelSceneBtn').addEventListener('click', () => {
-        document.getElementById('addSceneModal').close();
-    });
-    
-    document.getElementById('addSceneForm').addEventListener('submit', handleAddScene);
-    
-    // Add Scene modal INT/EXT radio button styling
-    const addIntExtRadios = document.querySelectorAll('input[name="addIntExt"]');
-    if (addIntExtRadios.length > 0) {
-        addIntExtRadios.forEach((radio, index) => {
-            radio.addEventListener('change', () => {
-                const labels = document.querySelectorAll('label:has(input[name="addIntExt"])');
-                labels.forEach(label => {
-                    label.classList.remove('btn-primary');
-                    label.classList.add('btn-outline');
-                });
-                if (radio.checked) {
-                    labels[index].classList.remove('btn-outline');
-                    labels[index].classList.add('btn-primary');
-                }
-            });
-        });
-    }
-    
-    // Add Scene location dropdown - create new location on select
-    const addSceneLocationSelect = document.getElementById('addSceneLocation');
-    if (addSceneLocationSelect) {
-        addSceneLocationSelect.addEventListener('change', async (e) => {
-            if (e.target.value === 'CREATE_NEW') {
-                const name = prompt('Enter new location name:');
-                if (!name) {
-                    e.target.value = '';
-                    return;
-                }
-                
-                try {
-                    const newLocation = await LocationService.create(currentProject.id, { name: name.trim().toUpperCase() });
-                    locations.push(newLocation);
-                    populateAddSceneLocationDropdown();
-                    e.target.value = newLocation.id;
-                } catch (error) {
-                    console.error('Error creating location:', error);
-                    alert('Failed to create location');
-                    e.target.value = '';
-                }
-            }
-        });
-    }
     
     // Settings subdock - replaces old modal
     document.getElementById('settingsBtn').addEventListener('click', toggleSettingsSubdock);
@@ -1156,60 +1125,6 @@ function updateCalendarTitle() {
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                         'July', 'August', 'September', 'October', 'November', 'December'];
     document.getElementById('calendarTitle').textContent = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-}
-
-async function handleAddScene(e) {
-    e.preventDefault();
-    
-    const sceneNumber = document.getElementById('addSceneNumber').value.trim();
-    const locationId = document.getElementById('addSceneLocation').value;
-    const intExtRadio = document.querySelector('input[name="addIntExt"]:checked');
-    const intExt = intExtRadio ? intExtRadio.value : null;
-    
-    if (!sceneNumber || !locationId) {
-        alert('Please fill in scene number and location');
-        return;
-    }
-    
-    try {
-        // Build description from location and int_ext for backward compatibility
-        let description = '';
-        if (locationId) {
-            const location = locations.find(l => l.id === locationId);
-            if (location) {
-                const prefix = intExt ? `${intExt}. ` : '';
-                description = `${prefix}${location.name}`;
-            }
-        }
-        
-        const newScene = await SceneService.create(currentProject.id, {
-            scene_number: sceneNumber,
-            description: description,
-            location_id: locationId,
-            int_ext: intExt,
-            shooting_dates: [],
-        });
-        
-        scenes.push(newScene);
-        renderUnscheduledScenes();
-        
-        // Clear form and close modal
-        document.getElementById('addSceneNumber').value = '';
-        document.getElementById('addSceneLocation').value = '';
-        // Reset INT/EXT radio buttons
-        const addIntExtRadios = document.querySelectorAll('input[name="addIntExt"]');
-        addIntExtRadios.forEach(radio => radio.checked = false);
-        const addIntExtLabels = document.querySelectorAll('label:has(input[name="addIntExt"])');
-        addIntExtLabels.forEach(label => {
-            label.classList.remove('btn-primary');
-            label.classList.add('btn-outline');
-        });
-        
-        document.getElementById('addSceneModal').close();
-    } catch (error) {
-        console.error('Error adding scene:', error);
-        alert('Failed to add scene');
-    }
 }
 
 // =================================================================
