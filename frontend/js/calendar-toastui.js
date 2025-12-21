@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function initializeSceneEditScreen() {
     sceneEditScreen = new SceneEditScreen({
+        projectId: currentProject.id,
         locations: locations,
         times: getProjectTimes(),
         conditions: getProjectConditions(),
@@ -843,17 +844,22 @@ function createUnscheduledSceneCard(scene) {
     card.draggable = true;
     card.classList.add('cursor-move');
     
+    console.log('✅ Card draggable attribute:', card.draggable, 'element:', card);
+    
     // Drag start
     card.addEventListener('dragstart', (e) => {
+        console.log('🎯 DRAGSTART handler fired!', e);
         draggedSceneId = scene.id;
         e.dataTransfer.setData('sceneId', scene.id);
+        e.dataTransfer.setData('text/plain', scene.id); // Add this for compatibility
         e.dataTransfer.effectAllowed = 'move';
         card.classList.add('opacity-50');
         console.log('🔵 DRAG START:', { 
             scene: scene.scene_number, 
             id: scene.id,
             hasLocation: !!scene.location_id,
-            hasIntExt: !!scene.int_ext
+            hasIntExt: !!scene.int_ext,
+            dataTransfer: e.dataTransfer
         });
     });
     
@@ -869,14 +875,45 @@ function createUnscheduledSceneCard(scene) {
 // Setup drop zone on calendar
 function setupCalendarDropZone() {
     const calendarEl = document.getElementById('calendar');
+    const calendarContainer = calendarEl.parentElement; // The flex-1 overflow-hidden p-6 div
     
-    calendarEl.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
+    console.log('🎯 Setting up calendar drop zone on:', {
+        calendar: calendarEl,
+        container: calendarContainer
     });
     
-    calendarEl.addEventListener('drop', async (e) => {
+    // Try document-level listeners to catch everything
+    document.addEventListener('dragover', (e) => {
+        console.log('🌍 Document DRAGOVER - draggedSceneId:', draggedSceneId);
+        
+        // Only handle if we're dragging a scene
+        if (!draggedSceneId) return;
+        
+        // Check if we're over the calendar area
+        const rect = calendarEl.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            console.log('🔄 DRAGOVER calendar area');
+        }
+    });
+    
+    document.addEventListener('drop', async (e) => {
+        // Only handle if we're dragging a scene
+        if (!draggedSceneId) return;
+        
+        // Check if we're over the calendar area
+        const rect = calendarEl.getBoundingClientRect();
+        if (!(e.clientX >= rect.left && e.clientX <= rect.right &&
+              e.clientY >= rect.top && e.clientY <= rect.bottom)) {
+            console.log('⚠️ Drop outside calendar area');
+            return;
+        }
+        
         e.preventDefault();
+        e.stopPropagation();
+        console.log('💧💧💧 DROP EVENT FIRED 💧💧💧');
         
         if (!draggedSceneId) {
             console.log('⚠️ No draggedSceneId on drop');
@@ -1060,28 +1097,6 @@ function setupEventListeners() {
     document.addEventListener('change', (e) => {
         if (e.target.id.startsWith('settingShow')) {
             updateSettingsPreview();
-        }
-    });
-    
-    // Location dropdown - create new location on select
-    document.getElementById('drawerLocationSelect').addEventListener('change', async (e) => {
-        if (e.target.value === 'CREATE_NEW') {
-            const name = prompt('Enter new location name:');
-            if (!name) {
-                e.target.value = '';
-                return;
-            }
-            
-            try {
-                const newLocation = await LocationService.create(currentProject.id, { name: name.trim().toUpperCase() });
-                locations.push(newLocation);
-                renderLocationDropdown();
-                e.target.value = newLocation.id;
-            } catch (error) {
-                console.error('Error creating location:', error);
-                alert('Failed to create location');
-                e.target.value = '';
-            }
         }
     });
     

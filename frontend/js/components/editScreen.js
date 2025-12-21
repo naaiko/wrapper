@@ -100,9 +100,6 @@ export class EditScreen {
             <div class="edit-screen__header">
                 <h3 class="edit-screen__title">${this.title}</h3>
             </div>
-            
-            <!-- Separator -->
-            <div class="edit-screen__separator"></div>
 
             <!-- Form Zone (scrollable, takes remaining space) -->
             <div class="edit-screen__form-zone">

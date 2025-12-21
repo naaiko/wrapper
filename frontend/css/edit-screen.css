@@ -36,6 +36,9 @@
     transform: translateY(100%);
     transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
     
+    /* Prevent blocking pointer events when closed */
+    pointer-events: none;
+    
     /* Default height (can be overridden) */
     height: 93vh;
     max-height: 93vh;
@@ -43,6 +46,7 @@
 
 .edit-screen--open {
     transform: translateY(0);
+    pointer-events: auto;
 }
 
 /* =================================================================
@@ -103,9 +107,14 @@
    ================================================================= */
 
 .edit-screen__header {
-    /* Layout */
-    padding: 2.5rem 1.5rem 1rem 1.5rem;
+    /* Fixed height and positioning */
     flex-shrink: 0;
+    
+    /* Padding - consistent spacing */
+    padding: 2rem 2rem 1rem 2rem;
+    
+    /* Typography */
+    border-bottom: none;
 }
 
 .edit-screen__title {
@@ -123,7 +132,7 @@
     height: 1px;
     background-color: oklch(var(--bc) / 0.1);
     flex-shrink: 0;
-    margin: 0 1.5rem;
+    margin: 0 2rem;
 }
 
 /* =================================================================
@@ -136,8 +145,8 @@
     overflow-y: auto;
     overflow-x: hidden;
     
-    /* Padding */
-    padding: 1.5rem 1.5rem;
+    /* No padding - tabs will handle their own spacing */
+    padding: 0;
     
     /* Smooth scrolling */
     scroll-behavior: smooth;
@@ -176,7 +185,7 @@
 .edit-screen__action-zone {
     /* Layout */
     flex-shrink: 0;
-    padding: 0 1.5rem 1rem 1.5rem;
+    padding: 0 2rem 1rem 2rem;
     
     /* Center the dock */
     display: flex;
@@ -428,15 +437,15 @@
     }
     
     .edit-screen__header {
-        padding: 2rem 1rem 0.75rem 1rem;
+        padding: 2rem 2rem 1rem 2rem;
     }
     
     .edit-screen__form-zone {
-        padding: 0 1rem 1rem 1rem;
+        padding: 0;
     }
     
     .edit-screen__action-zone {
-        padding: 0 1rem 0.75rem 1rem;
+        padding: 0 2rem 1rem 2rem;
     }
     
     .edit-screen__action-dock {
@@ -494,15 +503,15 @@
     
     /* More generous padding on desktop */
     .edit-screen__header {
-        padding: 2.5rem 2rem 1.25rem 2rem;
+        padding: 2rem 2rem 1rem 2rem;
     }
     
     .edit-screen__form-zone {
-        padding: 0 2rem 1.5rem 2rem;
+        padding: 0;
     }
     
     .edit-screen__action-zone {
-        padding: 0 2rem 1.25rem 2rem;
+        padding: 0 2rem 1rem 2rem;
     }
     
     .edit-screen__action-dock {

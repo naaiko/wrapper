@@ -22,6 +22,7 @@ import { buildSceneHeading } from './components/sceneCardRenderer.js';
 
 export class SceneEditScreen {
     constructor(options = {}) {
+        this.projectId = options.projectId;
         this.locations = options.locations || [];
         this.times = options.times || [];
         this.conditions = options.conditions || [];
@@ -63,32 +64,55 @@ export class SceneEditScreen {
         const continuityCols = 3;
         
         return `
-            ${this.renderShootingDatesSection(scene)}
-            
-            <!-- First Row: Scene Number, INT/EXT, Location, Continuity -->
-            <div class="edit-screen__form-row edit-screen__form-row--grid">
-                <!-- Scene Number -->
-                <div class="form-control edit-screen__col-span-${sceneNumCols}">
-                    <label class="label">
-                        <span class="label-text font-semibold">Scene #</span>
-                    </label>
-                    <input 
-                        type="text" 
-                        name="scene_number"
-                        value="${scene?.scene_number || ''}"
-                        class="input input-bordered" 
-                        placeholder="e.g., 1, 2A"
-                        required 
-                    />
+            <!-- Tabs Container -->
+            <div class="px-8">
+                <!-- DaisyUI Tabs -->
+                <div role="tablist" class="tabs tabs-boxed mb-2">
+                    <button type="button" role="tab" class="tab tab-active" data-tab="scene-info">Scene Info</button>
+                    <button type="button" role="tab" class="tab" data-tab="cast">Cast</button>
                 </div>
-                
-                ${features.show_int_ext ? this.renderIntExtSection(scene, intExtCols) : `<div class="edit-screen__col-span-${intExtCols}"></div>`}
-                ${features.show_location ? this.renderLocationSection(scene, locationCols) : `<div class="edit-screen__col-span-${locationCols}"></div>`}
-                ${hasContinuity ? this.renderContinuitySection(scene, continuityCols) : ''}
             </div>
             
-            ${features.show_time ? this.renderTimeSection(scene) : ''}
-            ${features.show_conditions ? this.renderConditionsSection(scene) : ''}
+            <!-- Tab Content Container -->
+            <div class="px-8">
+                <div id="sceneInfoTab" class="tab-panel">
+                    ${this.renderShootingDatesSection(scene)}
+                    
+                    <!-- First Row: Scene Number, INT/EXT, Location, Continuity -->
+                    <div class="edit-screen__form-row edit-screen__form-row--grid">
+                        <!-- Scene Number -->
+                        <div class="form-control edit-screen__col-span-${sceneNumCols}">
+                            <label class="label">
+                                <span class="label-text font-semibold">Scene #</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="scene_number"
+                                value="${scene?.scene_number || ''}"
+                                class="input input-bordered" 
+                                placeholder="e.g., 1, 2A"
+                                required 
+                            />
+                        </div>
+                        
+                        ${features.show_int_ext ? this.renderIntExtSection(scene, intExtCols) : `<div class="edit-screen__col-span-${intExtCols}"></div>`}
+                        ${features.show_location ? this.renderLocationSection(scene, locationCols) : `<div class="edit-screen__col-span-${locationCols}"></div>`}
+                        ${hasContinuity ? this.renderContinuitySection(scene, continuityCols) : ''}
+                    </div>
+                    
+                    <!-- Second Row: Time of Day and Conditions -->
+                    ${features.show_time || features.show_conditions ? `
+                        <div class="edit-screen__form-row edit-screen__form-row--grid">
+                            ${features.show_time ? this.renderTimeSection(scene) : '<div class="edit-screen__col-span-6"></div>'}
+                            ${features.show_conditions ? this.renderConditionsSection(scene) : '<div class="edit-screen__col-span-6"></div>'}
+                        </div>
+                    ` : ''}
+                </div>
+            
+                <div id="castTab" class="tab-panel hidden">
+                    ${this.renderCastSection(scene)}
+                </div>
+            </div>
         `;
     }
     
@@ -127,15 +151,22 @@ export class SceneEditScreen {
         const enabledTimes = this.times.filter(t => t.enabled);
         
         return `
-            <div class="form-control">
+            <div class="form-control edit-screen__col-span-6">
                 <label class="label">
                     <span class="label-text font-semibold">Time of Day</span>
+                    <button 
+                        type="button"
+                        class="btn btn-ghost btn-xs text-base-content/70 hover:bg-secondary hover:text-secondary-content ${!scene?.time ? 'invisible pointer-events-none' : ''}"
+                        data-clear-time
+                    >
+                        Clear
+                    </button>
                 </label>
-                <div class="flex flex-wrap gap-2" id="timeSelector">
+                <div class="flex flex-wrap gap-2 p-3 rounded-lg border border-base-300 bg-base-100 min-h-[3rem]" id="timeSelector">
                     ${enabledTimes.map(time => `
                         <button 
                             type="button"
-                            class="btn btn-sm ${scene?.time === time.id ? 'btn-primary' : 'btn-outline'}"
+                            class="btn btn-sm ${scene?.time === time.id ? 'btn-primary' : 'border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200'}"
                             data-time-id="${time.id}"
                         >
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -145,7 +176,6 @@ export class SceneEditScreen {
                         </button>
                     `).join('')}
                 </div>
-
             </div>
         `;
     }
@@ -158,15 +188,22 @@ export class SceneEditScreen {
         const sceneConditions = scene?.conditions || [];
         
         return `
-            <div class="form-control">
+            <div class="form-control edit-screen__col-span-6">
                 <label class="label">
                     <span class="label-text font-semibold">Conditions</span>
+                    <button 
+                        type="button"
+                        class="btn btn-ghost btn-xs text-base-content/70 hover:bg-secondary hover:text-secondary-content ${sceneConditions.length === 0 ? 'invisible pointer-events-none' : ''}"
+                        data-clear-conditions
+                    >
+                        Clear All
+                    </button>
                 </label>
-                <div class="flex flex-wrap gap-2" id="conditionsSelector">
+                <div class="flex flex-wrap gap-2 p-3 rounded-lg border border-base-300 bg-base-100 min-h-[3rem]" id="conditionsSelector">
                     ${enabledConditions.map(condition => `
                         <button 
                             type="button"
-                            class="btn btn-sm ${sceneConditions.includes(condition.id) ? 'btn-primary' : 'btn-outline'}"
+                            class="btn btn-sm ${sceneConditions.includes(condition.id) ? 'btn-primary' : 'border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200'}"
                             data-condition-id="${condition.id}"
                         >
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -176,7 +213,6 @@ export class SceneEditScreen {
                         </button>
                     `).join('')}
                 </div>
-
             </div>
         `;
     }
@@ -191,6 +227,24 @@ export class SceneEditScreen {
                     <span class="label-text font-semibold">Continuity</span>
                 </label>
                 <div id="continuityDropdownContainer"></div>
+            </div>
+        `;
+    }
+    
+    /**
+     * Render cast section
+     */
+    renderCastSection(scene) {
+        return `
+            <div class="edit-screen__form-row">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Cast Members</span>
+                    </label>
+                    <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
+                        Cast management coming soon...
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -241,6 +295,9 @@ export class SceneEditScreen {
      */
     initializeDropdowns(scene) {
         const features = settingsService.getAllFeatures();
+        
+        // Initialize tab switching
+        this.initializeTabs();
         
         // INT/EXT Dropdown
         if (features.show_int_ext) {
@@ -314,6 +371,42 @@ export class SceneEditScreen {
     }
     
     /**
+     * Initialize tab switching functionality
+     */
+    initializeTabs() {
+        const editScreenElement = document.getElementById('sceneEditScreen');
+        if (!editScreenElement) return;
+        
+        const tabButtons = editScreenElement.querySelectorAll('.tabs button[role="tab"]');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tabId = button.dataset.tab;
+                
+                // Update active states
+                tabButtons.forEach(btn => btn.classList.remove('tab-active'));
+                button.classList.add('tab-active');
+                
+                // Show/hide tab panels - only within this edit screen
+                editScreenElement.querySelectorAll('.tab-panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+                
+                // Map tab IDs to panel IDs
+                const panelMap = {
+                    'scene-info': 'sceneInfoTab',
+                    'cast': 'castTab'
+                };
+                
+                const targetPanel = document.getElementById(panelMap[tabId]);
+                if (targetPanel) {
+                    targetPanel.classList.remove('hidden');
+                }
+            });
+        });
+    }
+    
+    /**
      * Update the preview card with current scene data
      */
     updatePreview(scene) {
@@ -378,10 +471,13 @@ export class SceneEditScreen {
         if (!name) return;
         
         try {
-            const newLocation = await LocationService.create({ name });
+            const newLocation = await LocationService.create(this.projectId, { name });
             
             // Add to locations list
             this.locations.push(newLocation);
+            
+            // Sort locations alphabetically
+            this.locations.sort((a, b) => a.name.localeCompare(b.name));
             
             // Update dropdown options
             const locationOptions = this.locations.map(loc => ({
@@ -389,6 +485,9 @@ export class SceneEditScreen {
                 label: loc.name
             }));
             this.locationDropdown.updateOptions(locationOptions);
+            
+            // Close dropdown if open
+            this.locationDropdown.close();
             
             // Select the new location
             this.locationDropdown.setValue(newLocation.id);
@@ -529,6 +628,14 @@ export class SceneEditScreen {
             });
         });
         
+        // Clear time button
+        const clearTimeBtn = document.querySelector('button[data-clear-time]');
+        if (clearTimeBtn) {
+            clearTimeBtn.addEventListener('click', () => {
+                this.clearTime(scene);
+            });
+        }
+        
         // Condition selector buttons
         const conditionButtons = document.querySelectorAll('#conditionsSelector button[data-condition-id]');
         conditionButtons.forEach(btn => {
@@ -537,6 +644,14 @@ export class SceneEditScreen {
                 this.toggleCondition(conditionId, scene);
             });
         });
+        
+        // Clear conditions button
+        const clearConditionsBtn = document.querySelector('button[data-clear-conditions]');
+        if (clearConditionsBtn) {
+            clearConditionsBtn.addEventListener('click', () => {
+                this.clearConditions(scene);
+            });
+        }
         
         // INT/EXT select dropdown
         const intExtSelect = document.querySelector('select[name="int_ext"]');
@@ -551,17 +666,18 @@ export class SceneEditScreen {
      * Select time (single choice)
      */
     selectTime(timeId, scene) {
-        // Update button states
+        // Update button states immediately
         const buttons = document.querySelectorAll('#timeSelector button[data-time-id]');
         buttons.forEach(btn => {
             if (btn.dataset.timeId === timeId) {
-                btn.classList.remove('btn-outline');
-                btn.classList.add('btn-primary');
+                btn.className = 'btn btn-sm btn-primary';
             } else {
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-outline');
+                btn.className = 'btn btn-sm border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200';
             }
         });
+        
+        // Show clear button if not already visible
+        this.updateTimeClearButton(true);
         
         // Auto-save
         this.handleChange('time', timeId, scene);
@@ -581,20 +697,83 @@ export class SceneEditScreen {
             conditions.push(conditionId);
         }
         
-        // Update button state
+        // Update button state immediately
         const btn = document.querySelector(`#conditionsSelector button[data-condition-id="${conditionId}"]`);
         if (btn) {
             if (conditions.includes(conditionId)) {
-                btn.classList.remove('btn-outline');
-                btn.classList.add('btn-primary');
+                btn.className = 'btn btn-sm btn-primary';
             } else {
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-outline');
+                btn.className = 'btn btn-sm border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200';
             }
         }
         
+        // Update clear button visibility
+        this.updateConditionsClearButton(conditions.length > 0);
+        
         // Auto-save
         this.handleChange('conditions', conditions, scene);
+    }
+    
+    /**
+     * Clear selected time
+     */
+    clearTime(scene) {
+        // Clear all button states immediately
+        const buttons = document.querySelectorAll('#timeSelector button[data-time-id]');
+        buttons.forEach(btn => {
+            btn.className = 'btn btn-sm border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200';
+        });
+        
+        // Hide clear button
+        this.updateTimeClearButton(false);
+        
+        // Auto-save
+        this.handleChange('time', null, scene);
+    }
+    
+    /**
+     * Clear all conditions
+     */
+    clearConditions(scene) {
+        // Clear all button states immediately
+        const buttons = document.querySelectorAll('#conditionsSelector button[data-condition-id]');
+        buttons.forEach(btn => {
+            btn.className = 'btn btn-sm border border-base-300 bg-base-100 text-base-content/70 hover:border-base-content/20 hover:bg-base-200';
+        });
+        
+        // Hide clear button
+        this.updateConditionsClearButton(false);
+        
+        // Auto-save
+        this.handleChange('conditions', [], scene);
+    }
+    
+    /**
+     * Update time clear button visibility
+     */
+    updateTimeClearButton(show) {
+        const btn = document.querySelector('button[data-clear-time]');
+        if (!btn) return;
+        
+        if (show) {
+            btn.classList.remove('invisible', 'pointer-events-none');
+        } else {
+            btn.classList.add('invisible', 'pointer-events-none');
+        }
+    }
+    
+    /**
+     * Update conditions clear button visibility
+     */
+    updateConditionsClearButton(show) {
+        const btn = document.querySelector('button[data-clear-conditions]');
+        if (!btn) return;
+        
+        if (show) {
+            btn.classList.remove('invisible', 'pointer-events-none');
+        } else {
+            btn.classList.add('invisible', 'pointer-events-none');
+        }
     }
     
     /**
