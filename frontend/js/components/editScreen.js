@@ -22,8 +22,8 @@ export class EditScreen {
     constructor(options = {}) {
         this.id = options.id || 'editScreen';
         this.title = options.title || 'Edit';
-        this.height = options.height || '75vh'; // Default height
-        this.onSave = options.onSave || null;
+        this.height = options.height || '85vh'; // Default height
+        this.onChange = options.onChange || null; // Auto-save on change
         this.onCancel = options.onCancel || null;
         this.onDelete = options.onDelete || null;
         
@@ -100,17 +100,6 @@ export class EditScreen {
             <!-- Action Zone (always visible) -->
             <div class="edit-screen__action-zone">
                 <div class="edit-screen__actions">
-                    <!-- Primary actions (right) -->
-                    <div class="edit-screen__actions-primary">
-                        <button type="button" class="btn btn-ghost edit-screen__cancel-btn">Cancel</button>
-                        <button type="submit" form="${this.id}Form" class="btn btn-primary edit-screen__save-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Save
-                        </button>
-                    </div>
-                    
                     <!-- Secondary actions (left) -->
                     <div class="edit-screen__actions-secondary">
                         <!-- Optional delete/remove buttons will be added here -->
@@ -141,16 +130,8 @@ export class EditScreen {
         const closeBtn = this.container.querySelector('.edit-screen__close-btn');
         closeBtn.addEventListener('click', () => this.close());
 
-        // Cancel button
-        const cancelBtn = this.container.querySelector('.edit-screen__cancel-btn');
-        cancelBtn.addEventListener('click', () => this.handleCancel());
-
         // Backdrop click
         this.backdrop.addEventListener('click', () => this.close());
-
-        // Form submit
-        const form = this.formZone;
-        form.addEventListener('submit', (e) => this.handleSubmit(e));
 
         // ESC key to close
         document.addEventListener('keydown', (e) => {
@@ -215,36 +196,12 @@ export class EditScreen {
     }
 
     /**
-     * Handle form submission
+     * Trigger onChange callback for auto-save
      */
-    async handleSubmit(e) {
-        e.preventDefault();
-        
-        if (!this.onSave) {
-            console.warn('No onSave handler defined');
-            return;
+    triggerChange(field, value) {
+        if (this.onChange) {
+            this.onChange(field, value, this.currentData);
         }
-
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-
-        try {
-            await this.onSave(data, this.currentData);
-            this.close();
-        } catch (error) {
-            console.error('Error saving:', error);
-            // Could show error toast here
-        }
-    }
-
-    /**
-     * Handle cancel action
-     */
-    handleCancel() {
-        if (this.onCancel) {
-            this.onCancel(this.currentData);
-        }
-        this.close();
     }
 
     /**

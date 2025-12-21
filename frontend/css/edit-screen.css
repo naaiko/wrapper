@@ -37,8 +37,8 @@
     transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
     
     /* Default height (can be overridden) */
-    height: 75vh;
-    max-height: 75vh;
+    height: 85vh;
+    max-height: 85vh;
 }
 
 .edit-screen--open {
@@ -179,16 +179,9 @@
 .edit-screen__actions {
     /* Flexbox layout for action buttons */
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     gap: 0.5rem;
-}
-
-.edit-screen__actions-primary {
-    /* Primary actions (right side) */
-    display: flex;
-    gap: 0.5rem;
-    margin-left: auto;
 }
 
 .edit-screen__actions-secondary {
@@ -386,6 +379,8 @@
         transform: translateX(-50%) translateY(100%);
         max-width: 800px;
         width: 90%;
+        height: 90vh;
+        max-height: 90vh;
     }
     
     .edit-screen--open {

@@ -30,13 +30,12 @@ export class SceneEditScreen {
         this.onSceneUnscheduled = options.onSceneUnscheduled || null;
         
         // Create the edit screen
-        this.editScreen = new EditScreen({
+        this.editScreen = new EditScreen({   
             id: 'sceneEditScreen',
             title: 'Edit Scene',
-            height: '75vh',
             renderFormContent: (scene) => this.renderForm(scene),
             renderContextContent: (scene) => this.renderContext(scene),
-            onSave: (formData, scene) => this.handleSave(formData, scene)
+            onChange: (field, value, scene) => this.handleChange(field, value, scene)
         }).init();
         
         // Add secondary actions
@@ -142,7 +141,6 @@ export class SceneEditScreen {
                             type="button"
                             class="btn btn-sm ${scene?.time === time.id ? 'btn-primary' : 'btn-outline'}"
                             data-time-id="${time.id}"
-                            onclick="selectTime('${time.id}')"
                         >
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 ${time.icon}
@@ -151,7 +149,7 @@ export class SceneEditScreen {
                         </button>
                     `).join('')}
                 </div>
-                <input type="hidden" name="time" value="${scene?.time || ''}" id="timeInput" />
+
             </div>
         `;
     }
@@ -174,7 +172,6 @@ export class SceneEditScreen {
                             type="button"
                             class="btn btn-sm ${sceneConditions.includes(condition.id) ? 'btn-primary' : 'btn-outline'}"
                             data-condition-id="${condition.id}"
-                            onclick="toggleCondition('${condition.id}')"
                         >
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 ${condition.icon}
@@ -183,7 +180,7 @@ export class SceneEditScreen {
                         </button>
                     `).join('')}
                 </div>
-                <input type="hidden" name="conditions" value="${JSON.stringify(sceneConditions)}" id="conditionsInput" />
+
             </div>
         `;
     }
@@ -263,36 +260,32 @@ export class SceneEditScreen {
     }
     
     /**
-     * Handle save
+     * Handle field change (auto-save)
      */
-    async handleSave(formData, scene) {
-        // Check for CREATE_NEW location
-        if (formData.location_id === 'CREATE_NEW') {
-            // TODO: Show location creation modal
-            alert('Location creation modal would open here');
-            throw new Error('Location creation not yet implemented');
+    async handleChange(field, value, scene) {
+        if (!scene || !scene.id) return;
+        
+        // Build update object
+        const updates = { [field]: value };
+        
+        // Update scene in database
+        await SceneService.update(scene.id, updates);
+        
+        // Update current scene data
+        scene[field] = value;
+        
+        // If this scene is part of a split group, update all scenes in the group
+        if (scene.split_group_id) {
+            // This would need access to all scenes - will be handled by callback
         }
         
-        // Parse conditions from JSON string
-        if (formData.conditions) {
-            try {
-                formData.conditions = JSON.parse(formData.conditions);
-            } catch (e) {
-                formData.conditions = [];
-            }
-        }
-        
-        // Convert empty strings to null
-        if (formData.time === '') formData.time = null;
-        if (formData.continuity === '') formData.continuity = null;
-        
-        // Update scene
-        await SceneService.update(scene.id, formData);
-        
-        // Callback
+        // Trigger callback to refresh UI
         if (this.onSceneUpdated) {
             this.onSceneUpdated(scene.id);
         }
+        
+        // Update context preview
+        this.updateContextPreview(scene);
     }
     
     /**
@@ -371,15 +364,52 @@ export class SceneEditScreen {
     }
     
     /**
+     * Update context preview when scene changes
+     */
+    updateContextPreview(scene) {
+        const contextZone = this.editScreen.container.querySelector('.edit-screen__context-zone');
+        if (contextZone) {
+            contextZone.innerHTML = this.renderContext(scene);
+        }
+    }
+    
+    /**
      * Attach listeners for interactive elements
      */
     attachInteractiveListeners() {
+        const scene = this.editScreen.currentData;
+        if (!scene) return;
+        
+        // Scene number input
+        const sceneNumberInput = document.querySelector('input[name="scene_number"]');
+        if (sceneNumberInput) {
+            sceneNumberInput.addEventListener('change', (e) => {
+                this.handleChange('scene_number', e.target.value, scene);
+            });
+        }
+        
+        // Location select
+        const locationSelect = document.querySelector('select[name="location_id"]');
+        if (locationSelect) {
+            locationSelect.addEventListener('change', (e) => {
+                this.handleChange('location_id', e.target.value || null, scene);
+            });
+        }
+        
+        // Continuity select
+        const continuitySelect = document.querySelector('select[name="continuity"]');
+        if (continuitySelect) {
+            continuitySelect.addEventListener('change', (e) => {
+                this.handleChange('continuity', e.target.value || null, scene);
+            });
+        }
+        
         // Time selector buttons
         const timeButtons = document.querySelectorAll('#timeSelector button[data-time-id]');
         timeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const timeId = btn.dataset.timeId;
-                this.selectTime(timeId);
+                this.selectTime(timeId, scene);
             });
         });
         
@@ -388,15 +418,18 @@ export class SceneEditScreen {
         conditionButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const conditionId = btn.dataset.conditionId;
-                this.toggleCondition(conditionId);
+                this.toggleCondition(conditionId, scene);
             });
         });
         
         // INT/EXT radio buttons
         const intExtRadios = document.querySelectorAll('input[name="int_ext"]');
         intExtRadios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                this.updateIntExtUI();
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.handleChange('int_ext', e.target.value, scene);
+                    this.updateIntExtUI();
+                }
             });
         });
     }
@@ -404,10 +437,7 @@ export class SceneEditScreen {
     /**
      * Select time (single choice)
      */
-    selectTime(timeId) {
-        // Update hidden input
-        document.getElementById('timeInput').value = timeId;
-        
+    selectTime(timeId, scene) {
         // Update button states
         const buttons = document.querySelectorAll('#timeSelector button[data-time-id]');
         buttons.forEach(btn => {
@@ -419,20 +449,16 @@ export class SceneEditScreen {
                 btn.classList.add('btn-outline');
             }
         });
+        
+        // Auto-save
+        this.handleChange('time', timeId, scene);
     }
     
     /**
      * Toggle condition (multi-choice)
      */
-    toggleCondition(conditionId) {
-        const input = document.getElementById('conditionsInput');
-        let conditions = [];
-        
-        try {
-            conditions = JSON.parse(input.value);
-        } catch (e) {
-            conditions = [];
-        }
+    toggleCondition(conditionId, scene) {
+        let conditions = scene.conditions || [];
         
         // Toggle
         const index = conditions.indexOf(conditionId);
@@ -441,9 +467,6 @@ export class SceneEditScreen {
         } else {
             conditions.push(conditionId);
         }
-        
-        // Update hidden input
-        input.value = JSON.stringify(conditions);
         
         // Update button state
         const btn = document.querySelector(`#conditionsSelector button[data-condition-id="${conditionId}"]`);
@@ -456,6 +479,9 @@ export class SceneEditScreen {
                 btn.classList.add('btn-outline');
             }
         }
+        
+        // Auto-save
+        this.handleChange('conditions', conditions, scene);
     }
     
     /**
