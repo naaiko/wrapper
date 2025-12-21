@@ -88,8 +88,8 @@ export class EditScreen {
 
             <!-- Close Zone (top-right) -->
             <div class="edit-screen__close-zone">
-                <button class="btn btn-ghost btn-sm btn-circle edit-screen__close-btn" aria-label="Close">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button class="btn btn-secondary btn-circle btn-sm edit-screen__close-btn" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
@@ -150,6 +150,11 @@ export class EditScreen {
         // Close button
         const closeBtn = this.container.querySelector('.edit-screen__close-btn');
         closeBtn.addEventListener('click', () => this.close());
+
+        // Handle click to close
+        const handle = this.container.querySelector('.edit-screen__handle');
+        handle.addEventListener('click', () => this.close());
+        handle.style.cursor = 'pointer';
 
         // Backdrop click
         this.backdrop.addEventListener('click', () => this.close());
@@ -233,9 +238,11 @@ export class EditScreen {
         
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = `btn btn-${variant} btn-circle btn-lg`;
-        button.title = label; // Tooltip for accessibility
-        button.innerHTML = icon;
+        button.className = `btn btn-${variant} btn-sm`;
+        button.innerHTML = `
+            ${icon}
+            ${label}
+        `;
         button.addEventListener('click', () => handler(this.currentData));
         
         secondaryZone.appendChild(button);

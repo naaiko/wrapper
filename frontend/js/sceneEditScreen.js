@@ -47,57 +47,63 @@ export class SceneEditScreen {
      */
     renderForm(scene) {
         const features = settingsService.getAllFeatures();
+        const hasContinuity = features.show_continuity;
+        
+        // Dynamic column widths based on continuity visibility
+        const sceneNumCols = 2;
+        const intExtCols = 2;
+        const locationCols = 5;
+        const continuityCols = 3;
         
         return `
-            <!-- Scene Number -->
-            <div class="form-control">
-                <label class="label">
-                    <span class="label-text font-semibold">Scene Number</span>
-                </label>
-                <input 
-                    type="text" 
-                    name="scene_number"
-                    value="${scene?.scene_number || ''}"
-                    class="input input-bordered" 
-                    placeholder="e.g., 1, 2A, 15B"
-                    required 
-                />
+            ${this.renderShootingDatesSection(scene)}
+            
+            <!-- First Row: Scene Number, INT/EXT, Location, Continuity -->
+            <div class="edit-screen__form-row edit-screen__form-row--grid">
+                <!-- Scene Number -->
+                <div class="form-control edit-screen__col-span-${sceneNumCols}">
+                    <label class="label">
+                        <span class="label-text font-semibold">Scene #</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="scene_number"
+                        value="${scene?.scene_number || ''}"
+                        class="input input-bordered" 
+                        placeholder="e.g., 1, 2A"
+                        required 
+                    />
+                </div>
+                
+                ${features.show_int_ext ? this.renderIntExtSection(scene, intExtCols) : `<div class="edit-screen__col-span-${intExtCols}"></div>`}
+                ${features.show_location ? this.renderLocationSection(scene, locationCols) : `<div class="edit-screen__col-span-${locationCols}"></div>`}
+                ${hasContinuity ? this.renderContinuitySection(scene, continuityCols) : ''}
             </div>
             
-            ${features.show_int_ext ? this.renderIntExtSection(scene) : ''}
-            ${features.show_location ? this.renderLocationSection(scene) : ''}
             ${features.show_time ? this.renderTimeSection(scene) : ''}
             ${features.show_conditions ? this.renderConditionsSection(scene) : ''}
-            ${features.show_continuity ? this.renderContinuitySection(scene) : ''}
-            ${this.renderShootingDatesSection(scene)}
         `;
     }
     
     /**
-     * Render INT/EXT section
+     * Render INT/EXT section (as dropdown)
      */
-    renderIntExtSection(scene) {
+    renderIntExtSection(scene, cols = 2) {
         const options = ['INT', 'EXT', 'INT/EXT', 'EXT/INT'];
         
         return `
-            <div class="form-control">
+            <div class="form-control edit-screen__col-span-${cols}">
                 <label class="label">
-                    <span class="label-text font-semibold">Interior / Exterior</span>
+                    <span class="label-text font-semibold">INT/EXT</span>
                 </label>
-                <div class="edit-screen__toggle-group" style="grid-template-columns: repeat(4, 1fr);">
+                <select name="int_ext" class="select select-bordered">
+                    <option value="">Select...</option>
                     ${options.map(opt => `
-                        <label class="btn ${scene?.int_ext === opt ? 'btn-primary' : 'btn-outline'}">
-                            <input 
-                                type="radio" 
-                                name="int_ext" 
-                                value="${opt}" 
-                                class="hidden"
-                                ${scene?.int_ext === opt ? 'checked' : ''}
-                            />
-                            <span>${opt}.</span>
-                        </label>
+                        <option value="${opt}" ${scene?.int_ext === opt ? 'selected' : ''}>
+                            ${opt}.
+                        </option>
                     `).join('')}
-                </div>
+                </select>
             </div>
         `;
     }
@@ -105,9 +111,9 @@ export class SceneEditScreen {
     /**
      * Render location section
      */
-    renderLocationSection(scene) {
+    renderLocationSection(scene, cols = 6) {
         return `
-            <div class="form-control">
+            <div class="form-control edit-screen__col-span-${cols}">
                 <label class="label">
                     <span class="label-text font-semibold">Location</span>
                 </label>
@@ -188,9 +194,9 @@ export class SceneEditScreen {
     /**
      * Render continuity section
      */
-    renderContinuitySection(scene) {
+    renderContinuitySection(scene, cols = 3) {
         return `
-            <div class="form-control">
+            <div class="form-control edit-screen__col-span-${cols}">
                 <label class="label">
                     <span class="label-text font-semibold">Continuity</span>
                 </label>
@@ -243,20 +249,40 @@ export class SceneEditScreen {
     renderContext(scene) {
         if (!scene) return '';
         
-        // Build preview of scene heading
-        const heading = buildSceneHeading(scene, {
-            locations: this.locations,
-            times: this.times,
-            settings: settingsService.getAllFeatures(),
-            continuityOptions: this.continuityOptions
-        });
-        
         return `
             <div class="edit-screen__context-preview">
-                <div class="text-xs text-base-content/60 mb-1">Scene Heading Preview:</div>
-                <div class="font-mono font-semibold text-sm">${heading}</div>
+                <div class="text-sm font-semibold mb-3">Scene preview</div>
+                <div id="scenePreviewCard"></div>
             </div>
         `;
+    }
+    
+    /**
+     * Update the preview card with current scene data
+     */
+    updatePreview(scene) {
+        const previewContainer = document.getElementById('scenePreviewCard');
+        if (!previewContainer || !scene) return;
+        
+        // Import renderSceneCard dynamically
+        import('./components/sceneCardRenderer.js').then(module => {
+            const { renderSceneCard } = module;
+            
+            // Clear previous preview
+            previewContainer.innerHTML = '';
+            
+            // Render new preview card
+            const card = renderSceneCard(scene, {
+                locations: this.locations,
+                times: this.times,
+                conditions: this.conditions,
+                settings: settingsService.getAllFeatures(),
+                continuityOptions: this.continuityOptions,
+                hideSplitIndicator: true
+            });
+            
+            previewContainer.appendChild(card);
+        });
     }
     
     /**
@@ -342,6 +368,9 @@ export class SceneEditScreen {
         
         // Add event listeners for interactive buttons after render
         this.attachInteractiveListeners();
+        
+        // Initialize preview card
+        this.updatePreview(scene);
     }
     
     /**
@@ -368,6 +397,8 @@ export class SceneEditScreen {
         const contextZone = this.editScreen.container.querySelector('.edit-screen__context-zone');
         if (contextZone) {
             contextZone.innerHTML = this.renderContext(scene);
+            // Update the preview card
+            this.updatePreview(scene);
         }
     }
     
@@ -420,16 +451,13 @@ export class SceneEditScreen {
             });
         });
         
-        // INT/EXT radio buttons
-        const intExtRadios = document.querySelectorAll('input[name="int_ext"]');
-        intExtRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    this.handleChange('int_ext', e.target.value, scene);
-                    this.updateIntExtUI();
-                }
+        // INT/EXT select dropdown
+        const intExtSelect = document.querySelector('select[name="int_ext"]');
+        if (intExtSelect) {
+            intExtSelect.addEventListener('change', (e) => {
+                this.handleChange('int_ext', e.target.value || null, scene);
             });
-        });
+        }
     }
     
     /**
@@ -480,24 +508,6 @@ export class SceneEditScreen {
         
         // Auto-save
         this.handleChange('conditions', conditions, scene);
-    }
-    
-    /**
-     * Update INT/EXT UI when radio changes
-     */
-    updateIntExtUI() {
-        const labels = document.querySelectorAll('label:has(input[name="int_ext"])');
-        const radios = document.querySelectorAll('input[name="int_ext"]');
-        
-        radios.forEach((radio, index) => {
-            if (radio.checked) {
-                labels[index].classList.remove('btn-outline');
-                labels[index].classList.add('btn-primary');
-            } else {
-                labels[index].classList.remove('btn-primary');
-                labels[index].classList.add('btn-outline');
-            }
-        });
     }
     
     /**

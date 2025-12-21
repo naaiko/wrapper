@@ -23,7 +23,8 @@ export function renderSceneCard(scene, options = {}) {
         conditions = [],
         settings = {},
         continuityOptions = [],
-        highlightClasses = {}
+        highlightClasses = {},
+        hideSplitIndicator = false
     } = options;
 
     const card = document.createElement('div');
@@ -42,7 +43,7 @@ export function renderSceneCard(scene, options = {}) {
 
     // Add visual indicator if scene is part of a split group
     const isSplitScene = !!scene.split_group_id;
-    const splitIndicator = isSplitScene ? `
+    const splitIndicator = (isSplitScene && !hideSplitIndicator) ? `
         <div class="tooltip tooltip-right" data-tip="Part of a split scene group">
             <div class="badge badge-xs badge-outline badge-info flex-shrink-0">🔗</div>
         </div>
