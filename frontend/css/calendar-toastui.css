@@ -130,3 +130,51 @@
 .toastui-calendar-see-more-button:hover {
     background: hsl(var(--b3)) !important;
 }
+
+/* Settings Preview Animations */
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+        transform: scale(1.05);
+    }
+}
+
+@keyframes textGlow {
+    0%, 100% {
+        background-color: rgba(59, 130, 246, 0.2);
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+    }
+    50% {
+        background-color: rgba(59, 130, 246, 0.35);
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    }
+}
+
+.highlight-time-icon {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.highlight-time {
+    display: inline-block;
+    background: rgba(59, 130, 246, 0.2);
+    border-radius: 3px;
+    padding: 0px 3px;
+    animation: textGlow 2s ease-in-out infinite;
+}
+
+.highlight-condition-icon {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Animate actual scene cards when settings are open */
+.settings-active .time-icon-highlight {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.settings-active .condition-icon-highlight {
+    animation: pulseGlow 2s ease-in-out infinite;
+}

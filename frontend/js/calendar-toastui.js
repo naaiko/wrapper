@@ -7,6 +7,8 @@ import { LocationService } from './services/locationService.js';
 import settingsService from './services/settingsService.js';
 import { IconPicker } from './components/iconPicker.js';
 import { calculateScenePlacement, deleteSplitGroupScenes, getSceneShootingDaysCount } from './calendar-scene-placement.js';
+import { renderSceneCard, buildSceneHeading } from './components/sceneCardRenderer.js';
+import demoDataService from './services/demoDataService.js';
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 
@@ -17,6 +19,7 @@ let calendar = null;
 let selectedTime = null; // Currently selected time in drawer
 let selectedConditions = []; // Currently selected conditions in drawer (array)
 let selectedContinuity = null; // Currently selected continuity in drawer
+let currentSettingsTab = 'scene-headings'; // Currently active tab in settings subdock
 
 // Default times if project doesn't have times configured
 const DEFAULT_TIMES = [
@@ -37,63 +40,26 @@ const DEFAULT_CONDITIONS = [
 ];
 
 // =================================================================
-// SCENE HEADING BUILDER
+// SCENE HEADING BUILDER (Wrapper for imported function)
 // =================================================================
 
 /**
  * Build a properly formatted scene heading from scene properties
- * Follows industry standard format: INT./EXT. LOCATION - TIME - CONTINUITY
- * @param {Object} scene - Scene object with properties
- * @returns {string} Formatted scene heading
+ * This is a wrapper around the imported buildSceneHeading function
+ * that provides the necessary context from the calendar view
  */
-function buildSceneHeading(scene) {
-    const parts = [];
-    
-    // INT/EXT prefix
-    if (settingsService.isFeatureEnabled('show_int_ext') && scene.int_ext) {
-        parts.push(scene.int_ext + '.');
-    }
-    
-    // Location
-    if (settingsService.isFeatureEnabled('show_location') && scene.location_id) {
-        const location = locations.find(l => l.id === scene.location_id);
-        if (location) {
-            parts.push(location.name);
-        }
-    }
-    
-    // If we have INT/EXT and/or location, join them
-    let heading = parts.join(' ');
-    
-    // Time of day (after a dash)
-    if (settingsService.isFeatureEnabled('show_time') && scene.time) {
-        const times = currentProject?.times || DEFAULT_TIMES;
-        const timeObj = times.find(t => t.id === scene.time);
-        if (timeObj) {
-            heading += (heading ? ' - ' : '') + timeObj.label.toUpperCase();
-        }
-    }
-    
-    // Continuity (after a dash)
-    if (settingsService.isFeatureEnabled('show_continuity') && scene.continuity) {
-        const continuityOptions = settingsService.getContinuityOptions();
-        const continuityObj = continuityOptions.find(c => c.id === scene.continuity);
-        if (continuityObj) {
-            heading += (heading ? ' - ' : '') + continuityObj.label;
-        }
-    }
-    
-    // Fall back to description if no heading built
-    if (!heading && scene.description) {
-        heading = scene.description;
-    }
-    
-    // Ultimate fallback to scene number
-    if (!heading) {
-        heading = `Scene ${scene.scene_number}`;
-    }
-    
-    return heading;
+function buildSceneHeadingForCalendar(scene) {
+    return buildSceneHeading(scene, {
+        locations: locations,
+        times: getProjectTimes(),
+        settings: {
+            show_int_ext: settingsService.isFeatureEnabled('show_int_ext'),
+            show_location: settingsService.isFeatureEnabled('show_location'),
+            show_time: settingsService.isFeatureEnabled('show_time'),
+            show_continuity: settingsService.isFeatureEnabled('show_continuity')
+        },
+        continuityOptions: settingsService.getContinuityOptions()
+    });
 }
 
 // =================================================================
@@ -338,7 +304,7 @@ function sceneToEvent(scene) {
     }
     
     // Format title with INT./EXT. prefix and location
-    const displayTitle = buildSceneHeading(scene);
+    const displayTitle = buildSceneHeadingForCalendar(scene);
     
     return {
         id: scene.id,
@@ -998,98 +964,25 @@ function renderUnscheduledScenes() {
 }
 
 function createUnscheduledSceneCard(scene) {
-    const card = document.createElement('div');
-    card.className = 'card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-move';
-    card.style.borderRadius = '6px';
-    card.draggable = true;
-    card.dataset.sceneId = scene.id;
-    
     console.log('🎬 Creating card for scene:', scene.scene_number, 'time:', scene.time, 'conditions:', scene.conditions);
     
-    // Add visual indicator if scene is part of a split group
-    const isSplitScene = !!scene.split_group_id;
-    const splitIndicator = isSplitScene ? `
-        <div class="tooltip tooltip-right" data-tip="Part of a split scene group">
-            <div class="badge badge-xs badge-outline badge-info flex-shrink-0">🔗</div>
-        </div>
-    ` : '';
-    
-    // Get time icon if available
-    let timeIconHtml = '';
-    if (scene.time) {
-        const times = getProjectTimes();
-        const timeData = times.find(t => t.id === scene.time);
-        console.log('⏰ Time data found:', timeData);
-        if (timeData) {
-            timeIconHtml = `
-                <div class="flex-shrink-0 flex items-center justify-center" style="width: 25px; height: 25px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.1);">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" style="width: 15px; height: 15px; color: rgba(0, 0, 0, 0.7);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        ${timeData.icon}
-                    </svg>
-                </div>
-            `;
-        }
-    }
-    
-    // Get condition icons if available
-    let conditionIconsHtml = '';
-    if (scene.conditions && scene.conditions.length > 0) {
-        const conditions = getProjectConditions();
-        const icons = scene.conditions
-            .map(condId => {
-                const condData = conditions.find(c => c.id === condId);
-                return condData ? condData.icon : null;
-            })
-            .filter(icon => icon !== null);
-        
-        if (icons.length > 0) {
-            const isSingle = icons.length === 1;
-            const iconSvgs = icons.map(icon => `
-                <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    ${icon}
-                </svg>
-            `).join('');
-            const containerStyle = isSingle 
-                ? 'width: 24px; height: 24px; border-radius: 50%;' 
-                : 'padding: 3px 8px; border-radius: 12px;';
-            conditionIconsHtml = `
-                <div class="flex-shrink-0 flex items-center justify-center gap-1" style="${containerStyle} background-color: rgba(0, 0, 0, 0.05);">
-                    ${iconSvgs}
-                </div>
-            `;
-        }
-    }
-    
-    // Get location name if available
-    let locationName = '';
-    if (scene.location_id) {
-        const location = locations.find(l => l.id === scene.location_id);
-        if (location) {
-            locationName = location.name;
-        }
-    }
-    
-    // Format title with INT./EXT. prefix and location
-    const displayTitle = buildSceneHeading(scene);
-    console.log('📝 Scene heading built:', displayTitle, 'for scene:', scene.scene_number, 'scene data:', {
-        location_id: scene.location_id,
-        int_ext: scene.int_ext,
-        time: scene.time,
-        continuity: scene.continuity,
-        description: scene.description
+    // Use the reusable scene card renderer
+    const card = renderSceneCard(scene, {
+        locations: locations,
+        times: getProjectTimes(),
+        conditions: getProjectConditions(),
+        settings: {
+            show_int_ext: settingsService.isFeatureEnabled('show_int_ext'),
+            show_location: settingsService.isFeatureEnabled('show_location'),
+            show_time: settingsService.isFeatureEnabled('show_time'),
+            show_continuity: settingsService.isFeatureEnabled('show_continuity')
+        },
+        continuityOptions: settingsService.getContinuityOptions()
     });
     
-    card.innerHTML = `
-        <div class="card-body p-1.5">
-            <div class="flex items-center gap-2">
-                <div class="badge badge-primary badge-xs flex-shrink-0" style="padding: 2px 6px; font-size: 10px;">${scene.scene_number}</div>
-                ${splitIndicator}
-                <p class="text-xs flex-1 line-clamp-2 text-base-content/80">${displayTitle}</p>
-                ${timeIconHtml}
-                ${conditionIconsHtml}
-            </div>
-        </div>
-    `;
+    // Make it draggable
+    card.draggable = true;
+    card.classList.add('cursor-move');
     
     // Drag start
     card.addEventListener('dragstart', (e) => {
@@ -1292,46 +1185,23 @@ function setupEventListeners() {
         });
     }
     
-    // Config button
-    document.getElementById('configBtn').addEventListener('click', openTimeConfig);
-    document.getElementById('closeTimeConfigBtn').addEventListener('click', () => {
-        document.getElementById('timeConfigModal').close();
-    });
-    document.getElementById('addTimeForm').addEventListener('submit', handleAddTime);
+    // Settings subdock - replaces old modal
+    document.getElementById('settingsBtn').addEventListener('click', toggleSettingsSubdock);
+    document.getElementById('settingsBackdrop').addEventListener('click', closeSettingsSubdock);
     
-    // Conditions config button
-    document.getElementById('conditionsConfigBtn').addEventListener('click', openConditionsConfig);
-    document.getElementById('closeConditionsConfigBtn').addEventListener('click', () => {
-        document.getElementById('conditionsConfigModal').close();
+    // Tab switching
+    document.querySelectorAll('[role="tab"]').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const tabName = e.target.dataset.tab;
+            switchSettingsTab(tabName);
+        });
     });
-    document.getElementById('addConditionForm').addEventListener('submit', handleAddCondition);
-    
-    // Locations config button
-    console.log('🔍 Setting up locations config listeners');
-    console.log('🔍 openLocationsConfig function exists?', typeof openLocationsConfig);
-    console.log('🔍 handleAddLocation function exists?', typeof handleAddLocation);
-    document.getElementById('locationsConfigBtn').addEventListener('click', () => {
-        console.log('🔍 Locations config button clicked');
-        openLocationsConfig();
-    });
-    document.getElementById('closeLocationsConfigBtn').addEventListener('click', () => {
-        document.getElementById('locationsConfigModal').close();
-    });
-    document.getElementById('addLocationForm').addEventListener('submit', (e) => {
-        console.log('🔍 Add location form submitted');
-        handleAddLocation(e);
-    });
-    
-    // Settings modal
-    document.getElementById('settingsBtn').addEventListener('click', openSettings);
-    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-        document.getElementById('settingsModal').close();
-    });
-    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
     
     // Settings preview update
-    ['settingShowIntExt', 'settingShowLocation', 'settingShowTime', 'settingShowConditions', 'settingShowContinuity'].forEach(id => {
-        document.getElementById(id).addEventListener('change', updateSettingsPreview);
+    document.addEventListener('change', (e) => {
+        if (e.target.id.startsWith('settingShow')) {
+            updateSettingsPreview();
+        }
     });
     
     // Location dropdown - create new location on select
@@ -1396,42 +1266,6 @@ function setupEventListeners() {
                 labels[index].classList.add('btn-primary');
             }
         });
-    });
-    
-    // Icon picker button (time)
-    document.getElementById('chooseIconBtn').addEventListener('click', () => {
-        const picker = new IconPicker((selectedIcon) => {
-            // Set the hidden input value
-            document.getElementById('newTimeIcon').value = selectedIcon.path;
-            
-            // Update the icon in the round button
-            const svgElement = document.getElementById('selectedIconSvg');
-            svgElement.innerHTML = selectedIcon.path;
-            
-            // Change button style to show it's selected
-            const btn = document.getElementById('chooseIconBtn');
-            btn.classList.remove('btn-outline');
-            btn.classList.add('btn-primary');
-        });
-        picker.open();
-    });
-    
-    // Icon picker button (conditions)
-    document.getElementById('chooseConditionIconBtn').addEventListener('click', () => {
-        const picker = new IconPicker((selectedIcon) => {
-            // Set the hidden input value
-            document.getElementById('newConditionIcon').value = selectedIcon.path;
-            
-            // Update the icon in the round button
-            const svgElement = document.getElementById('selectedConditionIconSvg');
-            svgElement.innerHTML = selectedIcon.path;
-            
-            // Change button style to show it's selected
-            const btn = document.getElementById('chooseConditionIconBtn');
-            btn.classList.remove('btn-outline');
-            btn.classList.add('btn-primary');
-        });
-        picker.open();
     });
     
     // Drawer controls
@@ -1712,23 +1546,130 @@ function renderTimeSelector() {
 }
 
 // =================================================================
-// SETTINGS MODAL
+// SETTINGS SUBDOCK
 // =================================================================
 
-function openSettings() {
-    // Populate current settings
-    const features = settingsService.getAllFeatures();
-    document.getElementById('settingShowIntExt').checked = features.show_int_ext;
-    document.getElementById('settingShowLocation').checked = features.show_location;
-    document.getElementById('settingShowTime').checked = features.show_time;
-    document.getElementById('settingShowConditions').checked = features.show_conditions;
-    document.getElementById('settingShowContinuity').checked = features.show_continuity;
+function toggleSettingsSubdock() {
+    const subdock = document.getElementById('settingsSubdock');
+    const isOpen = subdock.classList.contains('opacity-100');
     
-    updateSettingsPreview();
-    document.getElementById('settingsModal').showModal();
+    if (isOpen) {
+        closeSettingsSubdock();
+    } else {
+        openSettingsSubdock();
+    }
+}
+
+function openSettingsSubdock() {
+    const subdock = document.getElementById('settingsSubdock');
+    const backdrop = document.getElementById('settingsBackdrop');
+    
+    subdock.classList.remove('opacity-0', 'pointer-events-none');
+    subdock.classList.add('opacity-100');
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100');
+    
+    // Start with scene headings tab
+    switchSettingsTab('scene-headings');
+}
+
+function closeSettingsSubdock() {
+    const subdock = document.getElementById('settingsSubdock');
+    const backdrop = document.getElementById('settingsBackdrop');
+    
+    subdock.classList.add('opacity-0', 'pointer-events-none');
+    subdock.classList.remove('opacity-100');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+    backdrop.classList.remove('opacity-100');
+}
+
+function switchSettingsTab(tabName) {
+    currentSettingsTab = tabName;
+    
+    // Update tab buttons
+    document.querySelectorAll('[role="tab"]').forEach(tab => {
+        if (tab.dataset.tab === tabName) {
+            tab.classList.add('tab-active');
+        } else {
+            tab.classList.remove('tab-active');
+        }
+    });
+    
+    // Load tab content
+    const contentContainer = document.getElementById('settingsTabContent');
+    let template;
+    
+    switch (tabName) {
+        case 'scene-headings':
+            template = document.getElementById('sceneHeadingsTabTemplate');
+            contentContainer.innerHTML = template.innerHTML;
+            
+            // Populate current settings
+            const features = settingsService.getAllFeatures();
+            document.getElementById('settingShowIntExt').checked = features.show_int_ext;
+            document.getElementById('settingShowLocation').checked = features.show_location;
+            document.getElementById('settingShowTime').checked = features.show_time;
+            document.getElementById('settingShowConditions').checked = features.show_conditions;
+            document.getElementById('settingShowContinuity').checked = features.show_continuity;
+            
+            updateSettingsPreview();
+            
+            // Auto-save on toggle change
+            ['settingShowIntExt', 'settingShowLocation', 'settingShowTime', 'settingShowConditions', 'settingShowContinuity'].forEach(id => {
+                document.getElementById(id).addEventListener('change', async () => {
+                    updateSettingsPreview();
+                    await saveSettings();
+                });
+            });
+            
+            // Attach close button listener
+            document.getElementById('closeSubdockBtn').addEventListener('click', closeSettingsSubdock);
+            break;
+            
+        case 'time-settings':
+            template = document.getElementById('timeSettingsTabTemplate');
+            contentContainer.innerHTML = template.innerHTML;
+            
+            // Render times and setup listeners
+            renderTimesList();
+            updateTimePreview();
+            document.getElementById('addTimeForm').addEventListener('submit', handleAddTime);
+            document.getElementById('chooseIconBtn').addEventListener('click', () => {
+                const picker = new IconPicker((icon) => {
+                    document.getElementById('selectedIconSvg').innerHTML = icon.path;
+                    document.getElementById('newTimeIcon').value = icon.path;
+                });
+                picker.open();
+            });
+            // Attach close button listener
+            document.getElementById('closeSubdockBtn').addEventListener('click', closeSettingsSubdock);
+            break;
+            
+        case 'conditions-settings':
+            template = document.getElementById('conditionsSettingsTabTemplate');
+            contentContainer.innerHTML = template.innerHTML;
+            
+            // Render conditions and setup listeners
+            renderConditionsList();
+            updateConditionsPreview();
+            document.getElementById('addConditionForm').addEventListener('submit', handleAddCondition);
+            document.getElementById('chooseConditionIconBtn').addEventListener('click', () => {
+                const picker = new IconPicker((icon) => {
+                    document.getElementById('selectedConditionIconSvg').innerHTML = icon.path;
+                    document.getElementById('newConditionIcon').value = icon.path;
+                });
+                picker.open();
+            });
+            // Attach close button listener
+            document.getElementById('closeSubdockBtn').addEventListener('click', closeSettingsSubdock);
+            break;
+    }
 }
 
 function updateSettingsPreview() {
+    const previewElement = document.getElementById('settingsPreview');
+    if (!previewElement) return;
+    
     const example = {
         int_ext: document.getElementById('settingShowIntExt').checked ? 'INT' : null,
         location_id: document.getElementById('settingShowLocation').checked ? 'COFFEE SHOP' : null,
@@ -1744,7 +1685,7 @@ function updateSettingsPreview() {
     if (example.time) heading += (heading ? ' - ' : '') + 'DAY';
     if (example.continuity) heading += (heading ? ' - ' : '') + 'CONTINUOUS';
     
-    document.getElementById('settingsPreview').textContent = heading || '(no components enabled)';
+    previewElement.textContent = heading || '(no components enabled)';
 }
 
 async function saveSettings() {
@@ -1762,22 +1703,100 @@ async function saveSettings() {
         // Refresh UI
         renderCalendarEvents();
         renderUnscheduledScenes();
-        
-        document.getElementById('settingsModal').close();
     } catch (error) {
         console.error('❌ Error saving settings:', error);
         alert('Failed to save settings');
     }
 }
 
+function updateTimePreview() {
+    const previewContainer = document.getElementById('timePreview');
+    if (!previewContainer) return;
+    
+    const times = getProjectTimes();
+    const enabledTime = times.find(t => t.enabled);
+    
+    if (!enabledTime) {
+        previewContainer.innerHTML = '<div class="text-center p-4 text-base-content/50 italic">No times enabled</div>';
+        return;
+    }
+    
+    // Get demo scene and location
+    const demoScene = demoDataService.getMaximalDemoScene();
+    const demoLocation = demoDataService.getDemoLocation();
+    
+    // Set the demo scene to use the enabled time
+    demoScene.time = enabledTime.id;
+    
+    // Clear container
+    previewContainer.innerHTML = '';
+    
+    // Render actual scene card
+    const sceneCard = renderSceneCard(demoScene, {
+        locations: [demoLocation],
+        times: times,
+        conditions: getProjectConditions(),
+        settings: {
+            show_int_ext: settingsService.isFeatureEnabled('show_int_ext'),
+            show_location: settingsService.isFeatureEnabled('show_location'),
+            show_time: settingsService.isFeatureEnabled('show_time'),
+            show_continuity: settingsService.isFeatureEnabled('show_continuity')
+        },
+        continuityOptions: settingsService.getContinuityOptions(),
+        highlightClasses: {
+            timeIcon: 'highlight-time-icon',
+            timeLabel: 'highlight-time'
+        }
+    });
+    
+    previewContainer.appendChild(sceneCard);
+}
+
+function updateConditionsPreview() {
+    const previewContainer = document.getElementById('conditionsPreview');
+    if (!previewContainer) return;
+    
+    const conditions = getProjectConditions();
+    const enabledConditions = conditions.filter(c => c.enabled);
+    
+    if (enabledConditions.length === 0) {
+        previewContainer.innerHTML = '<div class="text-center p-4 text-base-content/50 italic">No conditions enabled</div>';
+        return;
+    }
+    
+    // Get demo scene and location
+    const demoScene = demoDataService.getMaximalDemoScene();
+    const demoLocation = demoDataService.getDemoLocation();
+    
+    // Set the demo scene to use enabled conditions
+    demoScene.conditions = enabledConditions.map(c => c.id);
+    
+    // Clear container
+    previewContainer.innerHTML = '';
+    
+    // Render actual scene card
+    const sceneCard = renderSceneCard(demoScene, {
+        locations: [demoLocation],
+        times: getProjectTimes(),
+        conditions: conditions,
+        settings: {
+            show_int_ext: settingsService.isFeatureEnabled('show_int_ext'),
+            show_location: settingsService.isFeatureEnabled('show_location'),
+            show_time: settingsService.isFeatureEnabled('show_time'),
+            show_continuity: settingsService.isFeatureEnabled('show_continuity')
+        },
+        continuityOptions: settingsService.getContinuityOptions(),
+        highlightClasses: {
+            conditionIcon: 'highlight-condition-icon'
+        }
+    });
+    
+    previewContainer.appendChild(sceneCard);
+}
+
 // =================================================================
 // TIME CONFIGURATION
 // =================================================================
-
-async function openTimeConfig() {
-    renderTimesList();
-    document.getElementById('timeConfigModal').showModal();
-}
 
 function renderTimesList() {
     const container = document.getElementById('timesList');
@@ -1871,6 +1890,7 @@ window.toggleTime = async function(index) {
     const times = [...getProjectTimes()];
     times[index].enabled = !times[index].enabled;
     await updateProjectTimes(times);
+    updateTimePreview();
 };
 
 window.deleteTime = async function(index) {
@@ -1878,6 +1898,7 @@ window.deleteTime = async function(index) {
     const times = [...getProjectTimes()];
     times.splice(index, 1);
     await updateProjectTimes(times);
+    updateTimePreview();
 };
 
 async function updateProjectTimes(times) {
@@ -1928,6 +1949,9 @@ async function handleAddTime(e) {
     btn.classList.add('btn-outline');
     const svgElement = document.getElementById('selectedIconSvg');
     svgElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />';
+    
+    // Update preview
+    updateTimePreview();
 }
 
 // =================================================================
@@ -1985,11 +2009,6 @@ function renderConditionsSelector() {
         };
         container.appendChild(clearBtn);
     }
-}
-
-async function openConditionsConfig() {
-    renderConditionsList();
-    document.getElementById('conditionsConfigModal').showModal();
 }
 
 function renderConditionsList() {
@@ -2084,6 +2103,7 @@ window.toggleCondition = async function(index) {
     const conditions = [...getProjectConditions()];
     conditions[index].enabled = !conditions[index].enabled;
     await updateProjectConditions(conditions);
+    updateConditionsPreview();
 };
 
 window.deleteCondition = async function(index) {
@@ -2091,6 +2111,7 @@ window.deleteCondition = async function(index) {
     const conditions = [...getProjectConditions()];
     conditions.splice(index, 1);
     await updateProjectConditions(conditions);
+    updateConditionsPreview();
 };
 
 async function updateProjectConditions(conditions) {
@@ -2141,6 +2162,9 @@ async function handleAddCondition(e) {
     btn.classList.add('btn-outline');
     const svgElement = document.getElementById('selectedConditionIconSvg');
     svgElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />';
+    
+    // Update preview
+    updateConditionsPreview();
 }
 
 // =================================================================

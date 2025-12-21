@@ -94,5 +94,93 @@ Then visit `http://localhost:8000`
 
 ---
 
+## Development Guidelines
+
+### UI Framework Philosophy
+
+**Always use DaisyUI components** for UI elements. DaisyUI is the way to go for:
+- Buttons, modals, drawers, tabs, forms
+- Consistent styling across the application
+- Built-in accessibility and responsive design
+- Semantic component names that improve code readability
+
+When DaisyUI doesn't have what you need, extend with Tailwind utilities, but always check DaisyUI first.
+
+### User Experience Philosophy: Immersive & Immediate
+
+**Minimize friction - Auto-save by default**
+
+Actions should be **immediate and direct** unless they are:
+- **Destructive**: Deleting data permanently
+- **Irreversible**: Cannot be undone
+- **Critical**: Requires user confirmation for safety
+
+**DO auto-save:**
+- ✅ Toggle switches (feature flags, visibility settings)
+- ✅ Dropdown selections
+- ✅ Adding items to lists
+- ✅ Reordering items via drag & drop
+- ✅ Editing text fields (on blur or after short delay)
+- ✅ Checkbox changes
+
+**DO ask for confirmation:**
+- ⚠️ Delete buttons (show modal: "Are you sure?")
+- ⚠️ Permanent changes that affect multiple items
+- ⚠️ Actions that cannot be undone
+
+**Example: Settings Management**
+- Scene heading toggles → Auto-save on change
+- Add time of day → Save immediately after form submit
+- Delete time → Show confirmation modal first
+- Reorder times → Auto-save new order
+
+This creates an **immersive, seamless experience** where users feel in control without constant interruption.
+
+### Self-Guided Learning: Show, Don't Just Tell
+
+**Use live previews to educate users in context**
+
+Users learn best when they can immediately see the impact of their actions. Always include visual previews that show:
+- **Where** the setting will appear in the UI
+- **How** it will look in the actual application
+- **What** the user is configuring
+
+**Implementation examples:**
+
+**Scene Headings Settings:**
+```
+Preview: INT. COFFEE SHOP - DAY - CONTINUOUS
+         ↑ Shows exactly how the heading appears on scene cards
+```
+
+**Time of Day Settings:**
+```
+Preview on Scene Card:
+  [☀️ Icon] DAY
+  ↑ Shows the icon + label as it appears on actual scenes
+```
+
+**Conditions Settings:**
+```
+Preview on Scene Card:
+  [🌤️ Icon] SUNNY
+  ↑ Shows how weather conditions display on scenes
+```
+
+**Benefits:**
+- ✅ Users immediately understand where to find features
+- ✅ Reduces need for external documentation
+- ✅ Builds confidence through visual feedback
+- ✅ Creates a self-guided, intuitive experience
+
+**When to add previews:**
+- Settings that affect visual appearance
+- Configuration that impacts multiple locations
+- Any feature where "where does this show up?" is unclear
+
+This creates a **user-friendly, self-guiding platform** that takes time to show and explain, making the learning curve smooth and natural.
+
+---
+
 **Last Updated**: December 2025  
 **Status**: MVP / Prototype Phase
