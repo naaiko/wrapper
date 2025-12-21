@@ -4,6 +4,7 @@
 
 import { SceneService } from './services/sceneService.js';
 import { LocationService } from './services/locationService.js';
+import settingsService from './services/settingsService.js';
 import { IconPicker } from './components/iconPicker.js';
 import { calculateScenePlacement, deleteSplitGroupScenes, getSceneShootingDaysCount } from './calendar-scene-placement.js';
 
@@ -15,6 +16,7 @@ let locations = [];
 let calendar = null;
 let selectedTime = null; // Currently selected time in drawer
 let selectedConditions = []; // Currently selected conditions in drawer (array)
+let selectedContinuity = null; // Currently selected continuity in drawer
 
 // Default times if project doesn't have times configured
 const DEFAULT_TIMES = [
@@ -33,6 +35,66 @@ const DEFAULT_CONDITIONS = [
     { id: 'hot', label: 'Hot', icon: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>', enabled: true },
     { id: 'chilly', label: 'Chilly', icon: '<path d="M2 12h20"/><path d="M12 2v20"/><path d="m4.93 4.93 14.14 14.14"/><path d="m4.93 19.07 14.14-14.14"/>', enabled: true },
 ];
+
+// =================================================================
+// SCENE HEADING BUILDER
+// =================================================================
+
+/**
+ * Build a properly formatted scene heading from scene properties
+ * Follows industry standard format: INT./EXT. LOCATION - TIME - CONTINUITY
+ * @param {Object} scene - Scene object with properties
+ * @returns {string} Formatted scene heading
+ */
+function buildSceneHeading(scene) {
+    const parts = [];
+    
+    // INT/EXT prefix
+    if (settingsService.isFeatureEnabled('show_int_ext') && scene.int_ext) {
+        parts.push(scene.int_ext + '.');
+    }
+    
+    // Location
+    if (settingsService.isFeatureEnabled('show_location') && scene.location_id) {
+        const location = locations.find(l => l.id === scene.location_id);
+        if (location) {
+            parts.push(location.name);
+        }
+    }
+    
+    // If we have INT/EXT and/or location, join them
+    let heading = parts.join(' ');
+    
+    // Time of day (after a dash)
+    if (settingsService.isFeatureEnabled('show_time') && scene.time) {
+        const times = currentProject?.times || DEFAULT_TIMES;
+        const timeObj = times.find(t => t.id === scene.time);
+        if (timeObj) {
+            heading += (heading ? ' - ' : '') + timeObj.label.toUpperCase();
+        }
+    }
+    
+    // Continuity (after a dash)
+    if (settingsService.isFeatureEnabled('show_continuity') && scene.continuity) {
+        const continuityOptions = settingsService.getContinuityOptions();
+        const continuityObj = continuityOptions.find(c => c.id === scene.continuity);
+        if (continuityObj) {
+            heading += (heading ? ' - ' : '') + continuityObj.label;
+        }
+    }
+    
+    // Fall back to description if no heading built
+    if (!heading && scene.description) {
+        heading = scene.description;
+    }
+    
+    // Ultimate fallback to scene number
+    if (!heading) {
+        heading = `Scene ${scene.scene_number}`;
+    }
+    
+    return heading;
+}
 
 // =================================================================
 // INITIALIZATION
@@ -62,6 +124,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     currentProject = data;
     
+    // Load project settings
+    await settingsService.loadSettings(currentProject.id);
+    console.log('⚙️ Settings loaded:', settingsService.getAllFeatures());
+    
     // Load scenes and locations
     scenes = await SceneService.getAll(currentProject.id);
     locations = await LocationService.getAll(currentProject.id);
@@ -80,6 +146,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Setup event listeners
     setupEventListeners();
+    
+    // Listen for settings changes to update UI visibility
+    window.addEventListener('settingsChanged', (event) => {
+        console.log('⚙️ Settings changed, updating UI');
+        updateDrawerVisibility();
+        renderCalendarEvents();
+        renderUnscheduledScenes();
+    });
 });
 
 // =================================================================
@@ -264,8 +338,7 @@ function sceneToEvent(scene) {
     }
     
     // Format title with INT./EXT. prefix and location
-    const intExtPrefix = scene.int_ext ? `${scene.int_ext}. - ` : '';
-    const displayTitle = locationName ? `${intExtPrefix}${locationName}` : scene.description || '';
+    const displayTitle = buildSceneHeading(scene);
     
     return {
         id: scene.id,
@@ -661,6 +734,9 @@ function openSceneDrawer(event) {
     // Set selected conditions (copy array to avoid reference issues)
     selectedConditions = scene.conditions ? [...scene.conditions] : [];
     
+    // Set selected continuity
+    selectedContinuity = scene.continuity || null;
+    
     // Populate editable fields
     document.getElementById('drawerSceneNumberInput').value = scene.scene_number;
     
@@ -675,6 +751,12 @@ function openSceneDrawer(event) {
     
     // Render conditions selector
     renderConditionsSelector();
+    
+    // Render continuity selector
+    renderContinuitySelector();
+    
+    // Update field visibility based on settings
+    updateDrawerVisibility();
     
     // Format dates (read-only)
     const dates = scene.shooting_dates || [];
@@ -710,38 +792,30 @@ function closeSceneDrawer() {
 }
 
 function updateIntExtToggle(value) {
-    const intBtn = document.getElementById('intExtToggleInt');
-    const extBtn = document.getElementById('intExtToggleExt');
+    const radios = document.querySelectorAll('input[name="intExt"]');
+    const labels = document.querySelectorAll('label:has(input[name="intExt"])');
     
-    if (value === 'INT') {
-        intBtn.classList.remove('btn-outline');
-        intBtn.classList.add('btn-primary');
-        extBtn.classList.remove('btn-primary');
-        extBtn.classList.add('btn-outline');
-    } else if (value === 'EXT') {
-        extBtn.classList.remove('btn-outline');
-        extBtn.classList.add('btn-primary');
-        intBtn.classList.remove('btn-primary');
-        intBtn.classList.add('btn-outline');
-    } else {
-        // No selection
-        intBtn.classList.add('btn-outline');
-        intBtn.classList.remove('btn-primary');
-        extBtn.classList.add('btn-outline');
-        extBtn.classList.remove('btn-primary');
-    }
+    // Reset all labels
+    labels.forEach(label => {
+        label.classList.remove('btn-primary');
+        label.classList.add('btn-outline');
+    });
+    
+    // Find and select the matching radio
+    radios.forEach((radio, index) => {
+        if (radio.value === value) {
+            radio.checked = true;
+            labels[index].classList.remove('btn-outline');
+            labels[index].classList.add('btn-primary');
+        } else {
+            radio.checked = false;
+        }
+    });
 }
 
 function getSelectedIntExt() {
-    const intBtn = document.getElementById('intExtToggleInt');
-    if (intBtn.classList.contains('btn-primary')) {
-        return 'INT';
-    }
-    const extBtn = document.getElementById('intExtToggleExt');
-    if (extBtn.classList.contains('btn-primary')) {
-        return 'EXT';
-    }
-    return null;
+    const selected = document.querySelector('input[name="intExt"]:checked');
+    return selected ? selected.value : null;
 }
 
 function renderLocationDropdown(selectedLocationId) {
@@ -764,6 +838,86 @@ function renderLocationDropdown(selectedLocationId) {
     newOption.value = 'CREATE_NEW';
     newOption.textContent = '+ Create new location...';
     select.appendChild(newOption);
+}
+
+function populateAddSceneLocationDropdown() {
+    const select = document.getElementById('addSceneLocation');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">Select location...</option>';
+    
+    // Add existing locations
+    locations.forEach(location => {
+        const option = document.createElement('option');
+        option.value = location.id;
+        option.textContent = location.name;
+        select.appendChild(option);
+    });
+    
+    // Add "Create new location" option
+    const newOption = document.createElement('option');
+    newOption.value = 'CREATE_NEW';
+    newOption.textContent = '+ Create new location...';
+    select.appendChild(newOption);
+}
+
+function renderContinuitySelector() {
+    const select = document.getElementById('drawerContinuitySelect');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">None</option>';
+    
+    const continuityOptions = settingsService.getContinuityOptions();
+    continuityOptions.forEach(option => {
+        const optEl = document.createElement('option');
+        optEl.value = option.id;
+        optEl.textContent = option.label;
+        optEl.title = option.description || '';
+        if (option.id === selectedContinuity) {
+            optEl.selected = true;
+        }
+        select.appendChild(optEl);
+    });
+    
+    // Update selected continuity on change
+    select.addEventListener('change', (e) => {
+        selectedContinuity = e.target.value || null;
+    });
+}
+
+function updateDrawerVisibility() {
+    // Show/hide drawer sections based on feature flags
+    const features = settingsService.getAllFeatures();
+    
+    // INT/EXT section (find by radio button)
+    const intExtSection = document.querySelector('input[name="intExt"]')?.closest('.form-control');
+    if (intExtSection) {
+        intExtSection.style.display = features.show_int_ext ? '' : 'none';
+    }
+    
+    // Location section
+    const locationSection = document.getElementById('drawerLocationSelect')?.closest('.form-control');
+    if (locationSection) {
+        locationSection.style.display = features.show_location ? '' : 'none';
+    }
+    
+    // Time section
+    const timeSection = document.getElementById('drawerTimeSelector')?.closest('.form-control');
+    if (timeSection) {
+        timeSection.style.display = features.show_time ? '' : 'none';
+    }
+    
+    // Conditions section
+    const conditionsSection = document.getElementById('drawerConditionsSelector')?.closest('.form-control');
+    if (conditionsSection) {
+        conditionsSection.style.display = features.show_conditions ? '' : 'none';
+    }
+    
+    // Continuity section
+    const continuitySection = document.getElementById('drawerContinuitySelect')?.closest('.form-control');
+    if (continuitySection) {
+        continuitySection.style.display = features.show_continuity ? '' : 'none';
+    }
 }
 
 function formatDateReadable(dateStr) {
@@ -916,8 +1070,14 @@ function createUnscheduledSceneCard(scene) {
     }
     
     // Format title with INT./EXT. prefix and location
-    const intExtPrefix = scene.int_ext ? `${scene.int_ext}. - ` : '';
-    const displayTitle = locationName ? `${intExtPrefix}${locationName}` : scene.description || '';
+    const displayTitle = buildSceneHeading(scene);
+    console.log('📝 Scene heading built:', displayTitle, 'for scene:', scene.scene_number, 'scene data:', {
+        location_id: scene.location_id,
+        int_ext: scene.int_ext,
+        time: scene.time,
+        continuity: scene.continuity,
+        description: scene.description
+    });
     
     card.innerHTML = `
         <div class="card-body p-1.5">
@@ -937,11 +1097,17 @@ function createUnscheduledSceneCard(scene) {
         e.dataTransfer.setData('sceneId', scene.id);
         e.dataTransfer.effectAllowed = 'move';
         card.classList.add('opacity-50');
-        console.log('🔵 DRAG START:', { scene: scene.scene_number });
+        console.log('🔵 DRAG START:', { 
+            scene: scene.scene_number, 
+            id: scene.id,
+            hasLocation: !!scene.location_id,
+            hasIntExt: !!scene.int_ext
+        });
     });
     
     card.addEventListener('dragend', () => {
         card.classList.remove('opacity-50');
+        console.log('🔴 DRAG END for scene:', scene.scene_number);
         draggedSceneId = null;
     });
     
@@ -1068,10 +1234,12 @@ function setupEventListeners() {
     
     // Add scene modal
     document.getElementById('addSceneBtn').addEventListener('click', () => {
+        populateAddSceneLocationDropdown();
         document.getElementById('addSceneModal').showModal();
     });
     
     document.getElementById('addSceneFromCalendar').addEventListener('click', () => {
+        populateAddSceneLocationDropdown();
         document.getElementById('addSceneModal').showModal();
     });
     
@@ -1080,6 +1248,49 @@ function setupEventListeners() {
     });
     
     document.getElementById('addSceneForm').addEventListener('submit', handleAddScene);
+    
+    // Add Scene modal INT/EXT radio button styling
+    const addIntExtRadios = document.querySelectorAll('input[name="addIntExt"]');
+    if (addIntExtRadios.length > 0) {
+        addIntExtRadios.forEach((radio, index) => {
+            radio.addEventListener('change', () => {
+                const labels = document.querySelectorAll('label:has(input[name="addIntExt"])');
+                labels.forEach(label => {
+                    label.classList.remove('btn-primary');
+                    label.classList.add('btn-outline');
+                });
+                if (radio.checked) {
+                    labels[index].classList.remove('btn-outline');
+                    labels[index].classList.add('btn-primary');
+                }
+            });
+        });
+    }
+    
+    // Add Scene location dropdown - create new location on select
+    const addSceneLocationSelect = document.getElementById('addSceneLocation');
+    if (addSceneLocationSelect) {
+        addSceneLocationSelect.addEventListener('change', async (e) => {
+            if (e.target.value === 'CREATE_NEW') {
+                const name = prompt('Enter new location name:');
+                if (!name) {
+                    e.target.value = '';
+                    return;
+                }
+                
+                try {
+                    const newLocation = await LocationService.create(currentProject.id, { name: name.trim().toUpperCase() });
+                    locations.push(newLocation);
+                    populateAddSceneLocationDropdown();
+                    e.target.value = newLocation.id;
+                } catch (error) {
+                    console.error('Error creating location:', error);
+                    alert('Failed to create location');
+                    e.target.value = '';
+                }
+            }
+        });
+    }
     
     // Config button
     document.getElementById('configBtn').addEventListener('click', openTimeConfig);
@@ -1109,6 +1320,18 @@ function setupEventListeners() {
     document.getElementById('addLocationForm').addEventListener('submit', (e) => {
         console.log('🔍 Add location form submitted');
         handleAddLocation(e);
+    });
+    
+    // Settings modal
+    document.getElementById('settingsBtn').addEventListener('click', openSettings);
+    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+        document.getElementById('settingsModal').close();
+    });
+    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+    
+    // Settings preview update
+    ['settingShowIntExt', 'settingShowLocation', 'settingShowTime', 'settingShowConditions', 'settingShowContinuity'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateSettingsPreview);
     });
     
     // Location dropdown - create new location on select
@@ -1160,6 +1383,21 @@ function setupEventListeners() {
         }
     });
     
+    // INT/EXT radio button styling
+    document.querySelectorAll('input[name="intExt"]').forEach((radio, index) => {
+        radio.addEventListener('change', () => {
+            const labels = document.querySelectorAll('label:has(input[name="intExt"])');
+            labels.forEach(label => {
+                label.classList.remove('btn-primary');
+                label.classList.add('btn-outline');
+            });
+            if (radio.checked) {
+                labels[index].classList.remove('btn-outline');
+                labels[index].classList.add('btn-primary');
+            }
+        });
+    });
+    
     // Icon picker button (time)
     document.getElementById('chooseIconBtn').addEventListener('click', () => {
         const picker = new IconPicker((selectedIcon) => {
@@ -1196,14 +1434,6 @@ function setupEventListeners() {
         picker.open();
     });
     
-    // INT/EXT toggle buttons
-    document.getElementById('intExtToggleInt').addEventListener('click', () => {
-        updateIntExtToggle('INT');
-    });
-    document.getElementById('intExtToggleExt').addEventListener('click', () => {
-        updateIntExtToggle('EXT');
-    });
-    
     // Drawer controls
     document.getElementById('closeDrawer').addEventListener('click', closeSceneDrawer);
     document.getElementById('drawerBackdrop').addEventListener('click', closeSceneDrawer);
@@ -1231,7 +1461,7 @@ function setupEventListeners() {
         }
         
         try {
-            console.log('💾 Saving scene with time:', selectedTime, 'conditions:', selectedConditions, 'location_id:', locationId, 'int_ext:', intExt);
+            console.log('💾 Saving scene with time:', selectedTime, 'conditions:', selectedConditions, 'location_id:', locationId, 'int_ext:', intExt, 'continuity:', selectedContinuity);
             
             // Update local data
             const scene = scenes.find(s => s.id === sceneId);
@@ -1243,6 +1473,7 @@ function setupEventListeners() {
                     time: selectedTime,
                     conditions: selectedConditions,
                     int_ext: intExt,
+                    continuity: selectedContinuity,
                 };
                 
                 // Update this scene
@@ -1253,6 +1484,7 @@ function setupEventListeners() {
                 scene.time = selectedTime;
                 scene.conditions = [...selectedConditions];
                 scene.int_ext = intExt;
+                scene.continuity = selectedContinuity;
                 
                 // If this scene is part of a split group, update all scenes in the group
                 if (scene.split_group_id) {
@@ -1270,6 +1502,7 @@ function setupEventListeners() {
                             conditions: selectedConditions,
                             location: scene.location,
                             int_ext: scene.int_ext,
+                            continuity: selectedContinuity,
                             day_night: scene.day_night,
                             script_day: scene.script_day,
                             pages: scene.pages
@@ -1282,6 +1515,7 @@ function setupEventListeners() {
                         splitScene.conditions = [...selectedConditions];
                         splitScene.location = scene.location;
                         splitScene.int_ext = scene.int_ext;
+                        splitScene.continuity = selectedContinuity;
                         splitScene.day_night = scene.day_night;
                         splitScene.script_day = scene.script_day;
                         splitScene.pages = scene.pages;
@@ -1376,15 +1610,32 @@ function updateCalendarTitle() {
 async function handleAddScene(e) {
     e.preventDefault();
     
-    const sceneNumber = document.getElementById('sceneNumber').value.trim();
-    const description = document.getElementById('sceneDescription').value.trim();
+    const sceneNumber = document.getElementById('addSceneNumber').value.trim();
+    const locationId = document.getElementById('addSceneLocation').value;
+    const intExtRadio = document.querySelector('input[name="addIntExt"]:checked');
+    const intExt = intExtRadio ? intExtRadio.value : null;
     
-    if (!sceneNumber || !description) return;
+    if (!sceneNumber || !locationId) {
+        alert('Please fill in scene number and location');
+        return;
+    }
     
     try {
+        // Build description from location and int_ext for backward compatibility
+        let description = '';
+        if (locationId) {
+            const location = locations.find(l => l.id === locationId);
+            if (location) {
+                const prefix = intExt ? `${intExt}. ` : '';
+                description = `${prefix}${location.name}`;
+            }
+        }
+        
         const newScene = await SceneService.create(currentProject.id, {
             scene_number: sceneNumber,
             description: description,
+            location_id: locationId,
+            int_ext: intExt,
             shooting_dates: [],
         });
         
@@ -1392,8 +1643,17 @@ async function handleAddScene(e) {
         renderUnscheduledScenes();
         
         // Clear form and close modal
-        document.getElementById('sceneNumber').value = '';
-        document.getElementById('sceneDescription').value = '';
+        document.getElementById('addSceneNumber').value = '';
+        document.getElementById('addSceneLocation').value = '';
+        // Reset INT/EXT radio buttons
+        const addIntExtRadios = document.querySelectorAll('input[name="addIntExt"]');
+        addIntExtRadios.forEach(radio => radio.checked = false);
+        const addIntExtLabels = document.querySelectorAll('label:has(input[name="addIntExt"])');
+        addIntExtLabels.forEach(label => {
+            label.classList.remove('btn-primary');
+            label.classList.add('btn-outline');
+        });
+        
         document.getElementById('addSceneModal').close();
     } catch (error) {
         console.error('Error adding scene:', error);
@@ -1450,6 +1710,69 @@ function renderTimeSelector() {
         container.appendChild(clearBtn);
     }
 }
+
+// =================================================================
+// SETTINGS MODAL
+// =================================================================
+
+function openSettings() {
+    // Populate current settings
+    const features = settingsService.getAllFeatures();
+    document.getElementById('settingShowIntExt').checked = features.show_int_ext;
+    document.getElementById('settingShowLocation').checked = features.show_location;
+    document.getElementById('settingShowTime').checked = features.show_time;
+    document.getElementById('settingShowConditions').checked = features.show_conditions;
+    document.getElementById('settingShowContinuity').checked = features.show_continuity;
+    
+    updateSettingsPreview();
+    document.getElementById('settingsModal').showModal();
+}
+
+function updateSettingsPreview() {
+    const example = {
+        int_ext: document.getElementById('settingShowIntExt').checked ? 'INT' : null,
+        location_id: document.getElementById('settingShowLocation').checked ? 'COFFEE SHOP' : null,
+        time: document.getElementById('settingShowTime').checked ? 'day' : null,
+        continuity: document.getElementById('settingShowContinuity').checked ? 'continuous' : null
+    };
+    
+    // Temporarily create a fake scene for preview
+    const parts = [];
+    if (example.int_ext) parts.push(example.int_ext + '.');
+    if (example.location_id) parts.push(example.location_id);
+    let heading = parts.join(' ');
+    if (example.time) heading += (heading ? ' - ' : '') + 'DAY';
+    if (example.continuity) heading += (heading ? ' - ' : '') + 'CONTINUOUS';
+    
+    document.getElementById('settingsPreview').textContent = heading || '(no components enabled)';
+}
+
+async function saveSettings() {
+    try {
+        const settings = {
+            show_int_ext: document.getElementById('settingShowIntExt').checked,
+            show_location: document.getElementById('settingShowLocation').checked,
+            show_time: document.getElementById('settingShowTime').checked,
+            show_conditions: document.getElementById('settingShowConditions').checked,
+            show_continuity: document.getElementById('settingShowContinuity').checked
+        };
+        
+        await settingsService.updateSettings(currentProject.id, settings);
+        
+        // Refresh UI
+        renderCalendarEvents();
+        renderUnscheduledScenes();
+        
+        document.getElementById('settingsModal').close();
+    } catch (error) {
+        console.error('❌ Error saving settings:', error);
+        alert('Failed to save settings');
+    }
+}
+
+// =================================================================
+// TIME CONFIGURATION
+// =================================================================
 
 async function openTimeConfig() {
     renderTimesList();
