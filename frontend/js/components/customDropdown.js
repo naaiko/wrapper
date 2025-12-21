@@ -43,6 +43,8 @@ export class CustomDropdown {
         this.required = options.required !== undefined ? options.required : false;
         this.disabled = options.disabled !== undefined ? options.disabled : false;
         this.size = options.size || 'md'; // xs, sm, md, lg
+        this.align = options.align || 'left'; // left, right
+        this.dropdownWidth = options.dropdownWidth || 'auto'; // 'match' (match button), 'auto' (fit content), or specific width like '300px'
         this.onChange = options.onChange || null;
         this.onCreate = options.onCreate || null;
         
@@ -51,6 +53,7 @@ export class CustomDropdown {
         this.filteredOptions = [...this.options];
         this.highlightedIndex = -1;
         this.searchQuery = '';
+        this.searchQueryOriginal = ''; // Keep original case for prefilling
         
         // DOM references (set after render)
         this.container = null;
@@ -73,9 +76,13 @@ export class CustomDropdown {
         container.innerHTML = this.getHTML();
         this.container = container.querySelector('.custom-dropdown');
         this.button = this.container.querySelector('.custom-dropdown__button');
-        this.menu = this.container.querySelector('.custom-dropdown__menu');
         this.hiddenInput = this.container.querySelector('.custom-dropdown__hidden-input');
-        this.searchInput = this.searchable ? this.container.querySelector('.custom-dropdown__search') : null;
+        
+        // Extract menu and append to body for proper positioning (portal pattern)
+        this.menu = this.container.querySelector('.custom-dropdown__menu');
+        document.body.appendChild(this.menu);
+        
+        this.searchInput = this.searchable ? this.menu.querySelector('.custom-dropdown__search') : null;
         
         this.attachEventListeners();
     }
@@ -86,7 +93,15 @@ export class CustomDropdown {
     getHTML() {
         const selectedOption = this.options.find(opt => opt.value === this.value);
         const displayText = selectedOption ? selectedOption.label : this.placeholder;
-        const sizeClass = this.size !== 'md' ? `btn-${this.size}` : '';
+        
+        // Map sizes to input heights
+        const sizeMap = {
+            'xs': 'h-6 min-h-6 text-xs',
+            'sm': 'h-8 min-h-8 text-sm',
+            'md': 'h-12 min-h-12 text-sm',
+            'lg': 'h-14 min-h-14 text-base'
+        };
+        const sizeClass = sizeMap[this.size] || sizeMap['md'];
         
         return `
             <div class="custom-dropdown relative">
@@ -99,10 +114,10 @@ export class CustomDropdown {
                     ${this.required ? 'required' : ''}
                 />
                 
-                <!-- Trigger Button -->
+                <!-- Trigger Button (styled like input) -->
                 <button
                     type="button"
-                    class="custom-dropdown__button btn btn-outline w-full justify-between ${sizeClass}"
+                    class="custom-dropdown__button input input-bordered w-full flex items-center justify-between gap-2 ${sizeClass} cursor-pointer"
                     aria-haspopup="listbox"
                     aria-expanded="false"
                     ${this.disabled ? 'disabled' : ''}
@@ -110,13 +125,13 @@ export class CustomDropdown {
                     <span class="custom-dropdown__display truncate text-left flex-1">
                         ${displayText}
                     </span>
-                    <svg class="custom-dropdown__chevron w-4 h-4 ml-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="custom-dropdown__chevron w-4 h-4 flex-shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                 </button>
                 
-                <!-- Dropdown Menu -->
-                <div class="custom-dropdown__menu hidden absolute z-50 w-full mt-1 shadow-lg bg-base-100 rounded-box border border-base-300" role="listbox">
+                <!-- Dropdown Menu (will be portaled to body) -->
+                <div class="custom-dropdown__menu hidden bg-base-100 rounded-box border border-base-300 shadow-lg" role="listbox" style="position: fixed; z-index: 9999; width: ${this.dropdownWidth === 'match' ? '100%' : this.dropdownWidth === 'auto' ? 'max-content' : this.dropdownWidth};">
                     ${this.searchable ? `
                         <div class="p-2 border-b border-base-300">
                             <input 
@@ -149,30 +164,30 @@ export class CustomDropdown {
                     No options found
                 </li>
             `;
-            return html;
+            // Don't return yet - still show create button if available
+        } else {
+            // Regular options
+            this.filteredOptions.forEach((option, index) => {
+                const isSelected = option.value === this.value;
+                const isHighlighted = index === this.highlightedIndex;
+                
+                html += `
+                    <li>
+                        <button
+                            type="button"
+                            class="custom-dropdown__option ${isHighlighted ? 'bg-base-200' : ''}"
+                            data-value="${option.value}"
+                            data-index="${index}"
+                            role="option"
+                            aria-selected="${isSelected}"
+                        >
+                            ${option.label}
+                            ${isSelected ? '<span class="ml-auto">✓</span>' : ''}
+                        </button>
+                    </li>
+                `;
+            });
         }
-        
-        // Regular options
-        this.filteredOptions.forEach((option, index) => {
-            const isSelected = option.value === this.value;
-            const isHighlighted = index === this.highlightedIndex;
-            
-            html += `
-                <li>
-                    <button
-                        type="button"
-                        class="custom-dropdown__option ${isHighlighted ? 'active' : ''}"
-                        data-value="${option.value}"
-                        data-index="${index}"
-                        role="option"
-                        aria-selected="${isSelected}"
-                    >
-                        ${option.label}
-                        ${isSelected ? '<span class="ml-auto">✓</span>' : ''}
-                    </button>
-                </li>
-            `;
-        });
         
         // Create new option
         if (this.allowCreate) {
@@ -251,6 +266,49 @@ export class CustomDropdown {
         this.button.setAttribute('aria-expanded', 'true');
         this.button.querySelector('.custom-dropdown__chevron').style.transform = 'rotate(180deg)';
         
+        // Position menu relative to button
+        requestAnimationFrame(() => {
+            const buttonRect = this.button.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            
+            // Calculate position
+            let top = buttonRect.bottom + 4;
+            let left = buttonRect.left;
+            
+            // Handle right alignment
+            if (this.align === 'right') {
+                // For auto width, we need to measure the menu first
+                if (this.dropdownWidth === 'auto') {
+                    const menuWidth = this.menu.offsetWidth;
+                    left = buttonRect.right - menuWidth;
+                } else if (this.dropdownWidth === 'match') {
+                    left = buttonRect.left;
+                } else {
+                    // Custom width
+                    const menuWidth = parseInt(this.dropdownWidth);
+                    left = buttonRect.right - menuWidth;
+                }
+            }
+            
+            // Set width for 'match' mode
+            if (this.dropdownWidth === 'match') {
+                this.menu.style.width = `${buttonRect.width}px`;
+            } else {
+                this.menu.style.minWidth = `${buttonRect.width}px`;
+            }
+            
+            // Calculate available space and set max-height
+            const spaceBelow = viewportHeight - buttonRect.bottom - 16;
+            const maxHeight = Math.max(200, spaceBelow);
+            
+            // Apply styles
+            this.menu.style.top = `${top}px`;
+            this.menu.style.left = `${left}px`;
+            this.menu.style.maxHeight = `${maxHeight}px`;
+            this.menu.style.overflowY = 'auto';
+        });
+        
         // Focus search input if available
         if (this.searchInput) {
             setTimeout(() => this.searchInput.focus(), 50);
@@ -274,6 +332,7 @@ export class CustomDropdown {
         if (this.searchInput) {
             this.searchInput.value = '';
             this.searchQuery = '';
+            this.searchQueryOriginal = '';
             this.filteredOptions = [...this.options];
             this.refreshOptions();
         }
@@ -311,10 +370,11 @@ export class CustomDropdown {
      * Handle create new
      */
     handleCreate() {
+        const prefilledValue = this.searchQueryOriginal || '';
         this.close();
         
         if (this.onCreate) {
-            this.onCreate();
+            this.onCreate(prefilledValue);
         }
     }
     
@@ -322,7 +382,8 @@ export class CustomDropdown {
      * Handle search
      */
     handleSearch(query) {
-        this.searchQuery = query.toLowerCase().trim();
+        this.searchQueryOriginal = query.trim(); // Keep original case
+        this.searchQuery = query.toLowerCase().trim(); // For filtering
         
         if (!this.searchQuery) {
             this.filteredOptions = [...this.options];
@@ -351,10 +412,10 @@ export class CustomDropdown {
         const options = this.menu.querySelectorAll('.custom-dropdown__option');
         options.forEach((opt, index) => {
             if (index === this.highlightedIndex) {
-                opt.classList.add('active');
+                opt.classList.add('bg-base-200');
                 opt.scrollIntoView({ block: 'nearest' });
             } else {
-                opt.classList.remove('active');
+                opt.classList.remove('bg-base-200');
             }
         });
     }
@@ -458,6 +519,11 @@ export class CustomDropdown {
      * Destroy dropdown (cleanup)
      */
     destroy() {
+        // Remove menu from body
+        if (this.menu && this.menu.parentNode === document.body) {
+            document.body.removeChild(this.menu);
+        }
+        
         if (this.container) {
             this.container.innerHTML = '';
         }

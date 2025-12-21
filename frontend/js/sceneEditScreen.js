@@ -302,6 +302,8 @@ export class SceneEditScreen {
                 value: scene?.continuity || '',
                 placeholder: 'None',
                 size: 'md',
+                align: 'left',
+                dropdownWidth: 'auto', // Allow dropdown to be wider than button
                 onChange: (value) => this.handleChange('continuity', value, scene)
             });
             this.continuityDropdown.render();
@@ -371,8 +373,8 @@ export class SceneEditScreen {
     /**
      * Handle create new location
      */
-    async handleCreateLocation() {
-        const name = prompt('Enter new location name:');
+    async handleCreateLocation(prefilledName = '') {
+        const name = prompt('Enter new location name:', prefilledName);
         if (!name) return;
         
         try {
