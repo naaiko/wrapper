@@ -31,7 +31,7 @@
         <!-- Main Content -->
         <div class="container mx-auto px-4 pt-20 pb-8">
             <!-- Header with Add Actor Button -->
-            <div id="headerSection" class="flex justify-between items-center mb-8">
+            <div id="headerSection" class="hidden flex justify-between items-center mb-8">
                 <div>
                     <h1 class="text-4xl font-bold" id="projectTitle">Loading...</h1>
                     <p class="text-base-content/70 mt-2">Manage your cast and track continuity details</p>
@@ -45,7 +45,7 @@
             </div>
 
             <!-- Search and Filter -->
-            <div id="searchFilterSection" class="mb-6 flex gap-4">
+            <div id="searchFilterSection" class="hidden mb-6 flex gap-4">
                 <div class="form-control flex-1">
                     <input type="text" id="searchInput" placeholder="Search actors or characters..." class="input input-bordered w-full" />
                 </div>
@@ -66,12 +66,12 @@
             </div>
 
             <!-- Actors Grid -->
-            <div id="actorsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div id="actorsGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <!-- Actor cards will be inserted here -->
             </div>
 
             <!-- Empty State / Onboarding -->
-            <div id="emptyState" class="hidden">
+            <div id="emptyState">
                 <div class="max-w-2xl mx-auto text-center py-16">
                     <!-- Hero Icon -->
                     <div class="mb-8">
@@ -142,203 +142,35 @@
         </div>
     </div>
 
-    <!-- Add/Edit Actor Modal -->
-    <dialog id="actorModal" class="modal">
-        <div class="modal-box max-w-4xl">
-            <h3 class="font-bold text-2xl mb-6" id="modalTitle">Add Actor</h3>
+    <!-- Simple Add Actor Dialog -->
+    <dialog id="addActorDialog" class="modal">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-lg mb-4">Voeg Acteur Toe</h3>
             
-            <form id="actorForm" class="space-y-6">
-                <!-- Visual Character Preview -->
-                <div class="flex justify-center mb-6">
-                    <div class="actor-silhouette-container card bg-base-200 shadow-xl">
-                        <img id="actorSilhouette" src="images/silhouette.svg" alt="Actor Silhouette" class="actor-silhouette" />
-                        <div id="profileImagePreview" class="actor-photo-preview hidden">
-                            <img id="profileImage" src="" alt="Profile" class="rounded-full" />
-                        </div>
-                        <div class="silhouette-overlay">
-                            <div class="badge badge-primary badge-lg">Preview</div>
-                        </div>
-                    </div>
+            <form id="addActorForm" class="space-y-4" autocomplete="off">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Voornaam</span>
+                    </label>
+                    <input type="text" id="firstName" name="firstName" required 
+                           class="input input-bordered" placeholder="bijv. Margot" autofocus 
+                           autocomplete="new-password" data-1p-ignore />
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Left Column -->
-                    <div class="space-y-4">
-                        <h4 class="font-semibold text-lg border-b pb-2">Basic Information</h4>
-                        
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Actor Name *</span>
-                            </label>
-                            <input type="text" id="actorName" name="actorName" required 
-                                   placeholder="e.g., Margot Robbie" class="input input-bordered" />
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Character Name *</span>
-                            </label>
-                            <input type="text" id="characterName" name="characterName" required 
-                                   placeholder="e.g., Harley Quinn" class="input input-bordered" />
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Email</span>
-                            </label>
-                            <input type="email" id="email" name="email" 
-                                   placeholder="actor@example.com" class="input input-bordered" />
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Phone</span>
-                            </label>
-                            <input type="tel" id="phone" name="phone" 
-                                   placeholder="+32 123 45 67 89" class="input input-bordered" />
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Profile Image URL</span>
-                            </label>
-                            <input type="url" id="profileImageUrl" name="profileImageUrl" 
-                                   placeholder="https://..." class="input input-bordered" />
-                            <label class="label">
-                                <span class="label-text-alt">Enter an image URL to replace the silhouette</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Right Column -->
-                    <div class="space-y-4">
-                        <h4 class="font-semibold text-lg border-b pb-2">Physical Characteristics</h4>
-                        
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Height</span>
-                            </label>
-                            <input type="text" id="height" name="height" 
-                                   placeholder="e.g., 165 cm / 5'5\"" class="input input-bordered" />
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">Hair Color</span>
-                                </label>
-                                <select id="hairColor" name="hairColor" class="select select-bordered">
-                                    <option value="">Select...</option>
-                                    <option>Blonde</option>
-                                    <option>Brown</option>
-                                    <option>Black</option>
-                                    <option>Red</option>
-                                    <option>Gray</option>
-                                    <option>White</option>
-                                    <option>Dyed</option>
-                                    <option>Other</option>
-                                </select>
-                            </div>
-
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">Eye Color</span>
-                                </label>
-                                <select id="eyeColor" name="eyeColor" class="select select-bordered">
-                                    <option value="">Select...</option>
-                                    <option>Blue</option>
-                                    <option>Brown</option>
-                                    <option>Green</option>
-                                    <option>Hazel</option>
-                                    <option>Gray</option>
-                                    <option>Other</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Hair Style</span>
-                            </label>
-                            <input type="text" id="hairStyle" name="hairStyle" 
-                                   placeholder="e.g., Short, Long, Curly" class="input input-bordered" />
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Skin Tone</span>
-                            </label>
-                            <select id="skinTone" name="skinTone" class="select select-bordered">
-                                <option value="">Select...</option>
-                                <option>Very Fair</option>
-                                <option>Fair</option>
-                                <option>Light</option>
-                                <option>Medium</option>
-                                <option>Tan</option>
-                                <option>Brown</option>
-                                <option>Dark Brown</option>
-                                <option>Deep</option>
-                            </select>
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Body Type</span>
-                            </label>
-                            <select id="bodyType" name="bodyType" class="select select-bordered">
-                                <option value="">Select...</option>
-                                <option>Slim</option>
-                                <option>Athletic</option>
-                                <option>Average</option>
-                                <option>Muscular</option>
-                                <option>Stocky</option>
-                                <option>Large</option>
-                            </select>
-                        </div>
-                    </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Achternaam</span>
+                    </label>
+                    <input type="text" id="lastName" name="lastName" required 
+                           class="input input-bordered" placeholder="bijv. Robbie" 
+                           autocomplete="new-password" data-1p-ignore />
                 </div>
 
-                <!-- Full Width Fields -->
-                <div class="space-y-4">
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">Distinguishing Features</span>
-                        </label>
-                        <input type="text" id="distinguishingFeatures" name="distinguishingFeatures" 
-                               placeholder="e.g., Scar on left eyebrow, tattoo on right arm" class="input input-bordered" />
-                        <label class="label">
-                            <span class="label-text-alt">Separate multiple features with commas</span>
-                        </label>
-                    </div>
-
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">Notes</span>
-                        </label>
-                        <textarea id="notes" name="notes" rows="3" 
-                                  placeholder="Additional notes about the actor or character..." 
-                                  class="textarea textarea-bordered"></textarea>
-                    </div>
-                </div>
-
-                <!-- Modal Actions -->
                 <div class="modal-action">
-                    <button type="button" class="btn" onclick="actorModal.close()">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="btnSaveActor">Save Actor</button>
+                    <button type="button" class="btn" onclick="addActorDialog.close()">Annuleren</button>
+                    <button type="submit" class="btn btn-primary">Opslaan</button>
                 </div>
             </form>
-        </div>
-        <form method="dialog" class="modal-backdrop">
-            <button>close</button>
-        </form>
-    </dialog>
-
-    <!-- Actor Detail Modal -->
-    <dialog id="actorDetailModal" class="modal">
-        <div class="modal-box max-w-5xl">
-            <div id="actorDetailContent">
-                <!-- Content will be dynamically inserted -->
-            </div>
         </div>
         <form method="dialog" class="modal-backdrop">
             <button>close</button>

@@ -63,11 +63,11 @@ class ActorsApp {
 
     setupEventListeners() {
         // Add actor buttons
-        document.getElementById('btnAddActor').addEventListener('click', () => this.openAddActorModal());
-        document.getElementById('btnAddActorEmpty').addEventListener('click', () => this.openAddActorModal());
+        document.getElementById('btnAddActor').addEventListener('click', () => this.openAddActorDialog());
+        document.getElementById('btnAddActorEmpty').addEventListener('click', () => this.openAddActorDialog());
 
         // Form submission
-        document.getElementById('actorForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
+        document.getElementById('addActorForm').addEventListener('submit', (e) => this.handleAddActor(e));
 
         // Search
         document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -80,11 +80,6 @@ class ActorsApp {
         document.getElementById('filterRecent').addEventListener('click', () => this.setFilter('recent'));
         document.getElementById('filterAZ').addEventListener('click', () => this.setFilter('actor-az'));
         document.getElementById('filterCharacter').addEventListener('click', () => this.setFilter('character-az'));
-
-        // Profile image URL input
-        document.getElementById('profileImageUrl').addEventListener('input', (e) => {
-            this.updateProfilePreview(e.target.value);
-        });
     }
 
     async loadActors() {
@@ -222,13 +217,32 @@ class ActorsApp {
         `;
     }
 
-    openAddActorModal() {
-        this.currentActor = null;
-        document.getElementById('modalTitle').textContent = 'Add Actor';
-        document.getElementById('actorForm').reset();
-        document.getElementById('profileImagePreview').classList.add('hidden');
-        document.querySelector('.actor-silhouette').style.opacity = '1';
-        actorModal.showModal();
+    openAddActorDialog() {
+        const dialog = document.getElementById('addActorDialog');
+        document.getElementById('addActorForm').reset();
+        dialog.showModal();
+    }
+
+    async handleAddActor(e) {
+        e.preventDefault();
+        
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName = document.getElementById('lastName').value.trim();
+        
+        const actorData = {
+            actor_name: `${firstName} ${lastName}`,
+            character_name: ''
+        };
+
+        try {
+            await ActorService.create(this.projectId, actorData);
+            this.showSuccess('Acteur toegevoegd');
+            document.getElementById('addActorDialog').close();
+            await this.loadActors();
+        } catch (error) {
+            console.error('Error creating actor:', error);
+            this.showError('Kon acteur niet opslaan');
+        }
     }
 
     async openEditActorModal(actorId) {
