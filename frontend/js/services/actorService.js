@@ -2,14 +2,12 @@
 // ACTOR SERVICE - Business Logic Layer
 // =================================================================
 // Handles all actor-related business logic
-// Independent of database implementation
-
-import { supabaseClient } from '../api/supabaseClient.js';
+// Uses window.supabase directly (same pattern as calendar/timeline)
 
 export class ActorService {
     static async getAll(projectId) {
         try {
-            const { data, error } = await supabaseClient.db
+            const { data, error } = await window.supabase
                 .from('actors')
                 .select('*')
                 .eq('project_id', projectId)
@@ -25,7 +23,7 @@ export class ActorService {
 
     static async getById(actorId) {
         try {
-            const { data, error } = await supabaseClient.db
+            const { data, error } = await window.supabase
                 .from('actors')
                 .select('*')
                 .eq('id', actorId)
@@ -59,7 +57,7 @@ export class ActorService {
                 notes: actorData.notes || null
             };
 
-            const { data, error } = await supabaseClient.db
+            const { data, error } = await window.supabase
                 .from('actors')
                 .insert([actor])
                 .select()
@@ -92,7 +90,7 @@ export class ActorService {
                 notes: actorData.notes || null
             };
 
-            const { data, error } = await supabaseClient.db
+            const { data, error } = await window.supabase
                 .from('actors')
                 .update(updates)
                 .eq('id', actorId)
@@ -109,7 +107,7 @@ export class ActorService {
 
     static async delete(actorId) {
         try {
-            const { error } = await supabaseClient.db
+            const { error } = await window.supabase
                 .from('actors')
                 .delete()
                 .eq('id', actorId);
@@ -166,7 +164,7 @@ export class ActorService {
     // Get continuity entries for an actor
     static async getContinuity(actorId) {
         try {
-            const { data, error } = await supabaseClient.db
+            const { data, error } = await window.supabase
                 .from('actor_continuity')
                 .select(`
                     *,
@@ -209,7 +207,7 @@ export class ActorService {
                 notes: continuityData.notes || null
             };
 
-            const { data, error } = await supabaseClient.db
+            const { data, error } = await window.supabase
                 .from('actor_continuity')
                 .insert([entry])
                 .select()

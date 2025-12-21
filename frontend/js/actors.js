@@ -2,7 +2,6 @@
 // ACTORS MANAGEMENT - Main Application Logic
 // =================================================================
 
-import { supabaseClient } from './api/supabaseClient.js';
 import { ActorService } from './services/actorService.js';
 
 class ActorsApp {
@@ -39,7 +38,7 @@ class ActorsApp {
 
     async loadProjectInfo() {
         try {
-            const { data, error } = await supabaseClient.db
+            const { data, error } = await window.supabase
                 .from('projects')
                 .select('name')
                 .eq('id', this.projectId)
