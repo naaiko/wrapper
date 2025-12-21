@@ -3,6 +3,7 @@
 // =================================================================
 
 import { ActorService } from './services/actorService.js';
+import { SilhouetteController } from './components/silhouetteController.js';
 
 class ActorsApp {
     constructor() {
@@ -11,6 +12,7 @@ class ActorsApp {
         this.currentActor = null;
         this.currentFilter = 'all';
         this.searchTerm = '';
+        this.silhouetteController = null;
         
         this.init();
     }
@@ -29,6 +31,9 @@ class ActorsApp {
         // Load project info
         await this.loadProjectInfo();
 
+        // Initialize silhouette controller
+        this.silhouetteController = new SilhouetteController('silhouetteContainer');
+
         // Set up event listeners
         this.setupEventListeners();
 
@@ -46,8 +51,6 @@ class ActorsApp {
 
             if (error) throw error;
 
-            document.getElementById('projectTitle').textContent = data.name;
-            
             // Update navigation links with project ID
             const navActors = document.getElementById('navActors');
             const navTimeline = document.getElementById('navTimeline');
@@ -57,29 +60,18 @@ class ActorsApp {
             if (navCalendar) navCalendar.href = `calendar.html?project=${this.projectId}`;
         } catch (error) {
             console.error('Error loading project:', error);
-            document.getElementById('projectTitle').textContent = 'Unknown Project';
         }
     }
 
     setupEventListeners() {
         // Add actor buttons
-        document.getElementById('btnAddActor').addEventListener('click', () => this.openAddActorDialog());
-        document.getElementById('btnAddActorEmpty').addEventListener('click', () => this.openAddActorDialog());
-
-        // Form submission
-        document.getElementById('addActorForm').addEventListener('submit', (e) => this.handleAddActor(e));
-
-        // Search
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            this.searchTerm = e.target.value;
-            this.renderActors();
-        });
-
-        // Filters
-        document.getElementById('filterAll').addEventListener('click', () => this.setFilter('all'));
-        document.getElementById('filterRecent').addEventListener('click', () => this.setFilter('recent'));
-        document.getElementById('filterAZ').addEventListener('click', () => this.setFilter('actor-az'));
-        document.getElementById('filterCharacter').addEventListener('click', () => this.setFilter('character-az'));
+        const btnAddActor = document.getElementById('btnAddActor');
+        const btnAddActorEmpty = document.getElementById('btnAddActorEmpty');
+        const addActorForm = document.getElementById('addActorForm');
+        
+        if (btnAddActor) btnAddActor.addEventListener('click', () => this.openAddActorDialog());
+        if (btnAddActorEmpty) btnAddActorEmpty.addEventListener('click', () => this.openAddActorDialog());
+        if (addActorForm) addActorForm.addEventListener('submit', (e) => this.handleAddActor(e));
     }
 
     async loadActors() {
@@ -122,43 +114,25 @@ class ActorsApp {
     }
 
     displayActors(actors) {
-        const grid = document.getElementById('actorsGrid');
         const emptyState = document.getElementById('emptyState');
-        const headerSection = document.getElementById('headerSection');
-        const searchFilterSection = document.getElementById('searchFilterSection');
 
         // Apply sorting
         const sortedActors = ActorService.sortActors(actors, this.currentFilter);
 
-        if (sortedActors.length === 0) {
+        // Only show onboarding if there are truly no actors in the project
+        if (this.actors.length === 0) {
             // Show onboarding state
-            grid.classList.add('hidden');
             emptyState.classList.remove('hidden');
-            headerSection.classList.add('hidden');
-            searchFilterSection.classList.add('hidden');
             return;
         }
 
-        // Show normal state
-        grid.classList.remove('hidden');
+        // Hide empty state
         emptyState.classList.add('hidden');
-        headerSection.classList.remove('hidden');
-        searchFilterSection.classList.remove('hidden');
-
-        grid.innerHTML = sortedActors.map(actor => this.createActorCard(actor)).join('');
-
-        // Add click listeners to cards
-        sortedActors.forEach(actor => {
-            const card = document.getElementById(`actor-card-${actor.id}`);
-            if (card) {
-                card.addEventListener('click', (e) => {
-                    // Don't open detail if clicking action buttons
-                    if (!e.target.closest('.actor-card-actions')) {
-                        this.openActorDetail(actor);
-                    }
-                });
-            }
-        });
+        
+        // Show first actor in detail view if available
+        if (sortedActors.length > 0) {
+            this.showActorDetail(sortedActors[0]);
+        }
     }
 
     createActorCard(actor) {
@@ -235,14 +209,28 @@ class ActorsApp {
         };
 
         try {
-            await ActorService.create(this.projectId, actorData);
+            const newActor = await ActorService.create(this.projectId, actorData);
             this.showSuccess('Acteur toegevoegd');
             document.getElementById('addActorDialog').close();
             await this.loadActors();
+            
+            // Show actor in 3-column layout
+            this.showActorDetail(newActor);
         } catch (error) {
             console.error('Error creating actor:', error);
             this.showError('Kon acteur niet opslaan');
         }
+    }
+
+    showActorDetail(actor) {
+        // Hide empty state
+        document.getElementById('emptyState').classList.add('hidden');
+        
+        // Update actor info
+        document.getElementById('actorName').textContent = actor.actor_name;
+        
+        // Update silhouette through controller
+        this.silhouetteController.updateActor(actor);
     }
 
     async openEditActorModal(actorId) {

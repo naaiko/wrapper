@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div class="min-h-screen bg-base-200">
+    <div class="min-h-screen bg-base-200 h-screen overflow-hidden">
         <!-- Tab Switcher (Top Right) -->
         <div class="fixed top-4 right-4 z-50">
             <div role="tablist" class="tabs tabs-boxed bg-base-100 shadow-lg">
@@ -28,14 +28,36 @@
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="container mx-auto px-4 pt-20 pb-8">
-            <!-- Header with Add Actor Button -->
-            <div id="headerSection" class="hidden flex justify-between items-center mb-8">
-                <div>
-                    <h1 class="text-4xl font-bold" id="projectTitle">Loading...</h1>
-                    <p class="text-base-content/70 mt-2">Manage your cast and track continuity details</p>
+        <!-- Main 3-Column Layout -->
+        <div class="h-screen pt-4 pb-24 px-4">
+            <div class="grid grid-cols-12 gap-6 h-full">
+                <!-- Left Column (4 cols) -->
+                <div class="col-span-4 bg-base-100 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">Details Links</h3>
                 </div>
+
+                <!-- Middle Column (4 cols) - Silhouette -->
+                <div class="col-span-4 flex flex-col gap-4 h-full">
+                    <div class="card bg-base-100 shadow-lg">
+                        <div class="card-body py-3 px-4">
+                            <h2 id="actorName" class="text-xl font-bold text-center">Acteur Naam</h2>
+                        </div>
+                    </div>
+                    <div id="silhouetteContainer" class="flex-1 flex items-end justify-center overflow-hidden" role="region" aria-label="Actor visualization">
+                        <!-- Silhouette managed by SilhouetteController -->
+                    </div>
+                </div>
+
+                <!-- Right Column (4 cols) -->
+                <div class="col-span-4 bg-base-100 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">Details Rechts</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dock (Bottom Center) -->
+        <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div class="bg-base-100 shadow-2xl rounded-2xl px-6 py-3 flex gap-3">
                 <button id="btnAddActor" class="btn btn-primary gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -43,104 +65,115 @@
                     Add Actor
                 </button>
             </div>
+        </div>
 
-            <!-- Search and Filter -->
-            <div id="searchFilterSection" class="hidden mb-6 flex gap-4">
-                <div class="form-control flex-1">
-                    <input type="text" id="searchInput" placeholder="Search actors or characters..." class="input input-bordered w-full" />
-                </div>
-                <div class="dropdown dropdown-end">
-                    <label tabindex="0" class="btn btn-outline gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        <!-- Empty State / Onboarding Overlay -->
+        <div id="emptyState" class="fixed inset-0 bg-base-200 z-40 flex items-center justify-center"
+        <!-- Empty State / Onboarding Overlay -->
+        <div id="emptyState" class="fixed inset-0 bg-base-200 z-40 flex items-center justify-center">
+            <div class="max-w-2xl mx-auto text-center py-16">
+                <!-- Hero Icon -->
+                <div class="mb-8">
+                    <div class="inline-block p-8 bg-primary/10 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        Filter
-                    </label>
-                    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-2">
-                        <li><a id="filterAll" class="active">All Actors</a></li>
-                        <li><a id="filterRecent">Recently Modified</a></li>
-                        <li><a id="filterAZ">A-Z by Actor</a></li>
-                        <li><a id="filterCharacter">A-Z by Character</a></li>
-                    </ul>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Actors Grid -->
-            <div id="actorsGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <!-- Actor cards will be inserted here -->
-            </div>
+                <!-- Title & Description -->
+                <h2 class="text-4xl font-bold text-base-content mb-4">Welkom bij je Cast</h2>
+                <p class="text-lg text-base-content/70 mb-3">
+                    Je hebt nog geen acteurs toegevoegd aan dit project.
+                </p>
+                <p class="text-base text-base-content/60 mb-10">
+                    Start met het toevoegen van je eerste acteur om continuïteit te beheren, karakterdetails bij te houden en je productie georganiseerd te houden.
+                </p>
 
-            <!-- Empty State / Onboarding -->
-            <div id="emptyState">
-                <div class="max-w-2xl mx-auto text-center py-16">
-                    <!-- Hero Icon -->
-                    <div class="mb-8">
-                        <div class="inline-block p-8 bg-primary/10 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
+                <!-- CTA Button -->
+                <button id="btnAddActorEmpty" class="btn btn-primary btn-lg gap-3 mb-12">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Voeg je Eerste Acteur Toe
+                </button>
+
+                <!-- Info Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 text-left">
+                    <div class="card bg-base-100 shadow-md">
+                        <div class="card-body">
+                            <div class="text-primary mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-lg mb-2">Acteur & Karakter</h3>
+                            <p class="text-sm text-base-content/70">Leg vast wie wie speelt en houd alle details bij</p>
                         </div>
                     </div>
 
-                    <!-- Title & Description -->
-                    <h2 class="text-4xl font-bold text-base-content mb-4">Welkom bij je Cast</h2>
-                    <p class="text-lg text-base-content/70 mb-3">
-                        Je hebt nog geen acteurs toegevoegd aan dit project.
-                    </p>
-                    <p class="text-base text-base-content/60 mb-10">
-                        Start met het toevoegen van je eerste acteur om continuïteit te beheren, karakterdetails bij te houden en je productie georganiseerd te houden.
-                    </p>
-
-                    <!-- CTA Button -->
-                    <button id="btnAddActorEmpty" class="btn btn-primary btn-lg gap-3 mb-12">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Voeg je Eerste Acteur Toe
-                    </button>
-
-                    <!-- Info Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 text-left">
-                        <div class="card bg-base-100 shadow-md">
-                            <div class="card-body">
-                                <div class="text-primary mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                </div>
-                                <h3 class="font-semibold text-lg mb-2">Acteur & Karakter</h3>
-                                <p class="text-sm text-base-content/70">Leg vast wie wie speelt en houd alle details bij</p>
+                    <div class="card bg-base-100 shadow-md">
+                        <div class="card-body">
+                            <div class="text-primary mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
                             </div>
+                            <h3 class="font-semibold text-lg mb-2">Fysieke Kenmerken</h3>
+                            <p class="text-sm text-base-content/70">Haarkleur, lengte, tatoeages en andere details</p>
                         </div>
+                    </div>
 
-                        <div class="card bg-base-100 shadow-md">
-                            <div class="card-body">
-                                <div class="text-primary mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                </div>
-                                <h3 class="font-semibold text-lg mb-2">Fysieke Kenmerken</h3>
-                                <p class="text-sm text-base-content/70">Haarkleur, lengte, tatoeages en andere details</p>
+                    <div class="card bg-base-100 shadow-md">
+                        <div class="card-body">
+                            <div class="text-primary mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                             </div>
-                        </div>
-
-                        <div class="card bg-base-100 shadow-md">
-                            <div class="card-body">
-                                <div class="text-primary mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                                <h3 class="font-semibold text-lg mb-2">Continuïteit</h3>
-                                <p class="text-sm text-base-content/70">Koppel acteurs aan scènes en voorkom fouten</p>
-                            </div>
+                            <h3 class="font-semibold text-lg mb-2">Continuïteit</h3>
+                            <p class="text-sm text-base-content/70">Koppel acteurs aan scènes en voorkom fouten</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Simple Add Actor Dialog -->
+    <dialog id="addActorDialog" class="modal">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-lg mb-4">Voeg Acteur Toe</h3>
+            
+            <form id="addActorForm" class="space-y-4" autocomplete="off">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Voornaam</span>
+                    </label>
+                    <input type="text" id="firstName" name="firstName" required 
+                           class="input input-bordered" placeholder="bijv. Margot" autofocus 
+                           autocomplete="new-password" data-1p-ignore />
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Achternaam</span>
+                    </label>
+                    <input type="text" id="lastName" name="lastName" required 
+                           class="input input-bordered" placeholder="bijv. Robbie" 
+                           autocomplete="new-password" data-1p-ignore />
+                </div>
+
+                <div class="modal-action">
+                    <button type="button" class="btn" onclick="addActorDialog.close()">Annuleren</button>
+                    <button type="submit" class="btn btn-primary">Opslaan</button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
 
     <!-- Simple Add Actor Dialog -->
     <dialog id="addActorDialog" class="modal">
