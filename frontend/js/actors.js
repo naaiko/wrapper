@@ -27,9 +27,6 @@ class ActorsApp {
             return;
         }
 
-        // Initialize Supabase
-        await supabaseClient.init();
-
         // Load project info
         await this.loadProjectInfo();
 
@@ -42,7 +39,7 @@ class ActorsApp {
 
     async loadProjectInfo() {
         try {
-            const { data, error } = await supabaseClient.client
+            const { data, error } = await supabaseClient.db
                 .from('projects')
                 .select('name')
                 .eq('id', this.projectId)
