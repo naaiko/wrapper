@@ -14,6 +14,7 @@
 // =================================================================
 
 import { EditScreen } from './components/editScreen.js';
+import { CustomDropdown } from './components/customDropdown.js';
 import { SceneService } from './services/sceneService.js';
 import { LocationService } from './services/locationService.js';
 import settingsService from './services/settingsService.js';
@@ -29,13 +30,19 @@ export class SceneEditScreen {
         this.onSceneDeleted = options.onSceneDeleted || null;
         this.onSceneUnscheduled = options.onSceneUnscheduled || null;
         
+        // Custom dropdown instances
+        this.intExtDropdown = null;
+        this.locationDropdown = null;
+        this.continuityDropdown = null;
+        
         // Create the edit screen
         this.editScreen = new EditScreen({   
             id: 'sceneEditScreen',
             title: 'Edit Scene',
             renderFormContent: (scene) => this.renderForm(scene),
             renderContextContent: (scene) => this.renderContext(scene),
-            onChange: (field, value, scene) => this.handleChange(field, value, scene)
+            onChange: (field, value, scene) => this.handleChange(field, value, scene),
+            onAfterRender: (scene) => this.initializeDropdowns(scene)
         }).init();
         
         // Add secondary actions
@@ -86,24 +93,15 @@ export class SceneEditScreen {
     }
     
     /**
-     * Render INT/EXT section (as dropdown)
+     * Render INT/EXT section (as custom dropdown)
      */
     renderIntExtSection(scene, cols = 2) {
-        const options = ['INT', 'EXT', 'INT/EXT', 'EXT/INT'];
-        
         return `
             <div class="form-control edit-screen__col-span-${cols}">
                 <label class="label">
                     <span class="label-text font-semibold">INT/EXT</span>
                 </label>
-                <select name="int_ext" class="select select-bordered">
-                    <option value="">Select...</option>
-                    ${options.map(opt => `
-                        <option value="${opt}" ${scene?.int_ext === opt ? 'selected' : ''}>
-                            ${opt}.
-                        </option>
-                    `).join('')}
-                </select>
+                <div id="intExtDropdownContainer"></div>
             </div>
         `;
     }
@@ -117,15 +115,7 @@ export class SceneEditScreen {
                 <label class="label">
                     <span class="label-text font-semibold">Location</span>
                 </label>
-                <select name="location_id" class="select select-bordered" required>
-                    <option value="">Select location...</option>
-                    ${this.locations.map(loc => `
-                        <option value="${loc.id}" ${scene?.location_id === loc.id ? 'selected' : ''}>
-                            ${loc.name}
-                        </option>
-                    `).join('')}
-                    <option value="CREATE_NEW">+ Create new location...</option>
-                </select>
+                <div id="locationDropdownContainer"></div>
             </div>
         `;
     }
@@ -200,18 +190,7 @@ export class SceneEditScreen {
                 <label class="label">
                     <span class="label-text font-semibold">Continuity</span>
                 </label>
-                <select name="continuity" class="select select-bordered">
-                    <option value="">None</option>
-                    ${this.continuityOptions.map(opt => `
-                        <option 
-                            value="${opt.id}" 
-                            ${scene?.continuity === opt.id ? 'selected' : ''}
-                            title="${opt.description || ''}"
-                        >
-                            ${opt.label}
-                        </option>
-                    `).join('')}
-                </select>
+                <div id="continuityDropdownContainer"></div>
             </div>
         `;
     }
@@ -255,6 +234,81 @@ export class SceneEditScreen {
                 <div id="scenePreviewCard"></div>
             </div>
         `;
+    }
+    
+    /**
+     * Initialize custom dropdowns after form is rendered
+     */
+    initializeDropdowns(scene) {
+        const features = settingsService.getAllFeatures();
+        
+        // INT/EXT Dropdown
+        if (features.show_int_ext) {
+            const intExtOptions = ['INT', 'EXT', 'INT/EXT', 'EXT/INT'].map(opt => ({
+                value: opt,
+                label: opt
+            }));
+            
+            this.intExtDropdown = new CustomDropdown({
+                containerId: 'intExtDropdownContainer',
+                name: 'int_ext',
+                options: intExtOptions,
+                value: scene?.int_ext || '',
+                placeholder: 'Select...',
+                size: 'md',
+                onChange: (value) => this.handleChange('int_ext', value, scene)
+            });
+            this.intExtDropdown.render();
+        }
+        
+        // Location Dropdown
+        if (features.show_location) {
+            const locationOptions = this.locations.map(loc => ({
+                value: loc.id,
+                label: loc.name
+            }));
+            
+            this.locationDropdown = new CustomDropdown({
+                containerId: 'locationDropdownContainer',
+                name: 'location_id',
+                options: locationOptions,
+                value: scene?.location_id || '',
+                placeholder: 'Select location...',
+                searchable: true,
+                allowCreate: true,
+                createLabel: '+ Create new location...',
+                required: true,
+                size: 'md',
+                onChange: (value) => this.handleChange('location_id', value, scene),
+                onCreate: () => this.handleCreateLocation()
+            });
+            this.locationDropdown.render();
+        }
+        
+        // Continuity Dropdown
+        if (features.show_continuity) {
+            const continuityOptions = this.continuityOptions.map(opt => ({
+                value: opt.id,
+                label: opt.label
+            }));
+            
+            // Add "None" option at the start
+            continuityOptions.unshift({ value: '', label: 'None' });
+            
+            this.continuityDropdown = new CustomDropdown({
+                containerId: 'continuityDropdownContainer',
+                name: 'continuity',
+                options: continuityOptions,
+                value: scene?.continuity || '',
+                placeholder: 'None',
+                size: 'md',
+                onChange: (value) => this.handleChange('continuity', value, scene)
+            });
+            this.continuityDropdown.render();
+        }
+        
+        // Initialize preview after dropdowns are ready
+        this.updatePreview(scene);
     }
     
     /**
@@ -312,6 +366,37 @@ export class SceneEditScreen {
         
         // Update context preview
         this.updateContextPreview(scene);
+    }
+    
+    /**
+     * Handle create new location
+     */
+    async handleCreateLocation() {
+        const name = prompt('Enter new location name:');
+        if (!name) return;
+        
+        try {
+            const newLocation = await LocationService.create({ name });
+            
+            // Add to locations list
+            this.locations.push(newLocation);
+            
+            // Update dropdown options
+            const locationOptions = this.locations.map(loc => ({
+                value: loc.id,
+                label: loc.name
+            }));
+            this.locationDropdown.updateOptions(locationOptions);
+            
+            // Select the new location
+            this.locationDropdown.setValue(newLocation.id);
+            
+            // Trigger onChange to save
+            await this.handleChange('location_id', newLocation.id, this.editScreen.currentData);
+        } catch (error) {
+            console.error('Failed to create location:', error);
+            alert('Failed to create location. Please try again.');
+        }
     }
     
     /**

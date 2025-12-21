@@ -36,6 +36,7 @@ export class EditScreen {
         this.onChange = options.onChange || null; // Auto-save on change
         this.onCancel = options.onCancel || null;
         this.onDelete = options.onDelete || null;
+        this.onAfterRender = options.onAfterRender || null; // Called after form is rendered
         
         // Callbacks for content rendering
         this.renderFormContent = options.renderFormContent || null;
@@ -181,6 +182,13 @@ export class EditScreen {
 
         if (this.renderContextContent) {
             this.contextZone.innerHTML = this.renderContextContent(data);
+        }
+
+        // Call onAfterRender hook (for initializing custom components)
+        if (this.onAfterRender) {
+            setTimeout(() => {
+                this.onAfterRender(data);
+            }, 0);
         }
 
         // Show backdrop
