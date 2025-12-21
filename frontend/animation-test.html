@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Test</title>
+    <link rel="stylesheet" href="css/calendar-animations.css">
+    <style>
+        body {
+            margin: 40px;
+            font-family: system-ui;
+        }
+        .test-scene {
+            padding: 20px;
+            background: #4f46e5;
+            color: white;
+            border-radius: 8px;
+            cursor: move;
+            display: inline-block;
+            margin: 20px;
+        }
+        .calendar-area {
+            border: 2px dashed #ccc;
+            min-height: 400px;
+            padding: 20px;
+            margin-top: 40px;
+            position: relative;
+        }
+        .target-position {
+            position: absolute;
+            width: 200px;
+            height: 60px;
+            background: #e5e7eb;
+            border: 2px solid #9ca3af;
+            border-radius: 4px;
+            top: 100px;
+            left: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Pink Mode Animation Test</h1>
+    
+    <div class="test-scene" draggable="true" id="testScene">
+        Scene 1: Drag me to the calendar area
+    </div>
+    
+    <div class="calendar-area">
+        <h2>Drop Zone</h2>
+        <div class="target-position">Target Position</div>
+    </div>
+    
+    <script type="module">
+        import { calendarAnimationController } from './js/utils/calendarAnimations.js';
+        
+        const scene = document.getElementById('testScene');
+        const dropZone = document.querySelector('.calendar-area');
+        const target = document.querySelector('.target-position');
+        
+        let cursorX = 0, cursorY = 0;
+        
+        scene.addEventListener('dragstart', (e) => {
+            console.log('🎬 Test drag start');
+            calendarAnimationController.onDragStart(scene, { scene_number: '1', shooting_dates: [] }, e);
+        });
+        
+        scene.addEventListener('dragend', (e) => {
+            console.log('🎬 Test drag end');
+            calendarAnimationController.onDragEnd(scene);
+        });
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            cursorX = e.clientX;
+            cursorY = e.clientY;
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            console.log('🎬 Test drop at', e.clientX, e.clientY);
+            
+            // Simulate the grow animation
+            const targetRect = target.getBoundingClientRect();
+            
+            calendarAnimationController.onDrop({
+                sceneData: { scene_number: '1', shooting_dates: ['2025-01-01'] },
+                targetDate: new Date(),
+                cursorX: e.clientX,
+                cursorY: e.clientY
+            }, () => {
+                console.log('✅ Animation complete!');
+            });
+            
+            // Actually move the element after animation
+            setTimeout(() => {
+                target.innerHTML = 'Scene 1: Placed!';
+                target.style.background = '#4f46e5';
+                target.style.color = 'white';
+            }, 600);
+        });
+    </script>
+</body>
+</html>

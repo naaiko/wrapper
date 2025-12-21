@@ -693,6 +693,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update navbar with project name
     document.querySelector('.navbar .btn-ghost.text-xl').textContent = currentProject.name;
     
+    // Update navigation links with project ID
+    const navActors = document.getElementById('navActors');
+    const navCalendar = document.getElementById('navCalendar');
+    if (navActors) navActors.href = `actors.html?project=${currentProject.id}`;
+    if (navCalendar) navCalendar.href = `calendar.html?project=${currentProject.id}`;
+    
     renderTimeline();
     enableDragScroll();
     

@@ -1,0 +1,168 @@
+/* =================================================================
+   CALENDAR DRAG & DROP ANIMATIONS - "Pink Mode"
+   =================================================================
+   Smooth "suck in" and "grow out" animations for calendar scene placement
+*/
+
+/* Container for animation clones */
+#calendar-animation-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+/* Clone element for the animation */
+.calendar-event-clone {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 4px;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform, opacity, width, height, top, left;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    border: 2px solid hsl(var(--p));
+}
+
+/* Shrink animation - event gets "sucked into" the cursor */
+.calendar-event-clone.shrinking {
+    animation: suckIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Grow animation - event expands from cursor to final position */
+.calendar-event-clone.growing {
+    animation: growOut 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Keyframes for shrink effect */
+@keyframes suckIn {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.2);
+        opacity: 0.5;
+    }
+}
+
+/* Keyframes for grow effect */
+@keyframes growOut {
+    0% {
+        transform: scale(0.2);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Pulse effect while dragging */
+.dragging-placeholder {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Enhance the dragged card appearance */
+.scene-card.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+}
+
+/* Calendar drop zone highlight */
+.calendar-drop-active {
+    position: relative;
+}
+
+.calendar-drop-active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: hsla(var(--p), 0.1);
+    border: 2px dashed hsl(var(--p));
+    border-radius: 8px;
+    pointer-events: none;
+    animation: dropZonePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dropZonePulse {
+    0%, 100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Multi-day event special effect */
+.calendar-event-clone.multi-day {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2),
+                0 0 0 2px hsl(var(--p) / 0.3);
+}
+
+.calendar-event-clone.multi-day.growing {
+    animation: growOutMultiDay 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes growOutMultiDay {
+    0% {
+        transform: scale(0.2);
+        opacity: 0.5;
+    }
+    30% {
+        transform: scale(0.5) rotate(2deg);
+        opacity: 0.7;
+    }
+    60% {
+        transform: scale(1.1) rotate(-1deg);
+        opacity: 0.95;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+/* Smooth transitions for calendar events themselves */
+.toastui-calendar-weekday-event,
+.toastui-calendar-weekday-event-block {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Highlight effect when event is placed */
+.calendar-event-placed {
+    animation: placeHighlight 1s ease forwards;
+}
+
+@keyframes placeHighlight {
+    0% {
+        box-shadow: 0 0 0 0 hsl(var(--s) / 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 8px hsl(var(--s) / 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 hsl(var(--s) / 0);
+    }
+}

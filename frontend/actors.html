@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cupcake">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actors - Continuity Manager</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- DaisyUI CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/actors.css">
+    
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="min-h-screen bg-base-200">
+        <!-- Navbar -->
+        <div class="navbar bg-base-100 shadow-lg">
+            <div class="flex-1">
+                <a href="projects.html" class="btn btn-ghost text-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Actors & Characters
+                </a>
+            </div>
+            <div class="flex-none gap-2">
+                <a id="navTimeline" href="timeline.html" class="btn btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    Timeline
+                </a>
+                <a id="navCalendar" href="calendar.html" class="btn btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Calendar
+                </a>
+                <a href="projects.html" class="btn btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Projects
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container mx-auto px-4 py-8">
+            <!-- Header with Add Actor Button -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-4xl font-bold" id="projectTitle">Loading...</h1>
+                    <p class="text-base-content/70 mt-2">Manage your cast and track continuity details</p>
+                </div>
+                <button id="btnAddActor" class="btn btn-primary gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Actor
+                </button>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="mb-6 flex gap-4">
+                <div class="form-control flex-1">
+                    <input type="text" id="searchInput" placeholder="Search actors or characters..." class="input input-bordered w-full" />
+                </div>
+                <div class="dropdown dropdown-end">
+                    <label tabindex="0" class="btn btn-outline gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        Filter
+                    </label>
+                    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-2">
+                        <li><a id="filterAll" class="active">All Actors</a></li>
+                        <li><a id="filterRecent">Recently Modified</a></li>
+                        <li><a id="filterAZ">A-Z by Actor</a></li>
+                        <li><a id="filterCharacter">A-Z by Character</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Actors Grid -->
+            <div id="actorsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Actor cards will be inserted here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-20 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-base-content/30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <h3 class="text-2xl font-semibold text-base-content/70 mb-2">No Actors Yet</h3>
+                <p class="text-base-content/50 mb-6">Start building your cast by adding your first actor</p>
+                <button id="btnAddActorEmpty" class="btn btn-primary gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Your First Actor
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Actor Modal -->
+    <dialog id="actorModal" class="modal">
+        <div class="modal-box max-w-4xl">
+            <h3 class="font-bold text-2xl mb-6" id="modalTitle">Add Actor</h3>
+            
+            <form id="actorForm" class="space-y-6">
+                <!-- Visual Character Preview -->
+                <div class="flex justify-center mb-6">
+                    <div class="actor-silhouette-container">
+                        <svg id="actorSilhouette" class="actor-silhouette" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Head -->
+                            <ellipse cx="100" cy="50" rx="35" ry="40" class="silhouette-part" fill="#cbd5e1"/>
+                            <!-- Hair -->
+                            <ellipse cx="100" cy="35" rx="38" ry="25" class="silhouette-hair" fill="#94a3b8"/>
+                            <!-- Neck -->
+                            <rect x="85" y="85" width="30" height="25" class="silhouette-part" fill="#cbd5e1"/>
+                            <!-- Torso -->
+                            <ellipse cx="100" cy="160" rx="50" ry="70" class="silhouette-part" fill="#cbd5e1"/>
+                            <!-- Arms -->
+                            <ellipse cx="60" cy="150" rx="15" ry="60" class="silhouette-part" fill="#cbd5e1" transform="rotate(-10 60 150)"/>
+                            <ellipse cx="140" cy="150" rx="15" ry="60" class="silhouette-part" fill="#cbd5e1" transform="rotate(10 140 150)"/>
+                            <!-- Legs -->
+                            <ellipse cx="80" cy="300" rx="20" ry="90" class="silhouette-part" fill="#cbd5e1"/>
+                            <ellipse cx="120" cy="300" rx="20" ry="90" class="silhouette-part" fill="#cbd5e1"/>
+                        </svg>
+                        <div id="profileImagePreview" class="actor-photo-preview hidden">
+                            <img id="profileImage" src="" alt="Profile" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Left Column -->
+                    <div class="space-y-4">
+                        <h4 class="font-semibold text-lg border-b pb-2">Basic Information</h4>
+                        
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Actor Name *</span>
+                            </label>
+                            <input type="text" id="actorName" name="actorName" required 
+                                   placeholder="e.g., Margot Robbie" class="input input-bordered" />
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Character Name *</span>
+                            </label>
+                            <input type="text" id="characterName" name="characterName" required 
+                                   placeholder="e.g., Harley Quinn" class="input input-bordered" />
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Email</span>
+                            </label>
+                            <input type="email" id="email" name="email" 
+                                   placeholder="actor@example.com" class="input input-bordered" />
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Phone</span>
+                            </label>
+                            <input type="tel" id="phone" name="phone" 
+                                   placeholder="+32 123 45 67 89" class="input input-bordered" />
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Profile Image URL</span>
+                            </label>
+                            <input type="url" id="profileImageUrl" name="profileImageUrl" 
+                                   placeholder="https://..." class="input input-bordered" />
+                            <label class="label">
+                                <span class="label-text-alt">Enter an image URL to replace the silhouette</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-4">
+                        <h4 class="font-semibold text-lg border-b pb-2">Physical Characteristics</h4>
+                        
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Height</span>
+                            </label>
+                            <input type="text" id="height" name="height" 
+                                   placeholder="e.g., 165 cm / 5'5\"" class="input input-bordered" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text">Hair Color</span>
+                                </label>
+                                <select id="hairColor" name="hairColor" class="select select-bordered">
+                                    <option value="">Select...</option>
+                                    <option>Blonde</option>
+                                    <option>Brown</option>
+                                    <option>Black</option>
+                                    <option>Red</option>
+                                    <option>Gray</option>
+                                    <option>White</option>
+                                    <option>Dyed</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text">Eye Color</span>
+                                </label>
+                                <select id="eyeColor" name="eyeColor" class="select select-bordered">
+                                    <option value="">Select...</option>
+                                    <option>Blue</option>
+                                    <option>Brown</option>
+                                    <option>Green</option>
+                                    <option>Hazel</option>
+                                    <option>Gray</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Hair Style</span>
+                            </label>
+                            <input type="text" id="hairStyle" name="hairStyle" 
+                                   placeholder="e.g., Short, Long, Curly" class="input input-bordered" />
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Skin Tone</span>
+                            </label>
+                            <select id="skinTone" name="skinTone" class="select select-bordered">
+                                <option value="">Select...</option>
+                                <option>Very Fair</option>
+                                <option>Fair</option>
+                                <option>Light</option>
+                                <option>Medium</option>
+                                <option>Tan</option>
+                                <option>Brown</option>
+                                <option>Dark Brown</option>
+                                <option>Deep</option>
+                            </select>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Body Type</span>
+                            </label>
+                            <select id="bodyType" name="bodyType" class="select select-bordered">
+                                <option value="">Select...</option>
+                                <option>Slim</option>
+                                <option>Athletic</option>
+                                <option>Average</option>
+                                <option>Muscular</option>
+                                <option>Stocky</option>
+                                <option>Large</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Full Width Fields -->
+                <div class="space-y-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Distinguishing Features</span>
+                        </label>
+                        <input type="text" id="distinguishingFeatures" name="distinguishingFeatures" 
+                               placeholder="e.g., Scar on left eyebrow, tattoo on right arm" class="input input-bordered" />
+                        <label class="label">
+                            <span class="label-text-alt">Separate multiple features with commas</span>
+                        </label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Notes</span>
+                        </label>
+                        <textarea id="notes" name="notes" rows="3" 
+                                  placeholder="Additional notes about the actor or character..." 
+                                  class="textarea textarea-bordered"></textarea>
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="modal-action">
+                    <button type="button" class="btn" onclick="actorModal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveActor">Save Actor</button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <!-- Actor Detail Modal -->
+    <dialog id="actorDetailModal" class="modal">
+        <div class="modal-box max-w-5xl">
+            <div id="actorDetailContent">
+                <!-- Content will be dynamically inserted -->
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <!-- Scripts -->
+    <script type="module" src="js/actors.js"></script>
+</body>
+</html>

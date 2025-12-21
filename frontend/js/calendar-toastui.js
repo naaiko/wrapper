@@ -108,6 +108,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update navbar
     document.querySelector('.navbar .btn-ghost.text-xl').textContent = currentProject.name;
     
+    // Update navigation links with project ID
+    const navActors = document.getElementById('navActors');
+    const navTimeline = document.getElementById('navTimeline');
+    if (navActors) navActors.href = `actors.html?project=${currentProject.id}`;
+    if (navTimeline) navTimeline.href = `timeline.html?project=${currentProject.id}`;
+    
     // Initialize Toast UI Calendar
     initializeCalendar();
     
