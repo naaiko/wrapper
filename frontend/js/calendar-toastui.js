@@ -9,6 +9,7 @@ import { IconPicker } from './components/iconPicker.js';
 import { calculateScenePlacement, deleteSplitGroupScenes, getSceneShootingDaysCount } from './calendar-scene-placement.js';
 import { renderSceneCard, buildSceneHeading } from './components/sceneCardRenderer.js';
 import demoDataService from './services/demoDataService.js';
+import { SceneEditScreen } from './sceneEditScreen.js';
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 
@@ -16,9 +17,7 @@ let currentProject = null;
 let scenes = [];
 let locations = [];
 let calendar = null;
-let selectedTime = null; // Currently selected time in drawer
-let selectedConditions = []; // Currently selected conditions in drawer (array)
-let selectedContinuity = null; // Currently selected continuity in drawer
+let sceneEditScreen = null; // SceneEditScreen component instance
 let currentSettingsTab = 'scene-headings'; // Currently active tab in settings subdock
 
 // Default times if project doesn't have times configured
@@ -100,6 +99,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('📋 Loaded scenes:', scenes.map(s => ({ id: s.id, number: s.scene_number, time: s.time, conditions: s.conditions })));
     console.log('📍 Loaded locations:', locations.length, 'locations');
     
+    // Initialize SceneEditScreen component
+    initializeSceneEditScreen();
+    
     // Update navbar
     document.querySelector('.navbar .btn-ghost.text-xl').textContent = currentProject.name;
     
@@ -116,11 +118,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Listen for settings changes to update UI visibility
     window.addEventListener('settingsChanged', (event) => {
         console.log('⚙️ Settings changed, updating UI');
-        updateDrawerVisibility();
+        updateSceneEditScreenOptions();
         renderCalendarEvents();
         renderUnscheduledScenes();
     });
 });
+
+// =================================================================
+// SCENE EDIT SCREEN INITIALIZATION
+// =================================================================
+
+function initializeSceneEditScreen() {
+    sceneEditScreen = new SceneEditScreen({
+        locations: locations,
+        times: getProjectTimes(),
+        conditions: getProjectConditions(),
+        continuityOptions: settingsService.getContinuityOptions(),
+        
+        onSceneUpdated: async (sceneId) => {
+            // Reload scenes and refresh UI
+            scenes = await SceneService.getAll(currentProject.id);
+            renderCalendarEvents();
+            renderUnscheduledScenes();
+        },
+        
+        onSceneDeleted: async (sceneId) => {
+            // Reload scenes and refresh UI
+            scenes = await SceneService.getAll(currentProject.id);
+            renderCalendarEvents();
+            renderUnscheduledScenes();
+        },
+        
+        onSceneUnscheduled: async (sceneId) => {
+            // Reload scenes and refresh UI
+            scenes = await SceneService.getAll(currentProject.id);
+            renderCalendarEvents();
+            renderUnscheduledScenes();
+        }
+    });
+}
+
+function updateSceneEditScreenOptions() {
+    if (sceneEditScreen) {
+        sceneEditScreen.updateOptions({
+            locations: locations,
+            times: getProjectTimes(),
+            conditions: getProjectConditions(),
+            continuityOptions: settingsService.getContinuityOptions()
+        });
+    }
+}
 
 // =================================================================
 // TOAST UI CALENDAR INITIALIZATION
@@ -686,204 +733,16 @@ function setupEmptyDayClickHandler() {
     });
 }
 
-let currentDrawerEvent = null;
+// =================================================================
+// SCENE EDITING (using EditScreen component)
+// =================================================================
 
 function openSceneDrawer(event) {
     const scene = scenes.find(s => s.id === event.id);
     if (!scene) return;
     
-    currentDrawerEvent = event;
-    
-    // Set selected time
-    selectedTime = scene.time || null;
-    
-    // Set selected conditions (copy array to avoid reference issues)
-    selectedConditions = scene.conditions ? [...scene.conditions] : [];
-    
-    // Set selected continuity
-    selectedContinuity = scene.continuity || null;
-    
-    // Populate editable fields
-    document.getElementById('drawerSceneNumberInput').value = scene.scene_number;
-    
-    // Populate location dropdown
-    renderLocationDropdown(scene.location_id);
-    
-    // Set INT/EXT toggle
-    updateIntExtToggle(scene.int_ext);
-    
-    // Render time selector
-    renderTimeSelector();
-    
-    // Render conditions selector
-    renderConditionsSelector();
-    
-    // Render continuity selector
-    renderContinuitySelector();
-    
-    // Update field visibility based on settings
-    updateDrawerVisibility();
-    
-    // Format dates (read-only)
-    const dates = scene.shooting_dates || [];
-    if (dates.length === 0) {
-        document.getElementById('drawerSceneDatesInfo').textContent = 'Not scheduled';
-    } else if (dates.length === 1) {
-        document.getElementById('drawerSceneDatesInfo').textContent = formatDateReadable(dates[0]);
-    } else {
-        const sortedDates = [...dates].sort();
-        document.getElementById('drawerSceneDatesInfo').textContent = `${formatDateReadable(sortedDates[0])} - ${formatDateReadable(sortedDates[sortedDates.length - 1])} (${dates.length} days)`;
-    }
-    
-    // Show drawer
-    const drawer = document.getElementById('sceneDrawer');
-    const backdrop = document.getElementById('drawerBackdrop');
-    
-    drawer.style.transform = 'translateY(0)';
-    backdrop.classList.remove('pointer-events-none');
-    backdrop.style.opacity = '1';
-}
-
-function closeSceneDrawer() {
-    const drawer = document.getElementById('sceneDrawer');
-    const backdrop = document.getElementById('drawerBackdrop');
-    
-    drawer.style.transform = 'translateY(100%)';
-    backdrop.style.opacity = '0';
-    
-    setTimeout(() => {
-        backdrop.classList.add('pointer-events-none');
-        currentDrawerEvent = null;
-    }, 300);
-}
-
-function updateIntExtToggle(value) {
-    const radios = document.querySelectorAll('input[name="intExt"]');
-    const labels = document.querySelectorAll('label:has(input[name="intExt"])');
-    
-    // Reset all labels
-    labels.forEach(label => {
-        label.classList.remove('btn-primary');
-        label.classList.add('btn-outline');
-    });
-    
-    // Find and select the matching radio
-    radios.forEach((radio, index) => {
-        if (radio.value === value) {
-            radio.checked = true;
-            labels[index].classList.remove('btn-outline');
-            labels[index].classList.add('btn-primary');
-        } else {
-            radio.checked = false;
-        }
-    });
-}
-
-function getSelectedIntExt() {
-    const selected = document.querySelector('input[name="intExt"]:checked');
-    return selected ? selected.value : null;
-}
-
-function renderLocationDropdown(selectedLocationId) {
-    const select = document.getElementById('drawerLocationSelect');
-    select.innerHTML = '<option value="">Select location...</option>';
-    
-    // Add existing locations
-    locations.forEach(location => {
-        const option = document.createElement('option');
-        option.value = location.id;
-        option.textContent = location.name;
-        if (location.id === selectedLocationId) {
-            option.selected = true;
-        }
-        select.appendChild(option);
-    });
-    
-    // Add "Create new location" option
-    const newOption = document.createElement('option');
-    newOption.value = 'CREATE_NEW';
-    newOption.textContent = '+ Create new location...';
-    select.appendChild(newOption);
-}
-
-function populateAddSceneLocationDropdown() {
-    const select = document.getElementById('addSceneLocation');
-    if (!select) return;
-    
-    select.innerHTML = '<option value="">Select location...</option>';
-    
-    // Add existing locations
-    locations.forEach(location => {
-        const option = document.createElement('option');
-        option.value = location.id;
-        option.textContent = location.name;
-        select.appendChild(option);
-    });
-    
-    // Add "Create new location" option
-    const newOption = document.createElement('option');
-    newOption.value = 'CREATE_NEW';
-    newOption.textContent = '+ Create new location...';
-    select.appendChild(newOption);
-}
-
-function renderContinuitySelector() {
-    const select = document.getElementById('drawerContinuitySelect');
-    if (!select) return;
-    
-    select.innerHTML = '<option value="">None</option>';
-    
-    const continuityOptions = settingsService.getContinuityOptions();
-    continuityOptions.forEach(option => {
-        const optEl = document.createElement('option');
-        optEl.value = option.id;
-        optEl.textContent = option.label;
-        optEl.title = option.description || '';
-        if (option.id === selectedContinuity) {
-            optEl.selected = true;
-        }
-        select.appendChild(optEl);
-    });
-    
-    // Update selected continuity on change
-    select.addEventListener('change', (e) => {
-        selectedContinuity = e.target.value || null;
-    });
-}
-
-function updateDrawerVisibility() {
-    // Show/hide drawer sections based on feature flags
-    const features = settingsService.getAllFeatures();
-    
-    // INT/EXT section (find by radio button)
-    const intExtSection = document.querySelector('input[name="intExt"]')?.closest('.form-control');
-    if (intExtSection) {
-        intExtSection.style.display = features.show_int_ext ? '' : 'none';
-    }
-    
-    // Location section
-    const locationSection = document.getElementById('drawerLocationSelect')?.closest('.form-control');
-    if (locationSection) {
-        locationSection.style.display = features.show_location ? '' : 'none';
-    }
-    
-    // Time section
-    const timeSection = document.getElementById('drawerTimeSelector')?.closest('.form-control');
-    if (timeSection) {
-        timeSection.style.display = features.show_time ? '' : 'none';
-    }
-    
-    // Conditions section
-    const conditionsSection = document.getElementById('drawerConditionsSelector')?.closest('.form-control');
-    if (conditionsSection) {
-        conditionsSection.style.display = features.show_conditions ? '' : 'none';
-    }
-    
-    // Continuity section
-    const continuitySection = document.getElementById('drawerContinuitySelect')?.closest('.form-control');
-    if (continuitySection) {
-        continuitySection.style.display = features.show_continuity ? '' : 'none';
-    }
+    // Open the scene edit screen
+    sceneEditScreen.open(scene);
 }
 
 function formatDateReadable(dateStr) {
@@ -1268,164 +1127,7 @@ function setupEventListeners() {
         });
     });
     
-    // Drawer controls
-    document.getElementById('closeDrawer').addEventListener('click', closeSceneDrawer);
-    document.getElementById('drawerBackdrop').addEventListener('click', closeSceneDrawer);
-    
-    // Drawer form submission
-    document.getElementById('drawerForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!currentDrawerEvent) return;
-        
-        const sceneId = currentDrawerEvent.id;
-        const sceneNumber = document.getElementById('drawerSceneNumberInput').value.trim();
-        const locationId = document.getElementById('drawerLocationSelect').value || null;
-        const intExt = getSelectedIntExt();
-        
-        if (!sceneNumber) return;
-        
-        // Get location name for description field (for backward compatibility)
-        let description = '';
-        if (locationId) {
-            const location = locations.find(l => l.id === locationId);
-            if (location) {
-                const prefix = intExt ? `${intExt}. - ` : '';
-                description = `${prefix}${location.name}`;
-            }
-        }
-        
-        try {
-            console.log('💾 Saving scene with time:', selectedTime, 'conditions:', selectedConditions, 'location_id:', locationId, 'int_ext:', intExt, 'continuity:', selectedContinuity);
-            
-            // Update local data
-            const scene = scenes.find(s => s.id === sceneId);
-            if (scene) {
-                const updates = {
-                    scene_number: sceneNumber,
-                    description: description,
-                    location_id: locationId,
-                    time: selectedTime,
-                    conditions: selectedConditions,
-                    int_ext: intExt,
-                    continuity: selectedContinuity,
-                };
-                
-                // Update this scene
-                await SceneService.update(sceneId, updates);
-                scene.scene_number = sceneNumber;
-                scene.description = description;
-                scene.location_id = locationId;
-                scene.time = selectedTime;
-                scene.conditions = [...selectedConditions];
-                scene.int_ext = intExt;
-                scene.continuity = selectedContinuity;
-                
-                // If this scene is part of a split group, update all scenes in the group
-                if (scene.split_group_id) {
-                    const splitGroupScenes = scenes.filter(s => 
-                        s.split_group_id === scene.split_group_id && s.id !== scene.id
-                    );
-                    
-                    for (const splitScene of splitGroupScenes) {
-                        // Update all properties with the same values
-                        await SceneService.update(splitScene.id, {
-                            scene_number: sceneNumber,
-                            description: description,
-                            location_id: locationId,
-                            time: selectedTime,
-                            conditions: selectedConditions,
-                            location: scene.location,
-                            int_ext: scene.int_ext,
-                            continuity: selectedContinuity,
-                            day_night: scene.day_night,
-                            script_day: scene.script_day,
-                            pages: scene.pages
-                        });
-                        
-                        splitScene.scene_number = sceneNumber;
-                        splitScene.description = description;
-                        splitScene.location_id = locationId;
-                        splitScene.time = selectedTime;
-                        splitScene.conditions = [...selectedConditions];
-                        splitScene.location = scene.location;
-                        splitScene.int_ext = scene.int_ext;
-                        splitScene.continuity = selectedContinuity;
-                        splitScene.day_night = scene.day_night;
-                        splitScene.script_day = scene.script_day;
-                        splitScene.pages = scene.pages;
-                    }
-                    
-                    console.log(`🔗 Updated ${splitGroupScenes.length} linked scene(s) in split group with synced properties`);
-                }
-            }
-            
-            // Re-render calendar and unscheduled scenes
-            renderCalendarEvents();
-            renderUnscheduledScenes();
-            
-            // Update current drawer event
-            currentDrawerEvent.title = `${sceneNumber}: ${description}`;
-            currentDrawerEvent.raw.sceneNumber = sceneNumber;
-            currentDrawerEvent.raw.description = description;
-            
-            closeSceneDrawer();
-        } catch (error) {
-            console.error('❌ Error updating scene:', error);
-            alert('Failed to update scene');
-        }
-    });
-    
-    document.getElementById('drawerRemoveBtn').addEventListener('click', async () => {
-        if (!currentDrawerEvent) return;
-        
-        const confirmDelete = confirm(`Remove "${currentDrawerEvent.title}" from calendar?`);
-        if (confirmDelete) {
-            await handleEventDelete({ event: currentDrawerEvent });
-            closeSceneDrawer();
-        }
-    });
-    
-    document.getElementById('drawerDeleteBtn').addEventListener('click', async () => {
-        if (!currentDrawerEvent) return;
-        
-        const scene = scenes.find(s => s.id === currentDrawerEvent.id);
-        if (!scene) return;
-        
-        // Check if this scene is part of a split group
-        let confirmMessage = `Permanently delete scene "${scene.scene_number}: ${scene.description}"?\n\nThis action cannot be undone.`;
-        let scenesToDelete = [scene];
-        
-        if (scene.split_group_id) {
-            const splitGroupScenes = scenes.filter(s => s.split_group_id === scene.split_group_id);
-            if (splitGroupScenes.length > 1) {
-                const sceneNumbers = splitGroupScenes.map(s => s.scene_number).join(', ');
-                confirmMessage = `This scene is part of a split group (${sceneNumbers}).\n\nDelete ALL scenes in this group?\n\nThis action cannot be undone.`;
-                scenesToDelete = splitGroupScenes;
-            }
-        }
-        
-        const confirmDelete = confirm(confirmMessage);
-        if (confirmDelete) {
-            try {
-                // Delete all scenes in the group
-                for (const sceneToDelete of scenesToDelete) {
-                    await SceneService.delete(sceneToDelete.id);
-                }
-                
-                // Remove from local array
-                const deleteIds = scenesToDelete.map(s => s.id);
-                scenes = scenes.filter(s => !deleteIds.includes(s.id));
-                
-                renderCalendarEvents();
-                renderUnscheduledScenes();
-                closeSceneDrawer();
-                console.log(`✅ Deleted ${scenesToDelete.length} scene(s) successfully`);
-            } catch (error) {
-                console.error('❌ Error deleting scene:', error);
-                alert('Failed to delete scene');
-            }
-        }
-    });
+    // Settings configuration button - old drawer form handlers removed (now using EditScreen component)
     
     // Setup calendar drop zone
     setupCalendarDropZone();
