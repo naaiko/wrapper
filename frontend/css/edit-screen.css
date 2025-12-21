@@ -1,0 +1,503 @@
+/* =================================================================
+   EDIT SCREEN - Universal Bottom Sheet / Slide-Up Panel
+   ================================================================= */
+
+/* Core Architecture:
+   - Bottom sheet that slides up from bottom
+   - Fixed zone structure with consistent scroll behavior
+   - Form zone scrolls, all other zones stay visible
+   - Mobile-responsive with full-height option
+   - Smooth animations and transitions
+*/
+
+/* =================================================================
+   BASE CONTAINER
+   ================================================================= */
+
+.edit-screen {
+    /* Positioning */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    
+    /* Layout */
+    display: flex;
+    flex-direction: column;
+    
+    /* Appearance */
+    background-color: oklch(var(--b1));
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+    
+    /* Animation */
+    transform: translateY(100%);
+    transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+    
+    /* Default height (can be overridden) */
+    height: 75vh;
+    max-height: 75vh;
+}
+
+.edit-screen--open {
+    transform: translateY(0);
+}
+
+/* =================================================================
+   DRAG HANDLE
+   ================================================================= */
+
+.edit-screen__handle {
+    /* Positioning */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    
+    /* Layout */
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem 0;
+    
+    /* Cursor */
+    cursor: grab;
+}
+
+.edit-screen__handle:active {
+    cursor: grabbing;
+}
+
+.edit-screen__handle-bar {
+    width: 3rem;
+    height: 0.25rem;
+    background-color: oklch(var(--bc) / 0.2);
+    border-radius: 9999px;
+    transition: background-color 150ms;
+}
+
+.edit-screen__handle:hover .edit-screen__handle-bar {
+    background-color: oklch(var(--bc) / 0.3);
+}
+
+/* =================================================================
+   CLOSE ZONE
+   ================================================================= */
+
+.edit-screen__close-zone {
+    /* Positioning */
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 20;
+}
+
+.edit-screen__close-btn {
+    /* Ensure consistent button styling */
+}
+
+/* =================================================================
+   HEADER
+   ================================================================= */
+
+.edit-screen__header {
+    /* Layout */
+    padding: 2.5rem 1.5rem 1rem 1.5rem;
+    flex-shrink: 0;
+}
+
+.edit-screen__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.75rem;
+    color: oklch(var(--bc));
+}
+
+/* =================================================================
+   FORM ZONE (Scrollable Content Area)
+   ================================================================= */
+
+.edit-screen__form-zone {
+    /* Layout - takes available space and scrolls */
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    /* Padding */
+    padding: 0 1.5rem 1rem 1.5rem;
+    
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+.edit-screen__form {
+    /* Form styling */
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Custom scrollbar styling */
+.edit-screen__form-zone::-webkit-scrollbar {
+    width: 0.5rem;
+}
+
+.edit-screen__form-zone::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+.edit-screen__form-zone::-webkit-scrollbar-thumb {
+    background-color: oklch(var(--bc) / 0.2);
+    border-radius: 9999px;
+}
+
+.edit-screen__form-zone::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(var(--bc) / 0.3);
+}
+
+/* =================================================================
+   ACTION ZONE (Always Visible)
+   ================================================================= */
+
+.edit-screen__action-zone {
+    /* Layout */
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    
+    /* Visual separation */
+    border-top: 1px solid oklch(var(--bc) / 0.1);
+    background-color: oklch(var(--b1));
+    
+    /* Ensure it stays on top when scrolling */
+    position: relative;
+    z-index: 10;
+}
+
+.edit-screen__actions {
+    /* Flexbox layout for action buttons */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.edit-screen__actions-primary {
+    /* Primary actions (right side) */
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.edit-screen__actions-secondary {
+    /* Secondary actions (left side) */
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* =================================================================
+   CONTEXT ZONE (Always Visible, Optional Content)
+   ================================================================= */
+
+.edit-screen__context-zone {
+    /* Layout */
+    flex-shrink: 0;
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    
+    /* Only show if has content */
+    min-height: 0;
+    
+    /* Position above action zone */
+    position: relative;
+    z-index: 5;
+}
+
+.edit-screen__context-zone:empty {
+    display: none;
+}
+
+/* Common context patterns */
+.edit-screen__context-preview {
+    padding: 1rem;
+    background-color: oklch(var(--b2));
+    border-radius: 0.5rem;
+    border: 1px solid oklch(var(--bc) / 0.1);
+}
+
+.edit-screen__context-tip {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background-color: oklch(var(--in) / 0.1);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.edit-screen__context-warning {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background-color: oklch(var(--wa) / 0.1);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.edit-screen__context-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: oklch(var(--p));
+    text-decoration: underline;
+    font-size: 0.875rem;
+}
+
+.edit-screen__context-link:hover {
+    color: oklch(var(--pf));
+}
+
+/* =================================================================
+   FORM PATTERNS & COMPONENTS
+   ================================================================= */
+
+/* Multi-column form layouts */
+.edit-screen__form-row {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+.edit-screen__form-row--2col {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.edit-screen__form-row--3col {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* Icon-enhanced form fields */
+.edit-screen__field-with-icon {
+    position: relative;
+}
+
+.edit-screen__field-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: oklch(var(--bc) / 0.4);
+    pointer-events: none;
+}
+
+.edit-screen__field-with-icon input,
+.edit-screen__field-with-icon select {
+    padding-left: 2.5rem;
+}
+
+/* Form sections */
+.edit-screen__form-section {
+    padding-top: 1rem;
+    border-top: 1px solid oklch(var(--bc) / 0.1);
+}
+
+.edit-screen__form-section:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.edit-screen__form-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: oklch(var(--bc) / 0.6);
+    margin-bottom: 0.75rem;
+}
+
+/* Compact toggle buttons (like INT/EXT selector) */
+.edit-screen__toggle-group {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+
+/* =================================================================
+   MOBILE RESPONSIVE
+   ================================================================= */
+
+@media (max-width: 768px) {
+    .edit-screen {
+        /* Full height on mobile */
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .edit-screen__header {
+        padding: 2rem 1rem 0.75rem 1rem;
+    }
+    
+    .edit-screen__form-zone {
+        padding: 0 1rem 1rem 1rem;
+    }
+    
+    .edit-screen__action-zone {
+        padding: 0.75rem 1rem;
+    }
+    
+    .edit-screen__context-zone {
+        padding: 0 1rem 1rem 1rem;
+    }
+    
+    /* Stack action buttons on mobile if needed */
+    .edit-screen__actions {
+        flex-wrap: wrap;
+    }
+    
+    /* Single column forms on mobile */
+    .edit-screen__form-row--2col,
+    .edit-screen__form-row--3col {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =================================================================
+   TABLET RESPONSIVE
+   ================================================================= */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .edit-screen {
+        /* Slightly taller on tablets */
+        height: 80vh;
+        max-height: 80vh;
+    }
+}
+
+/* =================================================================
+   DESKTOP ENHANCEMENTS
+   ================================================================= */
+
+@media (min-width: 1025px) {
+    .edit-screen {
+        /* Centered with max-width on large screens */
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%) translateY(100%);
+        max-width: 800px;
+        width: 90%;
+    }
+    
+    .edit-screen--open {
+        transform: translateX(-50%) translateY(0);
+    }
+    
+    /* More generous padding on desktop */
+    .edit-screen__header {
+        padding: 2.5rem 2rem 1.25rem 2rem;
+    }
+    
+    .edit-screen__form-zone {
+        padding: 0 2rem 1.5rem 2rem;
+    }
+    
+    .edit-screen__action-zone {
+        padding: 1.25rem 2rem;
+    }
+    
+    .edit-screen__context-zone {
+        padding: 0 2rem 1.5rem 2rem;
+    }
+}
+
+/* =================================================================
+   ANIMATIONS & TRANSITIONS
+   ================================================================= */
+
+/* Fade in backdrop */
+@keyframes fadeInBackdrop {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Slide up panel */
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .edit-screen {
+        transition: none;
+    }
+    
+    .edit-screen__handle-bar {
+        transition: none;
+    }
+}
+
+/* =================================================================
+   FOCUS MANAGEMENT
+   ================================================================= */
+
+/* Trap focus within edit screen when open */
+.edit-screen--open {
+    /* Ensure keyboard navigation works properly */
+}
+
+.edit-screen:focus {
+    outline: none;
+}
+
+/* Visible focus indicators for accessibility */
+.edit-screen__close-btn:focus-visible,
+.edit-screen__save-btn:focus-visible,
+.edit-screen__cancel-btn:focus-visible {
+    outline: 2px solid oklch(var(--p));
+    outline-offset: 2px;
+}
+
+/* =================================================================
+   UTILITY CLASSES
+   ================================================================= */
+
+/* Hide on desktop, show on mobile (and vice versa) */
+.edit-screen__mobile-only {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .edit-screen__mobile-only {
+        display: block;
+    }
+    
+    .edit-screen__desktop-only {
+        display: none;
+    }
+}
+
+/* Compact spacing variant */
+.edit-screen--compact .edit-screen__form {
+    gap: 0.5rem;
+}
+
+.edit-screen--compact .edit-screen__header {
+    padding-bottom: 0.5rem;
+}
+
+/* Wide variant for complex forms */
+@media (min-width: 1025px) {
+    .edit-screen--wide {
+        max-width: 1200px;
+        width: 95%;
+    }
+}
