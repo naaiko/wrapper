@@ -31,37 +31,19 @@
 </head>
 <body class="overflow-hidden">
     <div class="min-h-screen bg-base-200">
-        <!-- Navbar -->
-        <div class="navbar bg-base-100 shadow-lg">
-            <div class="flex-1">
-                <a href="projects.html" class="btn btn-ghost text-xl">Continuity Manager</a>
-            </div>
-            <div class="flex-none gap-2">
-                <a id="navActors" href="actors.html" class="btn btn-ghost">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Actors
-                </a>
-                <a id="navTimeline" href="timeline.html" class="btn btn-ghost">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Timeline
-                </a>
-                <a href="projects.html" class="btn btn-ghost">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    Projects
-                </a>
+        <!-- Tab Switcher (Top Right) -->
+        <div class="fixed top-4 right-4 z-50">
+            <div role="tablist" class="tabs tabs-boxed bg-base-100 shadow-lg">
+                <a id="navActors" href="actors.html" role="tab" class="tab">Actors</a>
+                <a id="navTimeline" href="timeline.html" role="tab" class="tab">Timeline</a>
+                <a id="navCalendar" href="calendar.html" role="tab" class="tab tab-active">Calendar</a>
             </div>
         </div>
 
         <!-- Main Content -->
-        <div class="flex flex-col h-[calc(100vh-4rem)]">
+        <div class="flex flex-col h-screen">
             <!-- Calendar Header -->
-            <div class="flex justify-between items-center py-4 px-6 bg-base-100">
+            <div class="flex justify-between items-center pt-20 pb-4 px-6 bg-base-200">
                 <div class="flex items-center gap-4">
                     <button id="prevMonth" class="btn btn-ghost btn-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,9 +64,9 @@
                 </div>
             </div>
 
-            <div class="flex flex-1 overflow-hidden">
-                <!-- Scene Library (Left Sidebar) -->
-                <div class="w-80 bg-base-100 border-r border-base-300 overflow-y-auto p-4">
+            <div class="flex flex-1 overflow-hidden relative">
+                <!-- Scene Library (Left Sidebar) - Darker background -->
+                <div class="w-96 bg-base-200 overflow-y-auto p-4">
                     <h3 class="font-bold mb-4 flex items-center justify-between">
                         <span>Unscheduled Scenes</span>
                         <button id="addSceneFromCalendar" class="btn btn-primary btn-xs btn-circle">
@@ -98,8 +80,12 @@
                     </div>
                 </div>
 
-                <!-- Calendar Grid -->
-                <div class="flex-1 overflow-hidden p-6 flex flex-col">
+                <!-- Rounded corner transition -->
+                <div class="absolute top-0 left-96 w-8 h-8 bg-base-200 pointer-events-none" style="border-bottom-right-radius: 2rem;"></div>
+                <div class="absolute top-0 left-96 w-8 h-8 bg-base-100 pointer-events-none" style="border-top-left-radius: 2rem;"></div>
+
+                <!-- Calendar Grid - Lighter background -->
+                <div class="flex-1 overflow-hidden p-6 flex flex-col bg-base-100">
                     <div id="calendar" class="flex-1" style="height: 100%;"></div>
                 </div>
             </div>

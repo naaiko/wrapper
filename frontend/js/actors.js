@@ -49,8 +49,10 @@ class ActorsApp {
             document.getElementById('projectTitle').textContent = data.name;
             
             // Update navigation links with project ID
+            const navActors = document.getElementById('navActors');
             const navTimeline = document.getElementById('navTimeline');
             const navCalendar = document.getElementById('navCalendar');
+            if (navActors) navActors.href = `actors.html?project=${this.projectId}`;
             if (navTimeline) navTimeline.href = `timeline.html?project=${this.projectId}`;
             if (navCalendar) navCalendar.href = `calendar.html?project=${this.projectId}`;
         } catch (error) {
@@ -127,18 +129,26 @@ class ActorsApp {
     displayActors(actors) {
         const grid = document.getElementById('actorsGrid');
         const emptyState = document.getElementById('emptyState');
+        const headerSection = document.getElementById('headerSection');
+        const searchFilterSection = document.getElementById('searchFilterSection');
 
         // Apply sorting
         const sortedActors = ActorService.sortActors(actors, this.currentFilter);
 
         if (sortedActors.length === 0) {
+            // Show onboarding state
             grid.classList.add('hidden');
             emptyState.classList.remove('hidden');
+            headerSection.classList.add('hidden');
+            searchFilterSection.classList.add('hidden');
             return;
         }
 
+        // Show normal state
         grid.classList.remove('hidden');
         emptyState.classList.add('hidden');
+        headerSection.classList.remove('hidden');
+        searchFilterSection.classList.remove('hidden');
 
         grid.innerHTML = sortedActors.map(actor => this.createActorCard(actor)).join('');
 
@@ -159,16 +169,7 @@ class ActorsApp {
     createActorCard(actor) {
         const imageHtml = actor.profile_image_url
             ? `<img src="${actor.profile_image_url}" alt="${actor.actor_name}" class="actor-card-image" />`
-            : `<svg class="actor-card-silhouette" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-                <ellipse cx="100" cy="50" rx="35" ry="40" fill="#cbd5e1"/>
-                <ellipse cx="100" cy="35" rx="38" ry="25" fill="#94a3b8"/>
-                <rect x="85" y="85" width="30" height="25" fill="#cbd5e1"/>
-                <ellipse cx="100" cy="160" rx="50" ry="70" fill="#cbd5e1"/>
-                <ellipse cx="60" cy="150" rx="15" ry="60" fill="#cbd5e1" transform="rotate(-10 60 150)"/>
-                <ellipse cx="140" cy="150" rx="15" ry="60" fill="#cbd5e1" transform="rotate(10 140 150)"/>
-                <ellipse cx="80" cy="300" rx="20" ry="90" fill="#cbd5e1"/>
-                <ellipse cx="120" cy="300" rx="20" ry="90" fill="#cbd5e1"/>
-            </svg>`;
+            : `<img src="images/silhouette.svg" alt="Actor Silhouette" class="actor-card-silhouette" />`;
 
         const characteristics = [];
         if (actor.hair_color) characteristics.push(`Hair: ${actor.hair_color}`);
@@ -354,16 +355,7 @@ class ActorsApp {
 
         const imageHtml = actor.profile_image_url
             ? `<img src="${actor.profile_image_url}" alt="${actor.actor_name}" />`
-            : `<svg class="actor-silhouette" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg" style="width: 200px; height: 400px;">
-                <ellipse cx="100" cy="50" rx="35" ry="40" fill="#cbd5e1"/>
-                <ellipse cx="100" cy="35" rx="38" ry="25" fill="#94a3b8"/>
-                <rect x="85" y="85" width="30" height="25" fill="#cbd5e1"/>
-                <ellipse cx="100" cy="160" rx="50" ry="70" fill="#cbd5e1"/>
-                <ellipse cx="60" cy="150" rx="15" ry="60" fill="#cbd5e1" transform="rotate(-10 60 150)"/>
-                <ellipse cx="140" cy="150" rx="15" ry="60" fill="#cbd5e1" transform="rotate(10 140 150)"/>
-                <ellipse cx="80" cy="300" rx="20" ry="90" fill="#cbd5e1"/>
-                <ellipse cx="120" cy="300" rx="20" ry="90" fill="#cbd5e1"/>
-            </svg>`;
+            : `<img src="images/silhouette.svg" alt="Actor Silhouette" style="width: 200px; height: 400px; opacity: 0.4;" />`;
 
         content.innerHTML = `
             <div class="actor-detail-header">

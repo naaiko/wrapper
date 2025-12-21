@@ -3,33 +3,61 @@
 /* Actor Silhouette Styles */
 .actor-silhouette-container {
     position: relative;
-    width: 200px;
-    height: 400px;
+    width: 280px;
+    height: 520px;
     margin: 0 auto;
-    background: linear-gradient(to bottom, rgba(100, 116, 139, 0.1), rgba(100, 116, 139, 0.05));
-    border-radius: 100px 100px 20px 20px;
+    background: linear-gradient(135deg, hsl(var(--b2)) 0%, hsl(var(--b3)) 100%);
+    border: 3px solid hsl(var(--p));
+    outline: 2px solid hsl(var(--pf));
+    outline-offset: -6px;
+    border-radius: var(--rounded-box);
+    padding: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    border: 3px dashed rgba(100, 116, 139, 0.3);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2), inset 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
 }
 
 .actor-silhouette {
-    width: 200px;
-    height: 400px;
-    transition: opacity 0.3s ease;
+    width: 220px;
+    height: 440px;
+    opacity: 0.4;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+    transition: all 0.3s ease;
+    object-fit: contain;
+}
+
+.silhouette-overlay {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    pointer-events: none;
+}
+
+.actor-silhouette-container:hover {
+    border-color: hsl(var(--pf));
+    outline-color: hsl(var(--p));
+    transform: translateY(-4px);
+    box-shadow: 0 15px 50px rgba(0,0,0,0.3), inset 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.actor-silhouette-container:hover .actor-silhouette {
+    opacity: 0.6;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.3));
 }
 
 .actor-photo-preview {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 2rem;
+    left: 2rem;
+    width: calc(100% - 4rem);
+    height: calc(100% - 4rem);
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 2;
 }
 
 .actor-photo-preview.hidden {
@@ -40,12 +68,15 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 100px 100px 20px 20px;
+    border-radius: var(--rounded-box);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .actor-silhouette-container:hover {
-    border-color: rgba(100, 116, 139, 0.5);
-    background: linear-gradient(to bottom, rgba(100, 116, 139, 0.15), rgba(100, 116, 139, 0.08));
+    border-color: hsl(var(--pf));
+    outline-color: hsl(var(--p));
+    transform: translateY(-4px);
+    box-shadow: 0 15px 50px rgba(0,0,0,0.3), inset 0 2px 8px rgba(0,0,0,0.15);
 }
 
 /* Actor Card Styles */
@@ -84,7 +115,9 @@
 .actor-card-silhouette {
     width: 100px;
     height: 200px;
-    opacity: 0.4;
+    opacity: 0.3;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+    object-fit: contain;
 }
 
 .actor-card-body {
@@ -334,6 +367,7 @@
 }
 
 /* Empty State Animation */
+/* Empty State / Onboarding Styles */
 @keyframes float {
     0%, 100% {
         transform: translateY(0);
@@ -343,6 +377,46 @@
     }
 }
 
-#emptyState svg {
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#emptyState {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+#emptyState .inline-block {
     animation: float 3s ease-in-out infinite;
+}
+
+#emptyState .card {
+    transition: all 0.3s ease;
+}
+
+#emptyState .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+#emptyState .grid > div {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+#emptyState .grid > div:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+#emptyState .grid > div:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+#emptyState .grid > div:nth-child(3) {
+    animation-delay: 0.3s;
 }
