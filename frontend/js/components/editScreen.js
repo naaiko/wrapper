@@ -179,11 +179,16 @@ export class EditScreen {
 
         // Render content
         if (this.renderFormContent) {
-            this.formZone.innerHTML = this.renderFormContent(data);
+            const formHTML = this.renderFormContent(data);
+            console.log('📝 Form HTML length:', formHTML?.length, 'First 200 chars:', formHTML?.substring(0, 200));
+            this.formZone.innerHTML = formHTML;
+            console.log('✅ Form zone updated. Children count:', this.formZone.children.length);
         }
 
         if (this.renderContextContent) {
-            this.contextZone.innerHTML = this.renderContextContent(data);
+            const contextHTML = this.renderContextContent(data);
+            console.log('📋 Context HTML length:', contextHTML?.length);
+            this.contextZone.innerHTML = contextHTML;
         }
 
         // Call onAfterRender hook (for initializing custom components)

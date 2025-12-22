@@ -2,12 +2,12 @@
 // ADD SCENE SCREEN - Add new scenes with EditScreen styling
 // =================================================================
 
-import { EditScreen } from './components/editScreen.js';
-import { CustomDropdown } from './components/customDropdown.js';
-import { SceneService } from './services/sceneService.js';
-import { LocationService } from './services/locationService.js';
-import settingsService from './services/settingsService.js';
-import { renderTimeSelector, renderConditionsSelector } from './utils/formFieldTemplates.js';
+import { EditScreen } from '../components/editScreen.js';
+import { CustomDropdown } from '../components/customDropdown.js';
+import { SceneService } from '../services/sceneService.js';
+import { LocationService } from '../services/locationService.js';
+import settingsService from '../services/settingsService.js';
+import { renderTimeSelector, renderConditionsSelector } from '../utils/formFieldTemplates.js';
 
 export class AddSceneScreen {
     constructor(options = {}) {

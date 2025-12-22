@@ -5,9 +5,27 @@
 import { ActorService } from './services/actorService.js';
 import { CustomDropdown } from './components/customDropdown.js';
 import { SVGProcessor } from './utils/svgProcessor.js';
-import { ActorEditScreen } from './actorEditScreen.js';
+import { ActorEditScreen } from './screens/actorEditScreen.js';
 import { LocationService } from './services/locationService.js';
 import settingsService from './services/settingsService.js';
+
+// Default times (same as calendar-toastui.js)
+const DEFAULT_TIMES = [
+    { id: 'morning', label: 'Morning', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />', enabled: true },
+    { id: 'day', label: 'Day', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />', enabled: true },
+    { id: 'evening', label: 'Evening', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />', enabled: true },
+    { id: 'night', label: 'Night', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />', enabled: true },
+];
+
+// Default conditions (same as calendar-toastui.js)
+const DEFAULT_CONDITIONS = [
+    { id: 'sunny', label: 'Sunny', icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>', enabled: true },
+    { id: 'rainy', label: 'Rainy', icon: '<path d="M16 13v8"/><path d="M8 13v8"/><path d="M12 15v8"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>', enabled: true },
+    { id: 'stormy', label: 'Stormy', icon: '<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>', enabled: true },
+    { id: 'cold', label: 'Cold', icon: '<path d="M2 12h20"/><path d="M12 2v20"/><path d="m4.93 4.93 14.14 14.14"/><path d="m4.93 19.07 14.14-14.14"/>', enabled: true },
+    { id: 'hot', label: 'Hot', icon: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>', enabled: true },
+    { id: 'chilly', label: 'Chilly', icon: '<path d="M2 12h20"/><path d="M12 2v20"/><path d="m4.93 4.93 14.14 14.14"/><path d="m4.93 19.07 14.14-14.14"/>', enabled: true },
+];
 
 // Helper function for confirmation dialogs
 function confirmDialog(message, title = 'Bevestiging', okText = 'Verwijderen', cancelText = 'Annuleren') {
@@ -93,64 +111,72 @@ class ActorsApp {
         // Load project info
         await this.loadProjectInfo();
         
-        // Initialize ActorEditScreen
-        await this.initializeActorEditScreen();
-
         // Set up event listeners
         this.setupEventListeners();
 
-        // Load actors
+        // Load actors (do this BEFORE initializing edit screen)
         await this.loadActors();
+        
+        // Initialize ActorEditScreen (non-blocking, can fail gracefully)
+        this.initializeActorEditScreen().catch(err => {
+            console.warn('Failed to initialize ActorEditScreen:', err);
+            // App continues to work without edit screen
+        });
     }
     
     /**
      * Initialize ActorEditScreen component
      */
     async initializeActorEditScreen() {
-        // Load data needed for edit screen
-        this.locations = await LocationService.getAll(this.projectId);
-        
-        // Get times and conditions from settings
-        const times = settingsService.getProjectTimes();
-        const conditions = settingsService.getProjectConditions();
-        
-        this.times = times || [];
-        this.conditions = conditions || [];
-        
-        // Create edit screen instance
-        this.actorEditScreen = new ActorEditScreen({
-            projectId: this.projectId,
-            locations: this.locations,
-            times: this.times,
-            conditions: this.conditions,
-            onActorUpdated: async (actorId) => {
-                // Reload actors and update UI
-                await this.loadActors();
-                // Reselect the updated actor
-                const actor = this.actors.find(a => a.id === actorId);
-                if (actor) {
-                    this.currentActor = actor;
-                    this.currentActorIndex = this.actors.indexOf(actor);
-                    await this.showActorDetail(actor);
+        try {
+            // Load data needed for edit screen
+            this.locations = await LocationService.getAll(this.projectId);
+            
+            // Use default times and conditions (project-specific ones could be loaded from project settings in the future)
+            this.times = DEFAULT_TIMES;
+            this.conditions = DEFAULT_CONDITIONS;
+            
+            // Create edit screen instance
+            this.actorEditScreen = new ActorEditScreen({
+                projectId: this.projectId,
+                locations: this.locations,
+                times: this.times,
+                conditions: this.conditions,
+                onActorUpdated: async (actorId) => {
+                    // Reload actors and update UI
+                    await this.loadActors();
+                    // Reselect the updated actor
+                    const actor = this.actors.find(a => a.id === actorId);
+                    if (actor) {
+                        this.currentActor = actor;
+                        this.currentActorIndex = this.actors.indexOf(actor);
+                        await this.showActorDetail(actor);
+                    }
+                },
+                onActorDeleted: async (actorId) => {
+                    // Remove from local array
+                    this.actors = this.actors.filter(a => a.id !== actorId);
+                    
+                    // Select next/previous actor or show empty state
+                    if (this.actors.length > 0) {
+                        this.currentActorIndex = Math.min(this.currentActorIndex, this.actors.length - 1);
+                        this.currentActor = this.actors[this.currentActorIndex];
+                        this.renderActorDropdown();
+                        await this.showActorDetail(this.currentActor);
+                    } else {
+                        this.currentActor = null;
+                        this.currentActorIndex = 0;
+                        this.showEmptyState();
+                    }
                 }
-            },
-            onActorDeleted: async (actorId) => {
-                // Remove from local array
-                this.actors = this.actors.filter(a => a.id !== actorId);
-                
-                // Select next/previous actor or show empty state
-                if (this.actors.length > 0) {
-                    this.currentActorIndex = Math.min(this.currentActorIndex, this.actors.length - 1);
-                    this.currentActor = this.actors[this.currentActorIndex];
-                    this.renderActorDropdown();
-                    await this.showActorDetail(this.currentActor);
-                } else {
-                    this.currentActor = null;
-                    this.currentActorIndex = 0;
-                    this.showEmptyState();
-                }
-            }
-        });
+            });
+            
+            console.log('ActorEditScreen initialized successfully');
+        } catch (error) {
+            console.error('Error initializing ActorEditScreen:', error);
+            // Set to null so editActor() won't crash
+            this.actorEditScreen = null;
+        }
     }
     
     /**
@@ -962,7 +988,8 @@ class ActorsApp {
             <div class="mt-6 pt-6 border-t border-base-300">
                 <button 
                     class="btn btn-primary btn-block btn-sm"
-                    onclick="actorsApp.editActor('${actor.id}')"
+                    data-action="edit-actor"
+                    data-actor-id="${actor.id}"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -971,6 +998,16 @@ class ActorsApp {
                 </button>
             </div>
         `;
+        
+        // Attach event listener to edit button
+        setTimeout(() => {
+            const editBtn = document.querySelector('[data-action="edit-actor"]');
+            if (editBtn) {
+                editBtn.addEventListener('click', () => {
+                    this.editActor(actor.id);
+                });
+            }
+        }, 0);
     }
     
     /**
@@ -1088,6 +1125,9 @@ class ActorsApp {
     async editActor(actorId) {
         if (this.actorEditScreen) {
             await this.actorEditScreen.open(actorId);
+        } else {
+            console.warn('ActorEditScreen not initialized');
+            alert('Edit screen is not available. Please refresh the page.');
         }
     }
     

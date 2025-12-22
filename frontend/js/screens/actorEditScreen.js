@@ -4,10 +4,10 @@
 // Follows the same architecture as SceneEditScreen
 // Uses the universal EditScreen component for consistency
 
-import { EditScreen } from './components/editScreen.js';
-import { ActorService } from './services/actorService.js';
-import { renderSceneCard } from './components/sceneCardRenderer.js';
-import settingsService from './services/settingsService.js';
+import { EditScreen } from '../components/editScreen.js';
+import { ActorService } from '../services/actorService.js';
+import { renderSceneCard } from '../components/sceneCardRenderer.js';
+import settingsService from '../services/settingsService.js';
 
 export class ActorEditScreen {
     constructor(options = {}) {
@@ -345,28 +345,16 @@ export class ActorEditScreen {
         if (!actor) return '';
         
         return `
-            <div class="edit-screen__context-preview">
-                <div class="text-sm font-semibold mb-3">Preview</div>
-                
-                <!-- Profile Image -->
-                ${actor.profile_image_url ? `
-                    <div class="mb-3">
-                        <img src="${actor.profile_image_url}" alt="${actor.actor_name}" class="w-full rounded-lg shadow-md" />
-                    </div>
-                ` : `
-                    <div class="mb-3 aspect-square bg-base-200 rounded-lg flex items-center justify-center">
-                        <div class="text-6xl font-bold text-base-content/20">${actor.actor_name ? actor.actor_name[0].toUpperCase() : '?'}</div>
-                    </div>
-                `}
-                
-                <!-- Name -->
-                <div class="text-center mb-3">
-                    <div class="font-bold text-lg">${actor.actor_name || 'Actor Name'}</div>
-                    <div class="text-sm text-base-content/60">as ${actor.character_name || 'Character Name'}</div>
+            <div class="text-sm font-semibold mb-2">Preview</div>
+            
+            <!-- Compact Preview -->
+            <div class="text-center p-3 bg-base-200 rounded-lg">
+                <div class="text-4xl font-bold text-base-content/20 mb-2">
+                    ${(actor.actor_name || 'A').charAt(0).toUpperCase()}
                 </div>
-                
-                <!-- Scene Count -->
-                <div class="text-center text-sm text-base-content/60">
+                <div class="font-semibold text-sm">${actor.actor_name || 'Actor'}</div>
+                <div class="text-xs text-base-content/60">as ${actor.character_name || 'Character'}</div>
+                <div class="text-xs text-base-content/40 mt-1">
                     ${actor.scene_actors?.length || 0} scene${(actor.scene_actors?.length || 0) !== 1 ? 's' : ''}
                 </div>
             </div>
@@ -539,9 +527,19 @@ export class ActorEditScreen {
      * Open the edit screen
      */
     async open(actorId) {
-        // Load actor with scene_actors
-        const actor = await ActorService.getById(actorId);
-        this.editScreen.open(actor);
+        try {
+            // Load actor with scene_actors
+            const actor = await ActorService.getById(actorId);
+            
+            if (!actor) {
+                console.error('Actor not found for id:', actorId);
+                return;
+            }
+            
+            this.editScreen.open(actor);
+        } catch (error) {
+            console.error('Error in ActorEditScreen.open():', error);
+        }
     }
     
     /**

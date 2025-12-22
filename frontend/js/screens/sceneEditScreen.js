@@ -13,13 +13,13 @@
 // 6. Verwijder oude drawer HTML en JavaScript
 // =================================================================
 
-import { EditScreen } from './components/editScreen.js';
-import { CustomDropdown } from './components/customDropdown.js';
-import { SceneService } from './services/sceneService.js';
-import { LocationService } from './services/locationService.js';
-import settingsService from './services/settingsService.js';
-import { buildSceneHeading } from './components/sceneCardRenderer.js';
-import { renderTimeSelector, renderConditionsSelector } from './utils/formFieldTemplates.js';
+import { EditScreen } from '../components/editScreen.js';
+import { CustomDropdown } from '../components/customDropdown.js';
+import { SceneService } from '../services/sceneService.js';
+import { LocationService } from '../services/locationService.js';
+import settingsService from '../services/settingsService.js';
+import { buildSceneHeading } from '../components/sceneCardRenderer.js';
+import { renderTimeSelector, renderConditionsSelector } from '../utils/formFieldTemplates.js';
 
 export class SceneEditScreen {
     constructor(options = {}) {

@@ -549,6 +549,7 @@
     .edit-screen--open {
         transform: translateX(-50%) translateY(0);
     }
+}
     
     /* More generous padding on desktop */
     .edit-screen__header {

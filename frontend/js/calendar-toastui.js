@@ -9,8 +9,8 @@ import { IconPicker } from './components/iconPicker.js';
 import { calculateScenePlacement, deleteSplitGroupScenes, getSceneShootingDaysCount } from './calendar-scene-placement.js';
 import { renderSceneCard, buildSceneHeading } from './components/sceneCardRenderer.js';
 import demoDataService from './services/demoDataService.js';
-import { SceneEditScreen } from './sceneEditScreen.js';
-import { AddSceneScreen } from './addSceneScreen.js';
+import { SceneEditScreen } from './screens/sceneEditScreen.js';
+import { AddSceneScreen } from './screens/addSceneScreen.js';
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 
