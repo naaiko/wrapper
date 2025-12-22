@@ -3,16 +3,68 @@
 // =================================================================
 
 import { ActorService } from './services/actorService.js';
-import { SilhouetteController } from './components/silhouetteController.js';
+import { CustomDropdown } from './components/customDropdown.js';
+import { SVGProcessor } from './utils/svgProcessor.js';
+
+// Helper function for confirmation dialogs
+function confirmDialog(message, title = 'Bevestiging', okText = 'Verwijderen', cancelText = 'Annuleren') {
+    return new Promise((resolve) => {
+        const dialog = document.getElementById('confirmDialog');
+        const titleEl = document.getElementById('confirmTitle');
+        const messageEl = document.getElementById('confirmMessage');
+        const okBtn = document.getElementById('confirmOk');
+        const cancelBtn = document.getElementById('confirmCancel');
+        const backdrop = document.getElementById('confirmBackdrop');
+        
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        okBtn.textContent = okText;
+        cancelBtn.textContent = cancelText;
+        
+        const handleOk = () => {
+            cleanup();
+            dialog.close();
+            resolve(true);
+        };
+        
+        const handleCancel = () => {
+            cleanup();
+            dialog.close();
+            resolve(false);
+        };
+        
+        const cleanup = () => {
+            okBtn.removeEventListener('click', handleOk);
+            cancelBtn.removeEventListener('click', handleCancel);
+            backdrop.removeEventListener('click', handleCancel);
+        };
+        
+        okBtn.addEventListener('click', handleOk);
+        cancelBtn.addEventListener('click', handleCancel);
+        backdrop.addEventListener('click', handleCancel);
+        
+        dialog.showModal();
+    });
+}
+
+// Helper function to capitalize first letter of each word
+function capitalizeName(name) {
+    return name
+        .trim()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+}
 
 class ActorsApp {
     constructor() {
         this.projectId = null;
         this.actors = [];
         this.currentActor = null;
+        this.currentActorIndex = 0;
         this.currentFilter = 'all';
         this.searchTerm = '';
-        this.silhouetteController = null;
+        this.actorDropdown = null;
         
         this.init();
     }
@@ -28,17 +80,398 @@ class ActorsApp {
             return;
         }
 
+        // Load and process silhouette SVG
+        await this.loadSilhouetteSVG();
+
         // Load project info
         await this.loadProjectInfo();
-
-        // Initialize silhouette controller
-        this.silhouetteController = new SilhouetteController('silhouetteContainer');
 
         // Set up event listeners
         this.setupEventListeners();
 
         // Load actors
         await this.loadActors();
+    }
+    
+    /**
+     * Load and process multi-layer silhouette SVG
+     * 
+     * NOTE: Runtime loading is fast (single fetch + DOM ops) and only happens once on page load.
+     * Benefits: Source file stays pristine, automatic updates when source changes.
+     * 
+     * CRITICAL: Must use createElementNS and cloneNode to preserve SVG namespace.
+     * 
+     * Process:
+     * 1. Fetch source SVG (images/silhouette.svg) - NEVER modify this file directly
+     * 2. Parse with DOMParser (creates working copy in memory)
+     * 3. Extract groups by ID (Silhouet, Bodyshots, Accesories, Outfit)
+     * 4. Clone with createElementNS (preserves namespace - innerHTML breaks it!)
+     * 5. Remove inline styles (fill, stroke, class) → allows CSS styling
+     * 6. Append to container
+     */
+    async loadSilhouetteSVG() {
+        try {
+            const response = await fetch('images/silhouette.svg');
+            const svgText = await response.text();
+            
+            // Parse SVG with proper namespace - creates working copy
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svgText, 'image/svg+xml');
+            const sourceSVG = doc.querySelector('svg');
+            
+            const svgContainer = document.querySelector('.actor-silhouette');
+            if (!svgContainer || !sourceSVG) {
+                console.error('Missing container or source SVG');
+                return;
+            }
+            
+            // Set viewBox from source
+            svgContainer.innerHTML = '';
+            svgContainer.setAttribute('viewBox', sourceSVG.getAttribute('viewBox') || '0 0 373 852');
+            
+            // Add SVG defs for masks (plus cutout)
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            
+            // Create mask with plus cutout
+            const mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
+            mask.setAttribute('id', 'plus-cutout-mask');
+            
+            // White background (visible area)
+            const maskBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            maskBg.setAttribute('x', '0');
+            maskBg.setAttribute('y', '0');
+            maskBg.setAttribute('width', '100%');
+            maskBg.setAttribute('height', '100%');
+            maskBg.setAttribute('fill', 'white');
+            mask.appendChild(maskBg);
+            
+            // Black plus (cutout area) - positioned at center with transform
+            const plusVertical = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            plusVertical.setAttribute('x', '-3');
+            plusVertical.setAttribute('y', '-20');
+            plusVertical.setAttribute('width', '6');
+            plusVertical.setAttribute('height', '40');
+            plusVertical.setAttribute('fill', 'black');
+            plusVertical.setAttribute('rx', '2');
+            
+            const plusHorizontal = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            plusHorizontal.setAttribute('x', '-20');
+            plusHorizontal.setAttribute('y', '-3');
+            plusHorizontal.setAttribute('width', '40');
+            plusHorizontal.setAttribute('height', '6');
+            plusHorizontal.setAttribute('fill', 'black');
+            plusHorizontal.setAttribute('rx', '2');
+            
+            const plusGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            plusGroup.setAttribute('id', 'plus-symbol');
+            plusGroup.appendChild(plusVertical);
+            plusGroup.appendChild(plusHorizontal);
+            
+            mask.appendChild(plusGroup);
+            defs.appendChild(mask);
+            svgContainer.appendChild(defs);
+            
+            // Map source groups to CSS class names
+            const layerMapping = {
+                'Silhouet': 'layer-silhouet',
+                'Bodyshots': 'layer-bodyshots',
+                'Accesories': 'layer-accesories',
+                'Outfit': 'layer-outfit'
+            };
+            
+            // Process each layer - creates clean working copy
+            Object.entries(layerMapping).forEach(([sourceId, className]) => {
+                const sourceGroup = sourceSVG.querySelector(`g[id="${sourceId}"]`);
+                if (sourceGroup) {
+                    // Create group with SVG namespace (critical!)
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('class', className);
+                    
+                    // Special handling for bodyshots: order by size (largest first, smallest last)
+                    // This ensures smaller zones are on top and receive pointer events first
+                    let children = Array.from(sourceGroup.children);
+                    if (sourceId === 'Bodyshots') {
+                        const sizeOrder = ['fullbodyshot', 'shouldershot', 'headshot', 'handshot'];
+                        children = sizeOrder.map(id => 
+                            sourceGroup.querySelector(`[id="${id}"]`)
+                        ).filter(Boolean);
+                    }
+                    
+                    // Clone children with proper namespace - preserves source file integrity
+                    children.forEach(child => {
+                        const clonedChild = child.cloneNode(true);
+                        
+                        // Remove inline styles to allow CSS styling (working copy transformation)
+                        clonedChild.removeAttribute('class');
+                        clonedChild.removeAttribute('fill');
+                        clonedChild.removeAttribute('stroke');
+                        clonedChild.removeAttribute('stroke-width');
+                        clonedChild.removeAttribute('stroke-miterlimit');
+                        
+                        // For bodyshots, add mask attribute and center the plus symbol
+                        if (sourceId === 'Bodyshots') {
+                            // Create overlay rect with mask for the plus cutout
+                            const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                            overlay.setAttribute('class', 'bodyshot-overlay');
+                            
+                            // Copy position and size from original rect
+                            ['x', 'y', 'width', 'height', 'rx', 'ry'].forEach(attr => {
+                                const val = clonedChild.getAttribute(attr);
+                                if (val) overlay.setAttribute(attr, val);
+                            });
+                            
+                            // Apply mask and set it to be invisible initially
+                            overlay.setAttribute('mask', 'url(#plus-cutout-mask)');
+                            overlay.style.opacity = '0';
+                            overlay.style.pointerEvents = 'none';
+                            
+                            // Position the mask's plus symbol at rect center
+                            const x = parseFloat(clonedChild.getAttribute('x') || 0);
+                            const y = parseFloat(clonedChild.getAttribute('y') || 0);
+                            const width = parseFloat(clonedChild.getAttribute('width') || 0);
+                            const height = parseFloat(clonedChild.getAttribute('height') || 0);
+                            const centerX = x + width / 2;
+                            const centerY = y + height / 2;
+                            
+                            // Store center position as data attribute
+                            overlay.setAttribute('data-center-x', centerX);
+                            overlay.setAttribute('data-center-y', centerY);
+                            
+                            g.appendChild(overlay);
+                        }
+                        
+                        // For accessories, add circle overlay with mask
+                        if (sourceId === 'Accesories') {
+                            const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                            overlay.setAttribute('class', 'accessory-overlay');
+                            
+                            // Copy position and size from original circle
+                            ['cx', 'cy', 'r'].forEach(attr => {
+                                const val = clonedChild.getAttribute(attr);
+                                if (val) overlay.setAttribute(attr, val);
+                            });
+                            
+                            // Apply mask and set it to be invisible initially
+                            overlay.setAttribute('mask', 'url(#plus-cutout-mask)');
+                            overlay.style.opacity = '0';
+                            overlay.style.pointerEvents = 'none';
+                            
+                            // Store center position as data attribute
+                            const centerX = parseFloat(clonedChild.getAttribute('cx') || 0);
+                            const centerY = parseFloat(clonedChild.getAttribute('cy') || 0);
+                            
+                            overlay.setAttribute('data-center-x', centerX);
+                            overlay.setAttribute('data-center-y', centerY);
+                            
+                            g.appendChild(overlay);
+                        }
+                        
+                        // For outfit, add path overlay with mask
+                        if (sourceId === 'Outfit') {
+                            const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                            overlay.setAttribute('class', 'outfit-overlay');
+                            
+                            // Copy path data from original
+                            const d = clonedChild.getAttribute('d');
+                            if (d) overlay.setAttribute('d', d);
+                            
+                            // Apply mask and set it to be invisible initially
+                            overlay.setAttribute('mask', 'url(#plus-cutout-mask)');
+                            overlay.style.opacity = '0';
+                            overlay.style.pointerEvents = 'none';
+                            
+                            // Calculate center of path bounding box
+                            g.appendChild(clonedChild); // Temporarily append to calculate bbox
+                            svgContainer.appendChild(g);
+                            const bbox = clonedChild.getBBox();
+                            const centerX = bbox.x + bbox.width / 2;
+                            const centerY = bbox.y + bbox.height / 2;
+                            svgContainer.removeChild(g);
+                            
+                            overlay.setAttribute('data-center-x', centerX);
+                            overlay.setAttribute('data-center-y', centerY);
+                            
+                            g.appendChild(overlay);
+                        }
+                        
+                        g.appendChild(clonedChild);
+                    });
+                    
+                    svgContainer.appendChild(g);
+                }
+            });
+            
+            console.log('Silhouette SVG loaded from source, working copy created');
+            
+            // Add hover event listeners for all zones
+            this.setupBodyshotHoverEffects();
+            this.setupAccessoryHoverEffects();
+            this.setupOutfitHoverEffects();
+        } catch (error) {
+            console.error('Failed to load silhouette SVG:', error);
+        }
+    }
+
+    /**
+     * Setup hover effects for bodyshot zones
+     * Dims other zones when hovering one zone
+     */
+    setupBodyshotHoverEffects() {
+        const bodyshotsLayer = document.querySelector('.layer-bodyshots');
+        if (!bodyshotsLayer) return;
+        
+        const rects = bodyshotsLayer.querySelectorAll('rect:not(.bodyshot-overlay)');
+        const overlays = bodyshotsLayer.querySelectorAll('.bodyshot-overlay');
+        const plusSymbol = document.querySelector('#plus-symbol');
+        
+        rects.forEach((rect, index) => {
+            const overlay = overlays[index];
+            if (!overlay) return;
+            
+            console.log(`Setting up bodyshot ${index}:`, {
+                rect: rect.id || rect.getAttribute('id'),
+                hasOverlay: !!overlay,
+                rectPointerEvents: window.getComputedStyle(rect).pointerEvents,
+                overlayPointerEvents: window.getComputedStyle(overlay).pointerEvents
+            });
+            
+            rect.addEventListener('mouseenter', () => {
+                console.log(`🟢 Bodyshot mouseenter ${index}:`, rect.id || 'no-id');
+                bodyshotsLayer.classList.add('has-hover');
+                
+                // Show overlay with plus cutout
+                overlay.style.opacity = '1';
+                console.log(`  → Overlay opacity set to 1`);
+                
+                // Position plus symbol at center of this rect
+                const centerX = overlay.getAttribute('data-center-x');
+                const centerY = overlay.getAttribute('data-center-y');
+                if (plusSymbol && centerX && centerY) {
+                    plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
+                    console.log(`  → Plus positioned at (${centerX}, ${centerY})`);
+                }
+            });
+            
+            rect.addEventListener('mouseleave', () => {
+                console.log(`🔴 Bodyshot mouseleave ${index}:`, rect.id || 'no-id');
+                // Hide overlay
+                overlay.style.opacity = '0';
+                
+                // Small delay to prevent flicker when moving between zones
+                setTimeout(() => {
+                    const isAnyRectHovered = Array.from(rects).some(r => r.matches(':hover'));
+                    if (!isAnyRectHovered) {
+                        bodyshotsLayer.classList.remove('has-hover');
+                    }
+                }, 10);
+            });
+        });
+    }
+
+    /**
+     * Setup hover effects for accessory zones
+     * Dims other zones when hovering one zone
+     */
+    setupAccessoryHoverEffects() {
+        const accessoriesLayer = document.querySelector('.layer-accesories');
+        if (!accessoriesLayer) return;
+        
+        const circles = accessoriesLayer.querySelectorAll('circle:not(.accessory-overlay)');
+        const overlays = accessoriesLayer.querySelectorAll('.accessory-overlay');
+        const plusSymbol = document.querySelector('#plus-symbol');
+        
+        circles.forEach((circle, index) => {
+            const overlay = overlays[index];
+            if (!overlay) return;
+            
+            console.log(`Setting up accessory ${index}:`, {
+                circle: circle.id || circle.getAttribute('id'),
+                hasOverlay: !!overlay,
+                circlePointerEvents: window.getComputedStyle(circle).pointerEvents,
+                overlayPointerEvents: window.getComputedStyle(overlay).pointerEvents,
+                cx: circle.getAttribute('cx'),
+                cy: circle.getAttribute('cy')
+            });
+            
+            circle.addEventListener('mouseenter', () => {
+                console.log(`🟢 Accessory mouseenter ${index}:`, circle.id || 'no-id');
+                accessoriesLayer.classList.add('has-hover');
+                overlay.style.opacity = '1';
+                console.log(`  → Overlay opacity set to 1`);
+                
+                // Position plus symbol at circle center
+                const centerX = overlay.getAttribute('data-center-x');
+                const centerY = overlay.getAttribute('data-center-y');
+                if (plusSymbol && centerX && centerY) {
+                    plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
+                    console.log(`  → Plus positioned at (${centerX}, ${centerY})`);
+                }
+            });
+            
+            circle.addEventListener('mouseleave', () => {
+                console.log(`🔴 Accessory mouseleave ${index}:`, circle.id || 'no-id');
+                overlay.style.opacity = '0';
+                
+                setTimeout(() => {
+                    const isAnyCircleHovered = Array.from(circles).some(c => c.matches(':hover'));
+                    if (!isAnyCircleHovered) {
+                        accessoriesLayer.classList.remove('has-hover');
+                    }
+                }, 10);
+            });
+        });
+    }
+
+    /**
+     * Setup hover effects for outfit zones
+     * Dims other zones when hovering one zone
+     */
+    setupOutfitHoverEffects() {
+        const outfitLayer = document.querySelector('.layer-outfit');
+        if (!outfitLayer) return;
+        
+        const paths = outfitLayer.querySelectorAll('path:not(.outfit-overlay)');
+        const overlays = outfitLayer.querySelectorAll('.outfit-overlay');
+        const plusSymbol = document.querySelector('#plus-symbol');
+        
+        paths.forEach((path, index) => {
+            const overlay = overlays[index];
+            if (!overlay) return;
+            
+            console.log(`Setting up outfit ${index}:`, {
+                path: path.id || path.getAttribute('id'),
+                hasOverlay: !!overlay,
+                pathPointerEvents: window.getComputedStyle(path).pointerEvents,
+                overlayPointerEvents: window.getComputedStyle(overlay).pointerEvents
+            });
+            
+            path.addEventListener('mouseenter', () => {
+                console.log(`🟢 Outfit mouseenter ${index}:`, path.id || 'no-id');
+                outfitLayer.classList.add('has-hover');
+                overlay.style.opacity = '1';
+                console.log(`  → Overlay opacity set to 1`);
+                
+                // Position plus symbol at path center
+                const centerX = overlay.getAttribute('data-center-x');
+                const centerY = overlay.getAttribute('data-center-y');
+                if (plusSymbol && centerX && centerY) {
+                    plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
+                    console.log(`  → Plus positioned at (${centerX}, ${centerY})`);
+                }
+            });
+            
+            path.addEventListener('mouseleave', () => {
+                console.log(`🔴 Outfit mouseleave ${index}:`, path.id || 'no-id');
+                overlay.style.opacity = '0';
+                
+                setTimeout(() => {
+                    const isAnyPathHovered = Array.from(paths).some(p => p.matches(':hover'));
+                    if (!isAnyPathHovered) {
+                        outfitLayer.classList.remove('has-hover');
+                    }
+                }, 10);
+            });
+        });
     }
 
     async loadProjectInfo() {
@@ -72,6 +505,19 @@ class ActorsApp {
         if (btnAddActor) btnAddActor.addEventListener('click', () => this.openAddActorDialog());
         if (btnAddActorEmpty) btnAddActorEmpty.addEventListener('click', () => this.openAddActorDialog());
         if (addActorForm) addActorForm.addEventListener('submit', (e) => this.handleAddActor(e));
+
+        // Navigation buttons
+        const btnPrevActor = document.getElementById('btnPrevActor');
+        const btnNextActor = document.getElementById('btnNextActor');
+        
+        if (btnPrevActor) btnPrevActor.addEventListener('click', () => this.navigateToPreviousActor());
+        if (btnNextActor) btnNextActor.addEventListener('click', () => this.navigateToNextActor());
+        
+        // Layer mode switcher
+        const modeButtons = document.querySelectorAll('.layer-mode-btn');
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => this.switchLayerMode(btn));
+        });
     }
 
     async loadActors() {
@@ -129,10 +575,84 @@ class ActorsApp {
         // Hide empty state
         emptyState.classList.add('hidden');
         
+        // Render actor dropdown
+        this.renderActorDropdown();
+        
         // Show first actor in detail view if available
         if (sortedActors.length > 0) {
+            this.currentActorIndex = 0;
             this.showActorDetail(sortedActors[0]);
         }
+    }
+
+    renderActorDropdown() {
+        // Create options from actors
+        const options = this.actors.map(actor => ({
+            value: actor.id,
+            label: `${actor.first_name} ${actor.last_name}`
+        }));
+
+        // Initialize or update dropdown
+        if (this.actorDropdown) {
+            this.actorDropdown.options = options;
+            this.actorDropdown.value = this.currentActor?.id || '';
+            this.actorDropdown.render();
+        } else {
+            this.actorDropdown = new CustomDropdown({
+                containerId: 'actorDropdownContainer',
+                name: 'actor_id',
+                options: options,
+                value: this.currentActor?.id || '',
+                placeholder: 'Select actor...',
+                searchable: true,
+                allowCreate: true,
+                createLabel: '+ Create new actor',
+                allowDelete: true,
+                size: 'md',
+                onChange: (value, option) => this.onActorDropdownChange(value, option),
+                onCreate: (searchTerm) => this.openAddActorDialog(searchTerm),
+                onDelete: (value) => this.handleDeleteActorFromDropdown(value)
+            });
+            this.actorDropdown.render();
+        }
+    }
+
+    onActorDropdownChange(value, option) {
+        const actor = this.actors.find(a => a.id === value);
+        if (actor) {
+            this.currentActorIndex = this.actors.indexOf(actor);
+            this.showActorDetail(actor);
+        }
+    }
+
+    navigateToPreviousActor() {
+        if (this.actors.length === 0) return;
+        
+        this.currentActorIndex = (this.currentActorIndex - 1 + this.actors.length) % this.actors.length;
+        const actor = this.actors[this.currentActorIndex];
+        
+        // Update dropdown value
+        if (this.actorDropdown) {
+            this.actorDropdown.value = actor.id;
+            this.actorDropdown.render();
+        }
+        
+        this.showActorDetail(actor);
+    }
+
+    navigateToNextActor() {
+        if (this.actors.length === 0) return;
+        
+        this.currentActorIndex = (this.currentActorIndex + 1) % this.actors.length;
+        const actor = this.actors[this.currentActorIndex];
+        
+        // Update dropdown value
+        if (this.actorDropdown) {
+            this.actorDropdown.value = actor.id;
+            this.actorDropdown.render();
+        }
+        
+        this.showActorDetail(actor);
     }
 
     createActorCard(actor) {
@@ -191,31 +711,57 @@ class ActorsApp {
         `;
     }
 
-    openAddActorDialog() {
+    openAddActorDialog(searchTerm = '') {
         const dialog = document.getElementById('addActorDialog');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        
+        // Reset form first
         document.getElementById('addActorForm').reset();
+        
+        // Split search term into first and last name
+        if (searchTerm && searchTerm.trim()) {
+            const parts = searchTerm.trim().split(/\s+/);
+            firstNameInput.value = parts[0] || '';
+            lastNameInput.value = parts.slice(1).join(' ') || '';
+        }
+        
         dialog.showModal();
     }
 
     async handleAddActor(e) {
         e.preventDefault();
         
-        const firstName = document.getElementById('firstName').value.trim();
-        const lastName = document.getElementById('lastName').value.trim();
+        const firstName = capitalizeName(document.getElementById('firstName').value.trim());
+        const lastName = capitalizeName(document.getElementById('lastName').value.trim());
         
         const actorData = {
             actor_name: `${firstName} ${lastName}`,
-            character_name: ''
+            character_name: '',
+            first_name: firstName,
+            last_name: lastName
         };
 
         try {
             const newActor = await ActorService.create(this.projectId, actorData);
-            this.showSuccess('Acteur toegevoegd');
-            document.getElementById('addActorDialog').close();
-            await this.loadActors();
+            
+            // Add new actor to the local array immediately
+            this.actors.push(newActor);
+            
+            // Find and select the newly created actor
+            this.currentActorIndex = this.actors.findIndex(a => a.id === newActor.id);
+            this.currentActor = newActor;
+            
+            // Update dropdown to show new actor and select it
+            this.renderActorDropdown();
+            if (this.actorDropdown) {
+                this.actorDropdown.setValue(newActor.id);
+            }
             
             // Show actor in 3-column layout
             this.showActorDetail(newActor);
+            
+            document.getElementById('addActorDialog').close();
         } catch (error) {
             console.error('Error creating actor:', error);
             this.showError('Kon acteur niet opslaan');
@@ -226,11 +772,36 @@ class ActorsApp {
         // Hide empty state
         document.getElementById('emptyState').classList.add('hidden');
         
-        // Update actor info
-        document.getElementById('actorName').textContent = actor.actor_name;
+        // Update left panel with actor name
+        const leftActorName = document.getElementById('leftActorName');
+        if (leftActorName) {
+            leftActorName.textContent = `${actor.first_name} ${actor.last_name}`;
+        }
         
-        // Update silhouette through controller
-        this.silhouetteController.updateActor(actor);
+        // Silhouette is now static - no update needed
+    }
+    
+    /**
+     * Switch silhouette layer visibility mode
+     * Modes: none, bodyshots, accessories, outfit
+     */
+    switchLayerMode(button) {
+        const mode = button.dataset.mode;
+        const svg = document.querySelector('.actor-silhouette');
+        
+        // Update active button
+        document.querySelectorAll('.layer-mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        button.classList.add('active');
+        
+        // Remove all mode classes
+        svg.classList.remove('mode-bodyshots', 'mode-accessories', 'mode-outfit');
+        
+        // Add new mode class if not 'none'
+        if (mode !== 'none') {
+            svg.classList.add(`mode-${mode}`);
+        }
     }
 
     async openEditActorModal(actorId) {
@@ -328,8 +899,49 @@ class ActorsApp {
         }
     }
 
+    async handleDeleteActorFromDropdown(actorId) {
+        const confirmed = await confirmDialog(
+            'Weet je zeker dat je deze acteur wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
+            'Acteur verwijderen'
+        );
+        
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            await ActorService.delete(actorId);
+            
+            // Remove from local array
+            this.actors = this.actors.filter(a => a.id !== actorId);
+            
+            // Select another actor or show empty state
+            if (this.actors.length > 0) {
+                this.currentActorIndex = 0;
+                this.currentActor = this.actors[0];
+                this.renderActorDropdown();
+                if (this.actorDropdown) {
+                    this.actorDropdown.setValue(this.actors[0].id);
+                }
+                this.showActorDetail(this.actors[0]);
+            } else {
+                this.currentActor = null;
+                this.currentActorIndex = 0;
+                document.getElementById('emptyState').classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error deleting actor:', error);
+            this.showError('Kon acteur niet verwijderen');
+        }
+    }
+
     async deleteActor(actorId) {
-        if (!confirm('Are you sure you want to delete this actor? This action cannot be undone.')) {
+        const confirmed = await confirmDialog(
+            'Weet je zeker dat je deze acteur wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
+            'Acteur verwijderen'
+        );
+        
+        if (!confirmed) {
             return;
         }
 

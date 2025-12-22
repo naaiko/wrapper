@@ -47,6 +47,8 @@ export class CustomDropdown {
         this.dropdownWidth = options.dropdownWidth || 'auto'; // 'match' (match button), 'auto' (fit content), or specific width like '300px'
         this.onChange = options.onChange || null;
         this.onCreate = options.onCreate || null;
+        this.onDelete = options.onDelete || null;
+        this.allowDelete = options.allowDelete !== undefined ? options.allowDelete : false;
         
         // State
         this.isOpen = false;
@@ -131,7 +133,7 @@ export class CustomDropdown {
                 </button>
                 
                 <!-- Dropdown Menu (will be portaled to body) -->
-                <div class="custom-dropdown__menu hidden bg-base-100 rounded-box border border-base-300 shadow-lg" role="listbox" style="position: fixed; z-index: 9999; width: ${this.dropdownWidth === 'match' ? '100%' : this.dropdownWidth === 'auto' ? 'max-content' : this.dropdownWidth};">
+                <div class="custom-dropdown__menu hidden bg-base-100 rounded-box border border-base-300 shadow-lg" role="listbox" style="position: fixed; z-index: 9999; width: fit-content; min-width: 200px; max-width: 450px;">
                     ${this.searchable ? `
                         <div class="p-2 border-b border-base-300">
                             <input 
@@ -143,7 +145,7 @@ export class CustomDropdown {
                         </div>
                     ` : ''}
                     
-                    <ul class="custom-dropdown__options menu menu-sm max-h-60 overflow-y-auto">
+                    <ul class="custom-dropdown__options menu menu-sm overflow-y-auto" style="max-height: 300px;">
                         ${this.getOptionsHTML()}
                     </ul>
                 </div>
@@ -172,18 +174,32 @@ export class CustomDropdown {
                 const isHighlighted = index === this.highlightedIndex;
                 
                 html += `
-                    <li>
-                        <button
-                            type="button"
-                            class="custom-dropdown__option ${isHighlighted ? 'bg-base-200' : ''}"
-                            data-value="${option.value}"
-                            data-index="${index}"
-                            role="option"
-                            aria-selected="${isSelected}"
-                        >
-                            ${option.label}
-                            ${isSelected ? '<span class="ml-auto">✓</span>' : ''}
-                        </button>
+                    <li class="px-1">
+                        <div class="flex items-center gap-1">
+                            <button
+                                type="button"
+                                class="custom-dropdown__option flex-1 text-left ${isHighlighted ? 'bg-base-200' : ''}"
+                                data-value="${option.value}"
+                                data-index="${index}"
+                                role="option"
+                                aria-selected="${isSelected}"
+                            >
+                                ${option.label}
+                                ${isSelected ? '<span class="ml-auto">✓</span>' : ''}
+                            </button>
+                            ${this.allowDelete ? `
+                                <button
+                                    type="button"
+                                    class="custom-dropdown__delete btn btn-ghost btn-xs btn-square text-error hover:bg-error hover:text-error-content"
+                                    data-value="${option.value}"
+                                    title="Delete"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            ` : ''}
+                        </div>
                     </li>
                 `;
             });
@@ -232,10 +248,15 @@ export class CustomDropdown {
         
         // Option clicks (event delegation)
         this.menu.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.custom-dropdown__delete');
             const optionBtn = e.target.closest('.custom-dropdown__option');
             const createBtn = e.target.closest('.custom-dropdown__create');
             
-            if (optionBtn) {
+            if (deleteBtn) {
+                e.stopPropagation();
+                const value = deleteBtn.dataset.value;
+                this.handleDelete(value);
+            } else if (optionBtn) {
                 const value = optionBtn.dataset.value;
                 this.selectOption(value);
             } else if (createBtn) {
@@ -375,6 +396,15 @@ export class CustomDropdown {
         
         if (this.onCreate) {
             this.onCreate(prefilledValue);
+        }
+    }
+    
+    /**
+     * Handle delete option
+     */
+    handleDelete(value) {
+        if (this.onDelete) {
+            this.onDelete(value);
         }
     }
     

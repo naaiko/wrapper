@@ -43,6 +43,8 @@ export class ActorService {
                 project_id: projectId,
                 actor_name: actorData.actor_name,
                 character_name: actorData.character_name,
+                first_name: actorData.first_name || null,
+                last_name: actorData.last_name || null,
                 email: actorData.email || null,
                 phone: actorData.phone || null,
                 height: actorData.height || null,

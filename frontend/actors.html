@@ -18,6 +18,43 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+    <!-- SVG Sprite - Multi-Layer Silhouette System -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <!-- Base silhouette shape -->
+        <symbol id="silhouette" viewBox="0 0 373 852">
+            <path d="M186.3,479.4c-1.2,13.9,8.2,87.4,13.1,116.2,2.3,13.6,8.7,35.9,6.4,47.7-3.3,16.5-4.2,37.7-2.4,50.1,1.1,7.5,4.7,42.3-.4,55-2.7,6.7-7.6,40.8-7.6,40.8-12.7,32.2-5.5,30.6-5.5,30.6,3.9,4.8,10.7.4,10.7.4,5.1,3.3,8.7-.8,8.7-.8,4.4,3.7,9.6-.4,9.6-.4,5.5,2.9,10.7-2.4,10.7-2.4,3.2,1.6,4-.4,4-.4,9.6-.6-5.3-31.2-5.3-31.2-3.6-27.5,3.5-42.8,3.5-42.8,23.3-69,24.5-87.4,15.2-113.4-2.6-7.5-3.3-10.5-2.1-13.7,2.8-7.5.8-37.8,4.2-49.8,6.6-23.2,13-82,16.4-109.4,4.5-37-16.1-86.5-16.1-86.5-4.5-20.2,2.1-92,2.1-92,9.2,14.4,8.9,39.7,8.9,39.7-1.5,26.6,21.5,67.2,21.5,67.2,11,16.8,15.2,32.7,15.2,33.9,0,4.8-1.1,16.6-1.1,16.6l.4,10.2c.2,2.6,1.7,11.5,1.4,15.9-1.7,26.6,2.5,21.6,2.5,21.6,3.6,0,7.5-21.4,7.5-21.4,0,5.5-1.3,22.1,1.6,28.3,3.6,7.4,6.2-1.3,6.2-3,.9-33.9,3-25,3-25,2,27.5,4.4,33.7,8.8,31.5,3.3-1.6.3-33,.3-33,5.7,18.7,10,21.6,10,21.6,9.3,6.6,3.6-11.6,2.3-15.2-6.9-19.1-7.1-25.7-7.1-25.7,8.6,17.1,15.2,16.5,15.2,16.5,8.4-2.7-7.4-27-16.6-38.6-4.7-5.9-10.8-13.9-12.6-18.6-2.9-8-5.1-33.6-5.1-33.6-.9-30.3-8.4-43.4-8.4-43.4-12.8-20.5-15.2-58.7-15.2-58.7l-.6-64.5c-4.5-44-36.9-44.3-36.9-44.3-32.8-4.9-37.3-15.5-37.3-15.5-6.9-10-3-29.1-3-29.1,5.8-4.7,8-17.1,8-17.1,9.6-7.3,9.1-18.1,4.7-17.9-3.5,0-2.7-2.8-2.7-2.8,6-48.3-36.9-50.8-36.9-50.8h-6.5s-42.9,2.5-36.9,50.8c0,0,.8,2.9-2.8,2.8-4.4-.1-4.8,10.6,4.7,17.9,0,0,2.2,12.4,8,17.1,0,0,4,19.1-3,29.1,0,0-4.5,10.6-37.3,15.5,0,0-32.5.3-36.9,44.3l-.6,64.5s-2.4,38.2-15.2,58.7c0,0-7.4,13.2-8.3,43.4,0,0-2.2,25.7-5.1,33.6-1.7,4.7-7.8,12.6-12.6,18.6-9.3,11.6-25,35.8-16.6,38.6,0,0,6.5.6,15.2-16.5,0,0-.2,6.6-7.1,25.7-1.4,3.5-7.1,21.7,2.2,15.2,0,0,4.3-3,10-21.6,0,0-3,31.4.3,33,4.4,2.2,6.8-4.1,8.8-31.5,0,0,2-8.9,3,25,0,1.7,2.6,10.5,6.2,3,3-6.2,1.7-22.7,1.7-28.3,0,0,3.9,21.4,7.5,21.4,0,0,4.3,5,2.5-21.6-.3-4.3,1.2-13.3,1.4-15.9l.4-10.2s-1.1-11.7-1.1-16.6,4.2-17.1,15.2-33.9c0,0,22.9-40.7,21.4-67.2,0,0-.3-25.4,8.9-39.7,0,0,6.6,71.8,2.1,92,0,0-20.6,49.5-16.1,86.5,3.4,27.5,9.8,86.2,16.4,109.4,3.4,12,1.4,42.3,4.2,49.8,1.2,3.3.6,6.3-2.1,13.7-9.3,26-8.1,44.3,15.2,113.4,0,0,7.2,15.3,3.5,42.8,0,0-14.9,30.6-5.3,31.2,0,0,.7,2,4,.4,0,0,5.1,5.3,10.7,2.4,0,0,5.1,4.1,9.5.4,0,0,3.5,4.1,8.7.8,0,0,6.8,4.6,10.8-.4,0,0,7.1,1.6-5.6-30.6,0,0-4.9-34.1-7.5-40.8-5.1-12.7-1.5-47.5-.4-55,1.8-12.5.8-33.7-2.4-50.1-2.3-11.8,4-34,6.4-47.7,4.8-28.8,14.3-102.3,13.1-116.2l3.9,1.4c2.8,0,4.6-1.4,4.6-1.4Z"/>
+        </symbol>
+        
+        <!-- Bodyshots layer: Photo reference zones -->
+        <symbol id="bodyshots" viewBox="0 0 373 852">
+            <rect id="headshot" x="134" y="17.1" width="96" height="119.8" rx="15.6" ry="15.6"/>
+            <rect id="shouldershot" x="86" y="9.9" width="192.2" height="222.3" rx="23.1" ry="23.1"/>
+            <rect id="fullbodyshot" x="16.9" y="4.5" width="345.4" height="826.1" rx="23.1" ry="23.1"/>
+            <rect id="handshot" x="8.3" y="396.5" width="83.8" height="98.9" rx="23.1" ry="23.1"/>
+        </symbol>
+        
+        <!-- Accessories layer: Costume item zones -->
+        <symbol id="accessories" viewBox="0 0 373 852">
+            <circle id="hat" cx="174.5" cy="39.2" r="29.3"/>
+            <circle id="earrings" cx="227.1" cy="86.7" r="18.2"/>
+            <circle id="necklace" cx="182" cy="173.4" r="30"/>
+            <circle id="jewelry-left" cx="320.2" cy="465.4" r="30"/>
+            <circle id="bracelets-left" cx="303.5" cy="392" r="30"/>
+            <circle id="jewelry-right" cx="43.8" cy="465.4" r="30"/>
+            <circle id="bracelets-right" cx="62.1" cy="392" r="30"/>
+            <circle id="shoes" cx="150.7" cy="783.9" r="46.7"/>
+            <circle id="belt" cx="182" cy="392" r="28.4"/>
+            <circle id="slot-1" cx="320.2" cy="563.6" r="32.2"/>
+            <circle id="slot-2" cx="320.2" cy="643.7" r="32.2"/>
+            <circle id="slot-3" cx="320.2" cy="723.8" r="32.2"/>
+        </symbol>
+        
+        <!-- Outfit layer: Costume regions -->
+        <symbol id="outfit" viewBox="0 0 373 852">
+            <path id="top-outfit" d="M321.2,395.6c-11.9,5.3-21.1,7.4-27.6,8-2.2-4.7-5.1-10-8.6-15.3,0,0-23.7-42.1-22.2-69.6,0,0,.4-26.2-9.2-41.1,0,0-6.6,71.6-2.4,94-59.2,9-114.3,3.4-138.7,0,4.1-22.5-2.4-93.9-2.4-93.9-9.6,14.9-9.2,41.1-9.2,41.1,1.5,27.5-22.2,69.6-22.2,69.6-3.2,4.9-5.8,9.7-8,14.1-12.1-1.4-21.3-4.5-28-7.9,1.8-10.8,3-24.8,3-24.8.9-31.3,8.6-44.9,8.6-44.9,13.3-21.2,15.7-60.7,15.7-60.7l.6-66.7c4.6-45.5,38.2-45.9,38.2-45.9,14.5-2.1,23.6-5.4,29.4-8.4,9.2,7.7,23.3,15,43.7,15s34.7-6.9,44.8-14.4c5.8,2.8,14.7,5.8,28.2,7.8,0,0,33.5.3,38.2,45.9l.6,66.7s2.5,39.5,15.7,60.7c0,0,7.8,13.6,8.7,44.9,0,0,1.3,14.9,3.1,25.8Z"/>
+            <path id="bottom-outfit" d="M244.8,615.3c-1.2,3.3-.5,6.2,2.1,13.7,9.3,26,8.1,44.2-15.2,113.1,0,0-3.9,8.3-4.5,23.8-10,1.3-19.5,2.1-28.6,2.6,1.5-8.5,3.1-17,4.3-20,5.1-12.7,1.5-47.3.4-54.8-1.8-12.4-.8-33.6,2.4-50,2.3-11.8-4.1-34-6.4-47.6-4.9-28.7-14.3-102-13.1-115.9,0,0-1.8,1.4-4.6,1.4l-3.9-1.4c1.2,13.9-8.3,87.2-13.1,115.9-2.3,13.6-8.7,35.8-6.4,47.6,3.2,16.4,4.1,37.6,2.4,50-1.1,7.4-4.7,42.2.4,54.8,1.2,3,2.8,11.6,4.3,20.1-11-.5-20.7-1.5-28.6-2.6-.6-15.4-4.5-23.7-4.5-23.7-23.3-68.9-24.5-87.1-15.2-113.1,2.7-7.4,3.3-10.4,2.1-13.7-2.8-7.5-.7-37.7-4.2-49.7-6.6-23.1-13-81.7-16.4-109.1-4.5-36.9,16.1-86.3,16.1-86.3,0-.4.2-.8.2-1.2,23.5,3.3,76.8,8.7,134,0,0,.4.2.8.2,1.2,0,0,20.6,49.4,16.1,86.3-3.4,27.4-9.9,86-16.4,109.1-3.4,12-1.4,42.2-4.1,49.7Z"/>
+        </symbol>
+    </svg>
     <div class="min-h-screen bg-base-200 h-screen overflow-hidden">
         <!-- Tab Switcher (Top Right) -->
         <div class="fixed top-4 right-4 z-50">
@@ -31,25 +68,73 @@
         <!-- Main 3-Column Layout -->
         <div class="h-screen pt-4 pb-24 px-4">
             <div class="grid grid-cols-12 gap-6 h-full">
-                <!-- Left Column (4 cols) -->
-                <div class="col-span-4 bg-base-100 rounded-lg p-6">
+                <!-- Left Column (4 cols) - with top padding to avoid tab switcher -->
+                <div class="col-span-4 bg-base-100 rounded-lg p-6 mt-16">
                     <h3 class="text-lg font-semibold mb-4">Details Links</h3>
+                    <div class="text-2xl font-bold" id="leftActorName">-</div>
                 </div>
 
                 <!-- Middle Column (4 cols) - Silhouette -->
                 <div class="col-span-4 flex flex-col gap-4 h-full">
+                    <!-- Actor Selector with Navigation -->
                     <div class="card bg-base-100 shadow-lg">
                         <div class="card-body py-3 px-4">
-                            <h2 id="actorName" class="text-xl font-bold text-center">Acteur Naam</h2>
+                            <div class="flex items-center gap-3">
+                                <!-- Previous Actor Button -->
+                                <button id="btnPrevActor" class="btn btn-ghost btn-sm btn-circle" aria-label="Previous actor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                    </svg>
+                                </button>
+                                
+                                <!-- Actor Dropdown -->
+                                <div id="actorDropdownContainer" class="flex-1">
+                                    <!-- Skeleton loader - prevents layout jump (matches input-bordered h-12 min-h-12) -->
+                                    <div class="skeleton h-12 min-h-12 w-full rounded-lg"></div>
+                                </div>
+                                
+                                <!-- Next Actor Button -->
+                                <button id="btnNextActor" class="btn btn-ghost btn-sm btn-circle" aria-label="Next actor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div id="silhouetteContainer" class="flex-1 flex items-end justify-center overflow-hidden" role="region" aria-label="Actor visualization">
-                        <!-- Silhouette managed by SilhouetteController -->
+                    <!-- Silhouette with Layer System -->
+                    <div class="flex-1 flex flex-col items-center justify-end overflow-hidden" role="region" aria-label="Actor visualization">
+                        <!-- Mode Switcher -->
+                        <div class="mb-4 flex gap-2">
+                            <button class="btn btn-sm layer-mode-btn active" data-mode="none">None</button>
+                            <button class="btn btn-sm layer-mode-btn" data-mode="bodyshots">Bodyshots</button>
+                            <button class="btn btn-sm layer-mode-btn" data-mode="accessories">Accessories</button>
+                            <button class="btn btn-sm layer-mode-btn" data-mode="outfit">Outfit</button>
+                        </div>
+                        
+                        <!-- Layered SVG (populated dynamically by loadSilhouetteSVG) -->
+                        <svg class="actor-silhouette" viewBox="0 0 373 852" role="img" aria-label="Actor silhouette with layers">
+                            <!-- Layers loaded from images/silhouette.svg on page load -->
+                        </svg>
+                                <circle id="jewelry-right" cx="43.8" cy="465.4" r="30"/>
+                                <circle id="bracelets-right" cx="62.1" cy="392" r="30"/>
+                                <circle id="shoes" cx="150.7" cy="783.9" r="46.7"/>
+                                <circle id="belt" cx="182" cy="392" r="28.4"/>
+                                <circle id="slot-1" cx="320.2" cy="563.6" r="32.2"/>
+                                <circle id="slot-2" cx="320.2" cy="643.7" r="32.2"/>
+                                <circle id="slot-3" cx="320.2" cy="723.8" r="32.2"/>
+                            </g>
+                            <!-- Outfit layer -->
+                            <g class="layer-outfit">
+                                <path id="top-outfit" d="M321.2,395.6c-11.9,5.3-21.1,7.4-27.6,8-2.2-4.7-5.1-10-8.6-15.3,0,0-23.7-42.1-22.2-69.6,0,0,.4-26.2-9.2-41.1,0,0-6.6,71.6-2.4,94-59.2,9-114.3,3.4-138.7,0,4.1-22.5-2.4-93.9-2.4-93.9-9.6,14.9-9.2,41.1-9.2,41.1,1.5,27.5-22.2,69.6-22.2,69.6-3.2,4.9-5.8,9.7-8,14.1-12.1-1.4-21.3-4.5-28-7.9,1.8-10.8,3-24.8,3-24.8.9-31.3,8.6-44.9,8.6-44.9,13.3-21.2,15.7-60.7,15.7-60.7l.6-66.7c4.6-45.5,38.2-45.9,38.2-45.9,14.5-2.1,23.6-5.4,29.4-8.4,9.2,7.7,23.3,15,43.7,15s34.7-6.9,44.8-14.4c5.8,2.8,14.7,5.8,28.2,7.8,0,0,33.5.3,38.2,45.9l.6,66.7s2.5,39.5,15.7,60.7c0,0,7.8,13.6,8.7,44.9,0,0,1.3,14.9,3.1,25.8Z"/>
+                                <path id="bottom-outfit" d="M244.8,615.3c-1.2,3.3-.5,6.2,2.1,13.7,9.3,26,8.1,44.2-15.2,113.1,0,0-3.9,8.3-4.5,23.8-10,1.3-19.5,2.1-28.6,2.6,1.5-8.5,3.1-17,4.3-20,5.1-12.7,1.5-47.3.4-54.8-1.8-12.4-.8-33.6,2.4-50,2.3-11.8-4.1-34-6.4-47.6-4.9-28.7-14.3-102-13.1-115.9,0,0-1.8,1.4-4.6,1.4l-3.9-1.4c1.2,13.9-8.3,87.2-13.1,115.9-2.3,13.6-8.7,35.8-6.4,47.6,3.2,16.4,4.1,37.6,2.4,50-1.1,7.4-4.7,42.2.4,54.8,1.2,3,2.8,11.6,4.3,20.1-11-.5-20.7-1.5-28.6-2.6-.6-15.4-4.5-23.7-4.5-23.7-23.3-68.9-24.5-87.1-15.2-113.1,2.7-7.4,3.3-10.4,2.1-13.7-2.8-7.5-.7-37.7-4.2-49.7-6.6-23.1-13-81.7-16.4-109.1-4.5-36.9,16.1-86.3,16.1-86.3,0-.4.2-.8.2-1.2,23.5,3.3,76.8,8.7,134,0,0,.4.2.8.2,1.2,0,0,20.6,49.4,16.1,86.3-3.4,27.4-9.9,86-16.4,109.1-3.4,12-1.4,42.2-4.1,49.7Z"/>
+                            </g>
+                        </svg>
                     </div>
                 </div>
 
-                <!-- Right Column (4 cols) -->
-                <div class="col-span-4 bg-base-100 rounded-lg p-6">
+                <!-- Right Column (4 cols) - with top padding to avoid tab switcher -->
+                <div class="col-span-4 bg-base-100 rounded-lg p-6 mt-16">
                     <h3 class="text-lg font-semibold mb-4">Details Rechts</h3>
                 </div>
             </div>
@@ -68,9 +153,7 @@
         </div>
 
         <!-- Empty State / Onboarding Overlay -->
-        <div id="emptyState" class="fixed inset-0 bg-base-200 z-40 flex items-center justify-center"
-        <!-- Empty State / Onboarding Overlay -->
-        <div id="emptyState" class="fixed inset-0 bg-base-200 z-40 flex items-center justify-center">
+        <div id="emptyState" class="hidden fixed inset-0 bg-base-200 z-40 flex items-center justify-center">
             <div class="max-w-2xl mx-auto text-center py-16">
                 <!-- Hero Icon -->
                 <div class="mb-8">
@@ -207,6 +290,21 @@
         </div>
         <form method="dialog" class="modal-backdrop">
             <button>close</button>
+        </form>
+    </dialog>
+
+    <!-- Confirmation Dialog -->
+    <dialog id="confirmDialog" class="modal">
+        <div class="modal-box">
+            <h3 id="confirmTitle" class="font-bold text-lg mb-4">Bevestiging</h3>
+            <p id="confirmMessage" class="py-4"></p>
+            <div class="modal-action">
+                <button id="confirmCancel" class="btn">Annuleren</button>
+                <button id="confirmOk" class="btn btn-error">Verwijderen</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button id="confirmBackdrop">close</button>
         </form>
     </dialog>
 

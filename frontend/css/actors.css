@@ -1,53 +1,229 @@
 /* Actors Management Screen Styles */
 
-/* Actor Silhouette Styles */
-.actor-silhouette-container {
-    position: relative;
-    width: 280px;
-    height: 520px;
-    margin: 0 auto;
-    background: linear-gradient(135deg, hsl(var(--b2)) 0%, hsl(var(--b3)) 100%);
-    border: 3px solid hsl(var(--p));
-    outline: 2px solid hsl(var(--pf));
-    outline-offset: -6px;
-    border-radius: var(--rounded-box);
-    padding: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2), inset 0 2px 8px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-}
-
+/* Actor Silhouette */
 .actor-silhouette {
-    width: 220px;
-    height: 440px;
-    opacity: 0.4;
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-    transition: all 0.3s ease;
-    object-fit: contain;
+    width: auto;
+    height: 100%;
+    max-height: calc(100vh - 12rem);
 }
 
-.silhouette-overlay {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
+/* ============================================================================
+   SILHOUETTE SVG LAYERS - Multi-layer actor visualization
+   ============================================================================
+   
+   Structure:
+   - .layer-silhouet (base path, always visible, filled with theme color)
+   - .layer-bodyshots (4 rects: headshot, shouldershot, fullbodyshot, handshot)
+   - .layer-accesories (12 circles: hat, earrings, necklace, jewelry, etc)
+   - .layer-outfit (2 paths: top and bottom outfit)
+   
+   Visibility controlled by mode classes on parent SVG:
+   - .mode-bodyshots → shows bodyshots layer
+   - .mode-accessories → shows accessories layer
+   - .mode-outfit → shows outfit layer
+   
+   CRITICAL: SVG fill/stroke properties do NOT inherit from parent <g> to children.
+   Must target child elements directly (path, rect, circle).
+*/
+
+/* Base silhouette - always visible, filled with theme background color */
+.layer-silhouet {
+    pointer-events: none; /* Don't block clicks on overlaying shapes */
+}
+
+.layer-silhouet path {
+    fill: #f5f5f4; /* TODO: Change to oklch(var(--b1)) when DaisyUI loads */
+    pointer-events: none !important; /* Critical: Don't block overlaying interactive shapes */
+}
+
+/* Bodyshots layer - hidden by default */
+.layer-bodyshots {
+    visibility: hidden;
+}
+
+/* Individual bodyshot zones - modern dashed stroke styling */
+.layer-bodyshots rect:not(.bodyshot-overlay) {
+    fill: oklch(var(--p));
+    fill-opacity: 0;
+    stroke: oklch(var(--p));
+    stroke-opacity: 0.75;
+    stroke-width: 4;
+    stroke-dasharray: 8 4;
+    filter: drop-shadow(0 0 10px oklch(var(--p) / 0.3));
+    cursor: pointer;
+    transition: fill-opacity 0.2s ease, stroke-opacity 0.2s ease;
+    pointer-events: none; /* Disabled by default */
+}
+
+/* Only enable pointer-events when bodyshots mode is active */
+.mode-bodyshots .layer-bodyshots rect:not(.bodyshot-overlay) {
+    pointer-events: all;
+}
+
+/* Overlay with plus cutout */
+.bodyshot-overlay {
+    fill: oklch(var(--p));
+    fill-opacity: 0.15;
+    transition: opacity 0.2s ease;
     pointer-events: none;
 }
 
-.actor-silhouette-container:hover {
-    border-color: hsl(var(--pf));
-    outline-color: hsl(var(--p));
-    transform: translateY(-4px);
-    box-shadow: 0 15px 50px rgba(0,0,0,0.3), inset 0 2px 8px rgba(0,0,0,0.15);
+/* When any rect is hovered, dim all other rects */
+.layer-bodyshots.has-hover rect:not(.bodyshot-overlay) {
+    stroke-opacity: 0.2;
 }
 
-.actor-silhouette-container:hover .actor-silhouette {
+/* The currently hovered rect stays full opacity */
+.layer-bodyshots.has-hover rect:not(.bodyshot-overlay):hover {
+    stroke-opacity: 0.75 !important;
+}
+
+/* Hover effect - fade in fill */
+.layer-bodyshots rect:not(.bodyshot-overlay):hover {
+    fill-opacity: 0.15 !important;
+}
+
+/* Z-index ordering: smaller zones on top (via SVG DOM order)
+   SVG doesn't support z-index, so order is controlled in JS load function
+   Order (bottom to top): fullbodyshot -> shouldershot -> headshot -> handshot */
+
+/* Accessories layer - hidden by default */
+.layer-accesories {
+    visibility: hidden;
+}
+
+.layer-accesories circle:not(.accessory-overlay) {
+    fill: oklch(var(--s));
+    fill-opacity: 0;
+    stroke: oklch(var(--s));
+    stroke-opacity: 0.75;
+    stroke-width: 4;
+    stroke-dasharray: 8 4;
+    filter: drop-shadow(0 0 10px oklch(var(--s) / 0.3));
+    cursor: pointer;
+    transition: fill-opacity 0.2s ease, stroke-opacity 0.2s ease;
+    pointer-events: none; /* Disabled by default */
+}
+
+/* Only enable pointer-events when accessories mode is active */
+.mode-accessories .layer-accesories circle:not(.accessory-overlay) {
+    pointer-events: all;
+}
+
+.accessory-overlay {
+    fill: oklch(var(--s));
+    fill-opacity: 0.15;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.layer-accesories.has-hover circle:not(.accessory-overlay) {
+    stroke-opacity: 0.2;
+}
+
+.layer-accesories.has-hover circle:not(.accessory-overlay):hover {
+    stroke-opacity: 0.75 !important;
+}
+
+.layer-accesories circle:not(.accessory-overlay):hover {
+    fill-opacity: 0.15 !important;
+}
+
+/* Outfit layer - hidden by default */
+.layer-outfit {
+    visibility: hidden;
+}
+
+.layer-outfit path:not(.outfit-overlay) {
+    fill: oklch(var(--a));
+    fill-opacity: 0;
+    stroke: oklch(var(--a));
+    stroke-opacity: 0.75;
+    stroke-width: 4;
+    stroke-dasharray: 8 4;
+    filter: drop-shadow(0 0 10px oklch(var(--a) / 0.3));
+    cursor: pointer;
+    transition: fill-opacity 0.2s ease, stroke-opacity 0.2s ease;
+    pointer-events: none; /* Disabled by default */
+}
+
+/* Only enable pointer-events when outfit mode is active */
+.mode-outfit .layer-outfit path:not(.outfit-overlay) {
+    pointer-events: all;
+}
+
+.outfit-overlay {
+    fill: oklch(var(--a));
+    fill-opacity: 0.15;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.layer-outfit.has-hover path:not(.outfit-overlay) {
+    stroke-opacity: 0.2;
+}
+
+.layer-outfit.has-hover path:not(.outfit-overlay):hover {
+    stroke-opacity: 0.75 !important;
+}
+
+.layer-outfit path:not(.outfit-overlay):hover {
+    fill-opacity: 0.15 !important;
+}
+
+/* Mode classes - show specific layer when mode is active */
+.actor-silhouette.mode-bodyshots .layer-bodyshots {
+    visibility: visible;
+}
+
+.actor-silhouette.mode-accessories .layer-accesories {
+    visibility: visible;
+}
+
+.actor-silhouette.mode-outfit .layer-outfit {
+    visibility: visible;
+}
+
+/* Mode switcher button styling */
+.layer-mode-btn {
     opacity: 0.6;
-    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.3));
+    transition: opacity 0.2s;
 }
 
+.layer-mode-btn.active {
+    opacity: 1;
+    font-weight: bold;
+}
+
+.layer-mode-btn:hover {
+    opacity: 1;
+}
+
+/* Silhouette variant: solid fill */
+.silhouette-solid {
+    width: auto;
+    height: calc(100vh - 8rem);
+    max-height: 440px;
+}
+
+.silhouette-solid .fill-target {
+    fill: oklch(var(--bc) / 0.1);
+}
+
+/* Silhouette variant: accent color */
+.silhouette-accent {
+    width: auto;
+    height: calc(100vh - 8rem);
+    max-height: 440px;
+}
+
+.silhouette-accent .fill-target {
+    fill: oklch(var(--p) / 0.15);
+    stroke: oklch(var(--pf));
+    stroke-width: 2;
+}
+
+/* Legacy styles for photo preview overlay */
 .actor-photo-preview {
     position: absolute;
     top: 2rem;
@@ -70,13 +246,6 @@
     object-fit: cover;
     border-radius: var(--rounded-box);
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.actor-silhouette-container:hover {
-    border-color: hsl(var(--pf));
-    outline-color: hsl(var(--p));
-    transform: translateY(-4px);
-    box-shadow: 0 15px 50px rgba(0,0,0,0.3), inset 0 2px 8px rgba(0,0,0,0.15);
 }
 
 /* Actor Card Styles */
