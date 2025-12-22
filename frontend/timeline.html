@@ -19,13 +19,9 @@
 </head>
 <body class="overflow-hidden">
     <div class="min-h-screen bg-base-200">
-        <!-- Tab Switcher (Top Right) -->
-        <div class="fixed top-4 right-4 z-50">
-            <div role="tablist" class="tabs tabs-boxed bg-base-100 shadow-lg">
-                <a id="navActors" href="actors.html" role="tab" class="tab">Actors</a>
-                <a id="navTimeline" href="timeline.html" role="tab" class="tab tab-active">Timeline</a>
-                <a id="navCalendar" href="calendar.html" role="tab" class="tab">Calendar</a>
-            </div>
+        <!-- Navigation (Top Right) -->
+        <div class="fixed top-4 right-4 z-50" id="topNavigation">
+            <!-- Navigation will be injected here by navigation.js -->
         </div>
 
         <!-- Main Content -->
@@ -133,6 +129,16 @@
 
     <!-- Application Scripts -->
     <script src="js/supabase-config.js"></script>
+    <script type="module">
+        import { createNavigation } from './js/components/navigation.js';
+        
+        // Initialize navigation
+        const urlParams = new URLSearchParams(window.location.search);
+        const projectId = urlParams.get('project');
+        if (projectId) {
+            createNavigation(projectId, 'timeline');
+        }
+    </script>
     <script src="js/timeline.js"></script>
 </body>
 </html>

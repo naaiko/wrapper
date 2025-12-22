@@ -15,13 +15,25 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="overflow-hidden">
-    <div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
-        <div class="max-w-4xl w-full">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <h1 class="text-4xl font-bold mb-2">Continuity Manager</h1>
-                <p class="text-base-content/70">Manage your film and TV production continuity</p>
+    <div class="min-h-screen bg-base-200">
+        <!-- Navbar with User Info -->
+        <div class="navbar bg-base-100 shadow-lg">
+            <div class="flex-1">
+                <a class="btn btn-ghost text-xl">Continuity Manager</a>
             </div>
+            <div class="flex-none" id="userDisplay">
+                <!-- User info will be populated by JS -->
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex items-center justify-center p-4" style="min-height: calc(100vh - 64px);">
+            <div class="max-w-4xl w-full">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold mb-2">Your Projects</h1>
+                    <p class="text-base-content/70">Manage your film and TV production continuity</p>
+                </div>
 
             <!-- Action Cards -->
             <div class="grid md:grid-cols-2 gap-6 mb-8">
@@ -58,6 +70,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- New Project Modal -->
@@ -106,8 +119,61 @@
         </form>
     </dialog>
 
+    <!-- Delete Project Confirmation Modal -->
+    <dialog id="deleteProjectModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg text-error mb-4">⚠️ Delete Project</h3>
+            
+            <div class="alert alert-error mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <h3 class="font-bold">Permanent Deletion</h3>
+                    <div class="text-xs">This will permanently delete all project data including scenes, actors, and continuity records. This action cannot be undone.</div>
+                </div>
+            </div>
+
+            <p class="mb-4">
+                You are about to delete: <strong id="deleteProjectName" class="text-error"></strong>
+            </p>
+
+            <div class="form-control w-full mb-4">
+                <label class="label">
+                    <span class="label-text">Type the project name or "DELETE" to confirm</span>
+                </label>
+                <input 
+                    type="text" 
+                    id="deleteConfirmInput" 
+                    placeholder="Type project name or DELETE" 
+                    class="input input-bordered w-full" 
+                    autocomplete="off"
+                />
+                <label class="label">
+                    <span class="label-text-alt text-base-content/60">Case sensitive</span>
+                </label>
+            </div>
+
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="document.getElementById('deleteProjectModal').close()">Cancel</button>
+                <button 
+                    type="button" 
+                    id="confirmDeleteBtn"
+                    class="btn btn-error" 
+                    onclick="executeProjectDeletion()"
+                    disabled
+                >
+                    Delete Project
+                </button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
     <!-- Application Scripts -->
     <script src="js/supabase-config.js"></script>
-    <script src="js/projects.js"></script>
+    <script type="module" src="js/projects.js"></script>
 </body>
 </html>

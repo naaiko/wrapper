@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Continuity Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+        .login-card {
+            max-width: 450px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="card bg-base-200 shadow-2xl">
+            <div class="card-body p-8">
+                <!-- Logo -->
+                <div class="text-center mb-6">
+                    <h1 class="logo mb-2">CM</h1>
+                    <p class="text-base-content/70">Continuity Manager</p>
+                </div>
+
+                <!-- Alert Messages -->
+                <div id="alertContainer" class="hidden mb-4">
+                    <div id="alertMessage" class="alert">
+                        <span id="alertText"></span>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Email</span>
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            placeholder="admin@continuity.local" 
+                            class="input input-bordered w-full" 
+                            required 
+                            autofocus
+                        />
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Password</span>
+                        </label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            placeholder="Enter your password" 
+                            class="input input-bordered w-full" 
+                            required
+                        />
+                    </div>
+
+                    <div class="form-control mt-6">
+                        <button type="submit" class="btn btn-primary w-full">
+                            <span id="loginButtonText">Login</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Development Info -->
+                <div class="divider text-xs text-base-content/40">Development Mode</div>
+                <div class="text-xs text-base-content/50 text-center space-y-1">
+                    <p>Default superadmin:</p>
+                    <p class="font-mono">admin@continuity.local</p>
+                    <p class="text-base-content/30">Any password accepted in dev mode</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Role Switcher (Development Only) -->
+        <div class="card bg-base-300 shadow-xl mt-4" id="devTools">
+            <div class="card-body p-4">
+                <h3 class="text-sm font-bold mb-2">🔧 Dev Tools - Quick Login</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="quickLogin('superadmin')" class="btn btn-sm btn-outline">
+                        Login as Superadmin
+                    </button>
+                    <button onclick="quickLogin('manager')" class="btn btn-sm btn-outline">
+                        Login as Manager
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import authService from './js/services/authService.js';
+
+        // Check if already logged in
+        if (authService.isLoggedIn()) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirect') || 'index.html';
+            window.location.href = redirect;
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            
+            // Show loading state
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const buttonText = document.getElementById('loginButtonText');
+            submitBtn.disabled = true;
+            buttonText.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Logging in...';
+            
+            // Hide previous alerts
+            hideAlert();
+            
+            try {
+                const result = await authService.login(email, password);
+                
+                if (result.success) {
+                    showAlert('Login successful! Redirecting...', 'success');
+                    
+                    // Redirect after short delay
+                    setTimeout(() => {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const redirect = urlParams.get('redirect') || 'index.html';
+                        window.location.href = redirect;
+                    }, 500);
+                } else {
+                    showAlert(result.error || 'Login failed', 'error');
+                    submitBtn.disabled = false;
+                    buttonText.textContent = 'Login';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('An unexpected error occurred', 'error');
+                submitBtn.disabled = false;
+                buttonText.textContent = 'Login';
+            }
+        });
+
+        // Quick login for development (creates test users if needed)
+        window.quickLogin = async function(role) {
+            const email = role === 'superadmin' 
+                ? 'admin@continuity.local' 
+                : 'manager@continuity.local';
+            
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = 'test123';
+            document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+        };
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertContainer');
+            const alertBox = document.getElementById('alertMessage');
+            const text = document.getElementById('alertText');
+            
+            container.classList.remove('hidden');
+            alertBox.className = `alert alert-${type}`;
+            text.textContent = message;
+        }
+
+        function hideAlert() {
+            document.getElementById('alertContainer').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
