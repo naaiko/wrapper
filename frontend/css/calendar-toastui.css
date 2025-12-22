@@ -79,6 +79,18 @@
     background: hsl(var(--p) / 0.05) !important;
 }
 
+/* Today date number - override Toast UI default blue */
+.toastui-calendar-template-monthDayName.toastui-calendar-today {
+    color: hsl(var(--p)) !important;
+    font-weight: 600 !important;
+}
+
+/* Today date in month grid header */
+.toastui-calendar-template-monthGridHeader.toastui-calendar-today {
+    color: hsl(var(--p)) !important;
+    font-weight: 600 !important;
+}
+
 /* Multi-day event spanning */
 .toastui-calendar-weekday-event-block {
     margin: 2.5px 0 !important;

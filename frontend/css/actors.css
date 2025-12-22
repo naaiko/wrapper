@@ -51,7 +51,7 @@
     stroke-dasharray: 8 4;
     filter: drop-shadow(0 0 10px oklch(var(--p) / 0.3));
     cursor: pointer;
-    transition: fill-opacity 0.2s ease, stroke-opacity 0.2s ease;
+    transition: fill-opacity 0.25s ease-in-out, stroke-opacity 0.25s ease-in-out;
     pointer-events: none; /* Disabled by default */
 }
 
@@ -64,13 +64,13 @@
 .bodyshot-overlay {
     fill: oklch(var(--p));
     fill-opacity: 0.15;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.25s ease-in-out;
     pointer-events: none;
 }
 
 /* When any rect is hovered, dim all other rects */
 .layer-bodyshots.has-hover rect:not(.bodyshot-overlay) {
-    stroke-opacity: 0.2;
+    stroke-opacity: 0.35;
 }
 
 /* The currently hovered rect stays full opacity */
@@ -101,7 +101,7 @@
     stroke-dasharray: 8 4;
     filter: drop-shadow(0 0 10px oklch(var(--s) / 0.3));
     cursor: pointer;
-    transition: fill-opacity 0.2s ease, stroke-opacity 0.2s ease;
+    transition: fill-opacity 0.25s ease-in-out, stroke-opacity 0.25s ease-in-out;
     pointer-events: none; /* Disabled by default */
 }
 
@@ -113,12 +113,12 @@
 .accessory-overlay {
     fill: oklch(var(--s));
     fill-opacity: 0.15;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.25s ease-in-out;
     pointer-events: none;
 }
 
 .layer-accesories.has-hover circle:not(.accessory-overlay) {
-    stroke-opacity: 0.2;
+    stroke-opacity: 0.35;
 }
 
 .layer-accesories.has-hover circle:not(.accessory-overlay):hover {
@@ -143,7 +143,7 @@
     stroke-dasharray: 8 4;
     filter: drop-shadow(0 0 10px oklch(var(--a) / 0.3));
     cursor: pointer;
-    transition: fill-opacity 0.2s ease, stroke-opacity 0.2s ease;
+    transition: fill-opacity 0.25s ease-in-out, stroke-opacity 0.25s ease-in-out;
     pointer-events: none; /* Disabled by default */
 }
 
@@ -155,12 +155,12 @@
 .outfit-overlay {
     fill: oklch(var(--a));
     fill-opacity: 0.15;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.25s ease-in-out;
     pointer-events: none;
 }
 
 .layer-outfit.has-hover path:not(.outfit-overlay) {
-    stroke-opacity: 0.2;
+    stroke-opacity: 0.35;
 }
 
 .layer-outfit.has-hover path:not(.outfit-overlay):hover {

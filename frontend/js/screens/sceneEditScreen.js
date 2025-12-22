@@ -501,7 +501,7 @@ export class SceneEditScreen {
         if (!previewContainer || !scene) return;
         
         // Import renderSceneCard dynamically
-        import('./components/sceneCardRenderer.js').then(module => {
+        import('../components/sceneCardRenderer.js').then(module => {
             const { renderSceneCard } = module;
             
             // Clear previous preview
@@ -937,9 +937,9 @@ export class SceneEditScreen {
      */
     async showAddActorModal(scene) {
         // Dynamic import to avoid circular dependencies
-        const { ActorService } = await import('./services/actorService.js');
-        const { SceneActorService } = await import('./services/sceneActorService.js');
-        const { renderActorCard } = await import('./components/actorCardRenderer.js');
+        const { ActorService } = await import('../services/actorService.js');
+        const { SceneActorService } = await import('../services/sceneActorService.js');
+        const { renderActorCard } = await import('../components/actorCardRenderer.js');
         
         try {
             // Get all actors for this project
@@ -1057,7 +1057,7 @@ export class SceneEditScreen {
      */
     async handleRemoveActorFromScene(sceneActorId, scene) {
         // Dynamic import
-        const { SceneActorService } = await import('./services/sceneActorService.js');
+        const { SceneActorService } = await import('../services/sceneActorService.js');
         
         // Get scene actor details for confirmation
         const sceneActor = scene.scene_actors?.find(sa => sa.id === sceneActorId);

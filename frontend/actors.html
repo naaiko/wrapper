@@ -11,12 +11,19 @@
     <!-- DaisyUI CDN -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
     
+    <!-- Toast UI Calendar CSS -->
+    <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
+    
     <!-- Custom Styles -->
     <link rel="stylesheet" href="css/actors.css">
     <link rel="stylesheet" href="css/edit-screen.css">
+    <link rel="stylesheet" href="css/calendar-toastui.css">
     
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Toast UI Calendar -->
+    <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
 </head>
 <body>
     <!-- SVG Sprite - Multi-Layer Silhouette System -->
@@ -140,13 +147,25 @@
                 </div>
 
                 <!-- Right Column (4 cols) - with top padding to avoid tab switcher -->
-                <div class="col-span-4 bg-base-100 rounded-lg p-6 mt-16">
-                    <h3 class="text-lg font-semibold mb-4">Scenes</h3>
-                    <div id="actorScenesList" class="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
-                        <!-- Actor scenes will be rendered here -->
-                        <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
-                            Select an actor to see their scenes
+                <div class="col-span-4 bg-base-100 rounded-lg p-6 mt-16 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Scenes Calendar</h3>
+                        <div class="flex items-center gap-2">
+                            <button id="actorCalendarPrevMonth" class="btn btn-ghost btn-sm btn-circle">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <span id="actorCalendarMonth" class="text-sm font-semibold min-w-[120px] text-center"></span>
+                            <button id="actorCalendarNextMonth" class="btn btn-ghost btn-sm btn-circle">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
                         </div>
+                    </div>
+                    <div id="actorCalendar" class="flex-1" style="min-height: 500px;">
+                        <!-- Toast UI Calendar will be rendered here -->
                     </div>
                 </div>
             </div>

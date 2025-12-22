@@ -87,6 +87,7 @@ class ActorsApp {
         this.searchTerm = '';
         this.actorDropdown = null;
         this.actorEditScreen = null;
+        this.actorCalendar = null; // Toast UI Calendar instance
         this.locations = [];
         this.times = [];
         this.conditions = [];
@@ -604,6 +605,26 @@ class ActorsApp {
         modeButtons.forEach(btn => {
             btn.addEventListener('click', () => this.switchLayerMode(btn));
         });
+        
+        // Calendar navigation
+        const btnCalendarPrev = document.getElementById('actorCalendarPrevMonth');
+        const btnCalendarNext = document.getElementById('actorCalendarNextMonth');
+        
+        if (btnCalendarPrev) btnCalendarPrev.addEventListener('click', () => {
+            if (this.actorCalendar) {
+                this.actorCalendar.prev();
+                this.updateCalendarMonthLabel();
+            }
+        });
+        if (btnCalendarNext) btnCalendarNext.addEventListener('click', () => {
+            if (this.actorCalendar) {
+                this.actorCalendar.next();
+                this.updateCalendarMonthLabel();
+            }
+        });
+        
+        // Initialize calendar
+        this.initializeActorCalendar();
     }
 
     async loadActors() {
@@ -863,8 +884,8 @@ class ActorsApp {
         
         // Silhouette is now static - no update needed
         
-        // Load and display scenes for this actor
-        await this.loadActorScenes(actor);
+        // Render actor's scenes on calendar (right column)
+        await this.renderActorCalendar(actor);
     }
     
     /**
@@ -1008,6 +1029,214 @@ class ActorsApp {
                 });
             }
         }, 0);
+    }
+    
+    /**
+     * Initialize Toast UI Calendar for actor scenes (read-only)
+     */
+    initializeActorCalendar() {
+        const container = document.getElementById('actorCalendar');
+        if (!container) return;
+        
+        try {
+            // Initialize Toast UI Calendar in read-only mode
+            this.actorCalendar = new tui.Calendar(container, {
+                defaultView: 'month',
+                useFormPopup: false,
+                useDetailPopup: false,
+                isReadOnly: true, // Read-only mode - no drag & drop
+                week: {
+                    startDayOfWeek: 1, // Monday start
+                },
+                month: {
+                    startDayOfWeek: 1,
+                    visibleEventCount: 2,
+                },
+                template: {
+                    monthGridHeaderExceed(hiddenEvents) {
+                        return `<span class="text-sm text-base-content/60">+${hiddenEvents} more</span>`;
+                    },
+                    monthDayName(model) {
+                        return `<span class="text-sm font-semibold text-base-content/60">${model.label}</span>`;
+                    },
+                    allday(event) {
+                        const sceneNumber = event.raw?.sceneNumber || event.title.split(':')[0];
+                        const description = event.raw?.description || event.title.split(':').slice(1).join(':').trim();
+                        
+                        // Get time icon if available
+                        let timeIconHtml = '';
+                        if (event.raw?.timeIcon) {
+                            timeIconHtml = `
+                                <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 25px; height: 25px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.1);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 15px; height: 15px; color: rgba(0, 0, 0, 0.7); flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        ${event.raw.timeIcon}
+                                    </svg>
+                                </div>
+                            `;
+                        }
+                        
+                        // Get condition icons if available
+                        let conditionIconsHtml = '';
+                        if (event.raw?.conditionIcons && event.raw.conditionIcons.length > 0) {
+                            const isSingle = event.raw.conditionIcons.length === 1;
+                            const iconSvgs = event.raw.conditionIcons.map(icon => `
+                                <svg xmlns="http://www.w3.org/2000/svg" style="width: 15px; height: 15px; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    ${icon}
+                                </svg>
+                            `).join('');
+                            const containerStyle = isSingle 
+                                ? 'display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 25px; height: 25px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.05);' 
+                                : 'display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; padding: 5px 10px; border-radius: 12.5px; background-color: rgba(0, 0, 0, 0.05);';
+                            conditionIconsHtml = `
+                                <div style="${containerStyle}">
+                                    ${iconSvgs}
+                                </div>
+                            `;
+                        }
+                        
+                        return `<div style="display: flex; align-items: center; gap: 5px; width: 100%; height: 100%;">
+                            <span class="badge badge-primary badge-xs" style="font-size: 11.25px; padding: 3px 6px; flex-shrink: 0;">${sceneNumber}</span>
+                            <span style="font-size: 13.75px; line-height: 1.4; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${description}</span>
+                            ${timeIconHtml}
+                            ${conditionIconsHtml}
+                        </div>`;
+                    },
+                },
+            });
+            
+            this.updateCalendarMonthLabel();
+            console.log('✅ Actor calendar initialized (read-only mode)');
+        } catch (error) {
+            console.error('Failed to initialize actor calendar:', error);
+        }
+    }
+    
+    /**
+     * Update calendar month label
+     */
+    updateCalendarMonthLabel() {
+        if (!this.actorCalendar) return;
+        
+        const monthLabel = document.getElementById('actorCalendarMonth');
+        if (!monthLabel) return;
+        
+        const date = this.actorCalendar.getDate();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                            'July', 'August', 'September', 'October', 'November', 'December'];
+        monthLabel.textContent = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    }
+    
+    /**
+     * Render actor's scenes on the calendar
+     */
+    async renderActorCalendar(actor) {
+        console.log('🎬 renderActorCalendar called with actor:', actor?.actor_name, 'calendar exists:', !!this.actorCalendar);
+        
+        if (!this.actorCalendar || !actor) return;
+        
+        try {
+            // Clear existing events
+            this.actorCalendar.clear();
+            
+            // Dynamic import to avoid loading scene modules until needed
+            const { SceneActorService } = await import('./services/sceneActorService.js');
+            const { buildSceneHeading } = await import('./components/sceneCardRenderer.js');
+            const settingsService = await import('./services/settingsService.js');
+            
+            // Get scene_actors for this actor
+            const sceneActors = await SceneActorService.getByActor(actor.id);
+            console.log('📋 Scene actors loaded:', sceneActors.length, 'scenes');
+            
+            if (sceneActors.length === 0) {
+                console.log('No scenes found for actor');
+                return;
+            }
+            
+            // Load locations
+            const locations = await LocationService.getAll(this.projectId);
+            const settings = settingsService.default.getAllFeatures();
+            
+            // Prepare calendar events
+            const events = [];
+            
+            sceneActors.forEach(sa => {
+                const scene = sa.scene;
+                console.log('🔍 Processing scene:', scene?.scene_number, 'shooting_dates:', scene?.shooting_dates);
+                
+                // Check if scene has shooting dates (first element of the array)
+                if (!scene || !scene.shooting_dates || scene.shooting_dates.length === 0) {
+                    console.log('⏭️ Skipping scene (no scene or no shooting dates)');
+                    return; // Only show scheduled scenes
+                }
+                
+                // Build scene heading
+                const heading = buildSceneHeading(scene, {
+                    locations: locations,
+                    times: this.times,
+                    settings: {
+                        show_int_ext: settings.show_int_ext?.enabled,
+                        show_location: settings.show_location?.enabled,
+                        show_time: settings.show_time?.enabled,
+                        show_continuity: settings.show_continuity?.enabled
+                    },
+                    continuityOptions: settingsService.default.getContinuityOptions()
+                });
+                
+                // Get time icon
+                let timeIcon = '';
+                if (scene.time && this.times) {
+                    const timeObj = this.times.find(t => t.id === scene.time);
+                    if (timeObj?.icon) {
+                        timeIcon = timeObj.icon;
+                    }
+                }
+                
+                // Get condition icons
+                let conditionIcons = [];
+                if (scene.conditions && Array.isArray(scene.conditions) && this.conditions) {
+                    conditionIcons = scene.conditions
+                        .map(condId => {
+                            const condObj = this.conditions.find(c => c.id === condId);
+                            return condObj?.icon || null;
+                        })
+                        .filter(icon => icon !== null);
+                }
+                
+                // Use first and last shooting date from the array
+                const shootingDates = scene.shooting_dates.map(d => new Date(d)).sort((a, b) => a - b);
+                const startDate = shootingDates[0];
+                const endDate = new Date(shootingDates[shootingDates.length - 1]);
+                endDate.setDate(endDate.getDate() + 1); // End date is exclusive in Toast UI Calendar
+                
+                events.push({
+                    id: scene.id,
+                    calendarId: '1',
+                    title: `${scene.scene_number}: ${heading}`,
+                    category: 'allday',
+                    start: startDate,
+                    end: endDate,
+                    isAllday: true,
+                    backgroundColor: '#dbeafe',
+                    borderColor: '#3b82f6',
+                    raw: {
+                        sceneNumber: scene.scene_number,
+                        description: heading,
+                        timeIcon: timeIcon,
+                        conditionIcons: conditionIcons,
+                    }
+                });
+            });
+            
+            console.log('📅 Total events to add:', events.length);
+            console.log('Events:', events);
+            
+            // Add events to calendar
+            this.actorCalendar.createEvents(events);
+            console.log(`✅ Rendered ${events.length} scenes on actor calendar`);
+            
+        } catch (error) {
+            console.error('Error rendering actor calendar:', error);
+        }
     }
     
     /**

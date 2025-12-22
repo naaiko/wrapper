@@ -695,7 +695,7 @@ export class AddSceneScreen {
         if (!previewContainer) return;
         
         // Import renderSceneCard dynamically
-        import('./components/sceneCardRenderer.js').then(module => {
+        import('../components/sceneCardRenderer.js').then(module => {
             const { renderSceneCard } = module;
             
             // Clear previous preview
