@@ -5,6 +5,9 @@
 import { ActorService } from './services/actorService.js';
 import { CustomDropdown } from './components/customDropdown.js';
 import { SVGProcessor } from './utils/svgProcessor.js';
+import { ActorEditScreen } from './actorEditScreen.js';
+import { LocationService } from './services/locationService.js';
+import settingsService from './services/settingsService.js';
 
 // Helper function for confirmation dialogs
 function confirmDialog(message, title = 'Bevestiging', okText = 'Verwijderen', cancelText = 'Annuleren') {
@@ -65,6 +68,10 @@ class ActorsApp {
         this.currentFilter = 'all';
         this.searchTerm = '';
         this.actorDropdown = null;
+        this.actorEditScreen = null;
+        this.locations = [];
+        this.times = [];
+        this.conditions = [];
         
         this.init();
     }
@@ -85,12 +92,65 @@ class ActorsApp {
 
         // Load project info
         await this.loadProjectInfo();
+        
+        // Initialize ActorEditScreen
+        await this.initializeActorEditScreen();
 
         // Set up event listeners
         this.setupEventListeners();
 
         // Load actors
         await this.loadActors();
+    }
+    
+    /**
+     * Initialize ActorEditScreen component
+     */
+    async initializeActorEditScreen() {
+        // Load data needed for edit screen
+        this.locations = await LocationService.getAll(this.projectId);
+        
+        // Get times and conditions from settings
+        const times = settingsService.getProjectTimes();
+        const conditions = settingsService.getProjectConditions();
+        
+        this.times = times || [];
+        this.conditions = conditions || [];
+        
+        // Create edit screen instance
+        this.actorEditScreen = new ActorEditScreen({
+            projectId: this.projectId,
+            locations: this.locations,
+            times: this.times,
+            conditions: this.conditions,
+            onActorUpdated: async (actorId) => {
+                // Reload actors and update UI
+                await this.loadActors();
+                // Reselect the updated actor
+                const actor = this.actors.find(a => a.id === actorId);
+                if (actor) {
+                    this.currentActor = actor;
+                    this.currentActorIndex = this.actors.indexOf(actor);
+                    await this.showActorDetail(actor);
+                }
+            },
+            onActorDeleted: async (actorId) => {
+                // Remove from local array
+                this.actors = this.actors.filter(a => a.id !== actorId);
+                
+                // Select next/previous actor or show empty state
+                if (this.actors.length > 0) {
+                    this.currentActorIndex = Math.min(this.currentActorIndex, this.actors.length - 1);
+                    this.currentActor = this.actors[this.currentActorIndex];
+                    this.renderActorDropdown();
+                    await this.showActorDetail(this.currentActor);
+                } else {
+                    this.currentActor = null;
+                    this.currentActorIndex = 0;
+                    this.showEmptyState();
+                }
+            }
+        });
     }
     
     /**
@@ -772,16 +832,145 @@ class ActorsApp {
         // Hide empty state
         document.getElementById('emptyState').classList.add('hidden');
         
-        // Update left panel with actor name
-        const leftActorName = document.getElementById('leftActorName');
-        if (leftActorName) {
-            leftActorName.textContent = `${actor.first_name} ${actor.last_name}`;
-        }
+        // Render actor details in left panel
+        this.renderActorDetails(actor);
         
         // Silhouette is now static - no update needed
         
         // Load and display scenes for this actor
         await this.loadActorScenes(actor);
+    }
+    
+    /**
+     * Render actor details in left panel
+     */
+    renderActorDetails(actor) {
+        const panel = document.getElementById('actorDetailsPanel');
+        if (!panel) return;
+        
+        // Build distinguishing features list
+        const features = actor.distinguishing_features || [];
+        const featuresHtml = features.length > 0 
+            ? features.map(f => `<span class="badge badge-outline badge-sm">${f}</span>`).join(' ')
+            : '<span class="text-base-content/40 text-xs">None specified</span>';
+        
+        panel.innerHTML = `
+            <!-- Header with name -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-base-content mb-1">${actor.actor_name}</h2>
+                <p class="text-lg text-base-content/70">as ${actor.character_name}</p>
+            </div>
+            
+            <!-- Profile Image (if available) -->
+            ${actor.profile_image_url ? `
+                <div class="mb-6">
+                    <img src="${actor.profile_image_url}" alt="${actor.actor_name}" class="w-full rounded-lg shadow-md" />
+                </div>
+            ` : ''}
+            
+            <!-- Contact Information -->
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-base-content/60 uppercase tracking-wide mb-3">Contact</h3>
+                <div class="space-y-2">
+                    ${actor.email ? `
+                        <div class="flex items-center gap-2 text-sm">
+                            <svg class="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <a href="mailto:${actor.email}" class="text-primary hover:underline">${actor.email}</a>
+                        </div>
+                    ` : ''}
+                    ${actor.phone ? `
+                        <div class="flex items-center gap-2 text-sm">
+                            <svg class="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            <a href="tel:${actor.phone}" class="text-primary hover:underline">${actor.phone}</a>
+                        </div>
+                    ` : ''}
+                    ${!actor.email && !actor.phone ? `
+                        <p class="text-sm text-base-content/40">No contact information</p>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Physical Characteristics -->
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-base-content/60 uppercase tracking-wide mb-3">Physical Characteristics</h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    ${actor.height ? `
+                        <div>
+                            <div class="text-base-content/50 text-xs mb-1">Height</div>
+                            <div class="font-medium">${actor.height}</div>
+                        </div>
+                    ` : ''}
+                    ${actor.body_type ? `
+                        <div>
+                            <div class="text-base-content/50 text-xs mb-1">Body Type</div>
+                            <div class="font-medium">${actor.body_type}</div>
+                        </div>
+                    ` : ''}
+                    ${actor.hair_color ? `
+                        <div>
+                            <div class="text-base-content/50 text-xs mb-1">Hair Color</div>
+                            <div class="font-medium">${actor.hair_color}</div>
+                        </div>
+                    ` : ''}
+                    ${actor.hair_style ? `
+                        <div>
+                            <div class="text-base-content/50 text-xs mb-1">Hair Style</div>
+                            <div class="font-medium">${actor.hair_style}</div>
+                        </div>
+                    ` : ''}
+                    ${actor.eye_color ? `
+                        <div>
+                            <div class="text-base-content/50 text-xs mb-1">Eye Color</div>
+                            <div class="font-medium">${actor.eye_color}</div>
+                        </div>
+                    ` : ''}
+                    ${actor.skin_tone ? `
+                        <div>
+                            <div class="text-base-content/50 text-xs mb-1">Skin Tone</div>
+                            <div class="font-medium">${actor.skin_tone}</div>
+                        </div>
+                    ` : ''}
+                </div>
+                ${!actor.height && !actor.body_type && !actor.hair_color && !actor.hair_style && !actor.eye_color && !actor.skin_tone ? `
+                    <p class="text-sm text-base-content/40">No physical characteristics recorded</p>
+                ` : ''}
+            </div>
+            
+            <!-- Distinguishing Features -->
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-base-content/60 uppercase tracking-wide mb-3">Distinguishing Features</h3>
+                <div class="flex flex-wrap gap-2">
+                    ${featuresHtml}
+                </div>
+            </div>
+            
+            <!-- Notes -->
+            ${actor.notes ? `
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-base-content/60 uppercase tracking-wide mb-3">Notes</h3>
+                    <div class="text-sm text-base-content/80 whitespace-pre-wrap bg-base-200 p-3 rounded-lg">
+                        ${actor.notes}
+                    </div>
+                </div>
+            ` : ''}
+            
+            <!-- Edit Button -->
+            <div class="mt-6 pt-6 border-t border-base-300">
+                <button 
+                    class="btn btn-primary btn-block btn-sm"
+                    onclick="actorsApp.editActor('${actor.id}')"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Actor
+                </button>
+            </div>
+        `;
     }
     
     /**
@@ -891,6 +1080,15 @@ class ActorsApp {
         });
         
         return badges.length > 0 ? badges.join('') : null;
+    }
+    
+    /**
+     * Edit actor using new EditScreen component
+     */
+    async editActor(actorId) {
+        if (this.actorEditScreen) {
+            await this.actorEditScreen.open(actorId);
+        }
     }
     
     /**

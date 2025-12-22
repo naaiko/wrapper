@@ -69,9 +69,13 @@
         <div class="h-screen pt-4 pb-24 px-4">
             <div class="grid grid-cols-12 gap-6 h-full">
                 <!-- Left Column (4 cols) - with top padding to avoid tab switcher -->
-                <div class="col-span-4 bg-base-100 rounded-lg p-6 mt-16">
-                    <h3 class="text-lg font-semibold mb-4">Details Links</h3>
-                    <div class="text-2xl font-bold" id="leftActorName">-</div>
+                <div class="col-span-4 bg-base-100 rounded-lg p-6 mt-16 overflow-y-auto max-h-[calc(100vh-100px)]">
+                    <div id="actorDetailsPanel">
+                        <!-- Actor details will be rendered here -->
+                        <div class="text-sm text-base-content/60 text-center py-8">
+                            Select an actor to see details
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Middle Column (4 cols) - Silhouette -->
