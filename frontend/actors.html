@@ -104,16 +104,17 @@
                     </div>
                     <!-- Silhouette with Layer System -->
                     <div class="flex-1 flex flex-col items-center justify-end overflow-hidden" role="region" aria-label="Actor visualization">
-                        <!-- Mode Switcher -->
-                        <div class="mb-4 flex gap-2">
-                            <button class="btn btn-sm layer-mode-btn active" data-mode="none">None</button>
-                            <button class="btn btn-sm layer-mode-btn" data-mode="bodyshots">Bodyshots</button>
-                            <button class="btn btn-sm layer-mode-btn" data-mode="accessories">Accessories</button>
-                            <button class="btn btn-sm layer-mode-btn" data-mode="outfit">Outfit</button>
+                        <!-- Mode Switcher (Tab Style) -->
+                        <div class="mb-4" role="tablist">
+                            <div class="tabs tabs-boxed bg-base-100 shadow-md">
+                                <button role="tab" class="tab tab-active layer-mode-btn" data-mode="bodyshots">Bodyshots</button>
+                                <button role="tab" class="tab layer-mode-btn" data-mode="accessories">Accessories</button>
+                                <button role="tab" class="tab layer-mode-btn" data-mode="outfit">Outfit</button>
+                            </div>
                         </div>
                         
                         <!-- Layered SVG (populated dynamically by loadSilhouetteSVG) -->
-                        <svg class="actor-silhouette" viewBox="0 0 373 852" role="img" aria-label="Actor silhouette with layers">
+                        <svg class="actor-silhouette mode-bodyshots" viewBox="0 0 373 852" role="img" aria-label="Actor silhouette with layers">
                             <!-- Layers loaded from images/silhouette.svg on page load -->
                         </svg>
                                 <circle id="jewelry-right" cx="43.8" cy="465.4" r="30"/>

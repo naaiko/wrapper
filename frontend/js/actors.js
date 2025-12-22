@@ -783,25 +783,23 @@ class ActorsApp {
     
     /**
      * Switch silhouette layer visibility mode
-     * Modes: none, bodyshots, accessories, outfit
+     * Modes: bodyshots, accessories, outfit
      */
     switchLayerMode(button) {
         const mode = button.dataset.mode;
         const svg = document.querySelector('.actor-silhouette');
         
-        // Update active button
+        // Update active tab
         document.querySelectorAll('.layer-mode-btn').forEach(btn => {
-            btn.classList.remove('active');
+            btn.classList.remove('tab-active');
         });
-        button.classList.add('active');
+        button.classList.add('tab-active');
         
         // Remove all mode classes
         svg.classList.remove('mode-bodyshots', 'mode-accessories', 'mode-outfit');
         
-        // Add new mode class if not 'none'
-        if (mode !== 'none') {
-            svg.classList.add(`mode-${mode}`);
-        }
+        // Add new mode class
+        svg.classList.add(`mode-${mode}`);
     }
 
     async openEditActorModal(actorId) {
