@@ -84,7 +84,13 @@ export class SupabaseClient {
     async getScene(sceneId) {
         const { data, error } = await this.db
             .from('scenes')
-            .select('*')
+            .select(`
+                *,
+                scene_actors (
+                    *,
+                    actor:actors (*)
+                )
+            `)
             .eq('id', sceneId)
             .single();
         

@@ -25,7 +25,13 @@ export class ActorService {
         try {
             const { data, error } = await window.supabase
                 .from('actors')
-                .select('*')
+                .select(`
+                    *,
+                    scene_actors (
+                        *,
+                        scene:scenes (*)
+                    )
+                `)
                 .eq('id', actorId)
                 .single();
 

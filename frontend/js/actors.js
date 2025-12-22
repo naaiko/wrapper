@@ -768,7 +768,7 @@ class ActorsApp {
         }
     }
 
-    showActorDetail(actor) {
+    async showActorDetail(actor) {
         // Hide empty state
         document.getElementById('emptyState').classList.add('hidden');
         
@@ -779,6 +779,118 @@ class ActorsApp {
         }
         
         // Silhouette is now static - no update needed
+        
+        // Load and display scenes for this actor
+        await this.loadActorScenes(actor);
+    }
+    
+    /**
+     * Load and render scenes for an actor
+     */
+    async loadActorScenes(actor) {
+        const scenesList = document.getElementById('actorScenesList');
+        if (!scenesList) return;
+        
+        try {
+            // Dynamic import to avoid loading scene modules until needed
+            const { SceneActorService } = await import('./services/sceneActorService.js');
+            const { renderSceneCard } = await import('./components/sceneCardRenderer.js');
+            const { LocationService } = await import('./services/locationService.js');
+            const settingsService = await import('./services/settingsService.js');
+            
+            // Show loading state
+            scenesList.innerHTML = `
+                <div class="flex justify-center items-center p-8">
+                    <span class="loading loading-spinner loading-md"></span>
+                </div>
+            `;
+            
+            // Get scene_actors for this actor
+            const sceneActors = await SceneActorService.getByActor(actor.id);
+            
+            if (sceneActors.length === 0) {
+                scenesList.innerHTML = `
+                    <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
+                        This actor is not assigned to any scenes yet.
+                    </div>
+                `;
+                return;
+            }
+            
+            // Load locations for scene cards
+            const locations = await LocationService.getAll(this.projectId);
+            const settings = settingsService.default.getAllFeatures();
+            
+            // Render scene cards
+            scenesList.innerHTML = '';
+            sceneActors.forEach(sa => {
+                const scene = sa.scene;
+                if (!scene) return;
+                
+                // Create wrapper for scene card + continuity info
+                const wrapper = document.createElement('div');
+                wrapper.className = 'space-y-1';
+                
+                // Render scene card
+                const card = renderSceneCard(scene, {
+                    locations: locations,
+                    times: [], // Not needed for basic display
+                    conditions: [],
+                    settings: settings,
+                    hideSplitIndicator: false
+                });
+                wrapper.appendChild(card);
+                
+                // Add continuity badges if photos exist
+                const badges = this.renderContinuityBadgesForScene(sa);
+                if (badges) {
+                    const badgesDiv = document.createElement('div');
+                    badgesDiv.className = 'flex gap-1 px-2';
+                    badgesDiv.innerHTML = badges;
+                    wrapper.appendChild(badgesDiv);
+                }
+                
+                scenesList.appendChild(wrapper);
+            });
+            
+        } catch (error) {
+            console.error('Error loading actor scenes:', error);
+            scenesList.innerHTML = `
+                <div class="alert alert-error">
+                    <span>Failed to load scenes</span>
+                </div>
+            `;
+        }
+    }
+    
+    /**
+     * Render continuity badges for a scene actor
+     */
+    renderContinuityBadgesForScene(sceneActor) {
+        const badges = [];
+        
+        const categories = [
+            { key: 'costume_images', icon: '👔', label: 'Costume' },
+            { key: 'makeup_images', icon: '💄', label: 'Makeup' },
+            { key: 'hair_images', icon: '💇', label: 'Hair' },
+            { key: 'props_images', icon: '🎭', label: 'Props' }
+        ];
+        
+        categories.forEach(cat => {
+            const count = sceneActor[cat.key]?.length || 0;
+            if (count > 0) {
+                badges.push(`
+                    <div class="tooltip tooltip-right" data-tip="${cat.label}: ${count} photo${count > 1 ? 's' : ''}">
+                        <div class="badge badge-xs badge-ghost gap-1">
+                            <span>${cat.icon}</span>
+                            <span class="text-xs">${count}</span>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+        
+        return badges.length > 0 ? badges.join('') : null;
     }
     
     /**

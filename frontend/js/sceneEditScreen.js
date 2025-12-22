@@ -208,13 +208,132 @@ export class SceneEditScreen {
                 <div class="form-control">
                     <label class="label">
                         <span class="label-text font-semibold">Cast Members</span>
+                        <button 
+                            type="button" 
+                            class="btn btn-primary btn-xs"
+                            data-action="add-actor-to-scene"
+                        >
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Actor
+                        </button>
                     </label>
-                    <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
-                        Cast management coming soon...
+                    
+                    <!-- Actors List -->
+                    <div id="sceneActorsList" class="space-y-2">
+                        ${this.renderSceneActorsList(scene)}
                     </div>
                 </div>
             </div>
         `;
+    }
+    
+    /**
+     * Render list of actors in this scene
+     */
+    renderSceneActorsList(scene) {
+        const sceneActors = scene?.scene_actors || [];
+        
+        if (sceneActors.length === 0) {
+            return `
+                <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
+                    No actors assigned to this scene yet.
+                    <br>
+                    <span class="text-xs mt-1 inline-block">Click "Add Actor" to assign cast members.</span>
+                </div>
+            `;
+        }
+        
+        return sceneActors.map(sa => {
+            const actor = sa.actor;
+            if (!actor) return '';
+            
+            return `
+                <div class="actor-scene-card" data-scene-actor-id="${sa.id}">
+                    <div class="flex items-center gap-3 p-2 bg-base-100 border border-base-300 rounded-lg hover:shadow-md transition-shadow">
+                        
+                        <!-- Profile image -->
+                        <div class="avatar flex-shrink-0">
+                            <div class="w-10 h-10 rounded-full">
+                                ${actor.profile_image_url 
+                                    ? `<img src="${actor.profile_image_url}" alt="${actor.actor_name}" />`
+                                    : `<div class="bg-base-300 flex items-center justify-center text-xs font-bold">${actor.actor_name[0].toUpperCase()}</div>`
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- Actor info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-sm truncate">${actor.actor_name}</div>
+                            <div class="text-xs text-base-content/60 truncate">as ${actor.character_name}</div>
+                        </div>
+                        
+                        <!-- Continuity indicators -->
+                        <div class="flex gap-1">
+                            ${this.renderContinuityBadges(sa)}
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="flex gap-1">
+                            <button 
+                                type="button"
+                                class="btn btn-ghost btn-xs btn-circle"
+                                data-action="edit-scene-actor"
+                                data-scene-actor-id="${sa.id}"
+                                title="Edit continuity"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-ghost btn-xs btn-circle text-error"
+                                data-action="remove-actor-from-scene"
+                                data-scene-actor-id="${sa.id}"
+                                title="Remove from scene"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    /**
+     * Render continuity badges for scene actor
+     */
+    renderContinuityBadges(sceneActor) {
+        const badges = [];
+        
+        // Count images per category
+        const categories = [
+            { key: 'costume_images', icon: '👔', label: 'Costume' },
+            { key: 'makeup_images', icon: '💄', label: 'Makeup' },
+            { key: 'hair_images', icon: '💇', label: 'Hair' },
+            { key: 'props_images', icon: '🎭', label: 'Props' }
+        ];
+        
+        categories.forEach(cat => {
+            const count = sceneActor[cat.key]?.length || 0;
+            if (count > 0) {
+                badges.push(`
+                    <div class="tooltip tooltip-left" data-tip="${cat.label}: ${count} photo${count > 1 ? 's' : ''}">
+                        <div class="badge badge-xs badge-ghost gap-1">
+                            <span>${cat.icon}</span>
+                            <span class="text-xs">${count}</span>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+        
+        return badges.join('');
     }
     
     /**
@@ -655,6 +774,32 @@ export class SceneEditScreen {
                 this.handleChange('int_ext', e.target.value || null, scene);
             });
         }
+        
+        // Cast tab: Add actor button
+        const addActorBtn = document.querySelector('button[data-action="add-actor-to-scene"]');
+        if (addActorBtn) {
+            addActorBtn.addEventListener('click', () => {
+                this.showAddActorModal(scene);
+            });
+        }
+        
+        // Cast tab: Edit scene actor buttons
+        const editSceneActorBtns = document.querySelectorAll('button[data-action="edit-scene-actor"]');
+        editSceneActorBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sceneActorId = btn.dataset.sceneActorId;
+                this.showEditSceneActorModal(sceneActorId);
+            });
+        });
+        
+        // Cast tab: Remove actor buttons
+        const removeActorBtns = document.querySelectorAll('button[data-action="remove-actor-from-scene"]');
+        removeActorBtns.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const sceneActorId = btn.dataset.sceneActorId;
+                await this.handleRemoveActorFromScene(sceneActorId, scene);
+            });
+        });
     }
     
     /**
@@ -781,6 +926,177 @@ export class SceneEditScreen {
             day: 'numeric', 
             year: 'numeric' 
         });
+    }
+    
+    // =================================================================
+    // CAST MANAGEMENT
+    // =================================================================
+    
+    /**
+     * Show modal to add actor to scene
+     */
+    async showAddActorModal(scene) {
+        // Dynamic import to avoid circular dependencies
+        const { ActorService } = await import('./services/actorService.js');
+        const { SceneActorService } = await import('./services/sceneActorService.js');
+        const { renderActorCard } = await import('./components/actorCardRenderer.js');
+        
+        try {
+            // Get all actors for this project
+            const allActors = await ActorService.getAll(this.projectId);
+            
+            // Filter out actors already in this scene
+            const sceneActorIds = (scene.scene_actors || []).map(sa => sa.actor_id);
+            const availableActors = allActors.filter(actor => !sceneActorIds.includes(actor.id));
+            
+            if (availableActors.length === 0) {
+                alert('All actors are already assigned to this scene.');
+                return;
+            }
+            
+            // Create modal
+            const modal = document.createElement('dialog');
+            modal.id = 'addActorModal';
+            modal.className = 'modal';
+            
+            modal.innerHTML = `
+                <div class="modal-box w-11/12 max-w-2xl">
+                    <h3 class="font-bold text-lg mb-4">Add Actor to Scene ${scene.scene_number}</h3>
+                    
+                    <div class="form-control mb-4">
+                        <input 
+                            type="text" 
+                            placeholder="Search actors..." 
+                            class="input input-bordered"
+                            id="actorSearchInput"
+                        />
+                    </div>
+                    
+                    <div id="actorGrid" class="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
+                        <!-- Actor cards will be inserted here -->
+                    </div>
+                    
+                    <div class="modal-action">
+                        <button class="btn" data-close-modal>Cancel</button>
+                    </div>
+                </div>
+                <form method="dialog" class="modal-backdrop"><button>close</button></form>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Render actor cards
+            const actorGrid = modal.querySelector('#actorGrid');
+            availableActors.forEach(actor => {
+                const card = renderActorCard(actor, {
+                    showCharacter: true,
+                    onClick: async (selectedActor) => {
+                        // Add actor to scene
+                        try {
+                            await SceneActorService.create({
+                                scene_id: scene.id,
+                                actor_id: selectedActor.id
+                            });
+                            
+                            // Reload scene data
+                            const updatedScene = await SceneService.getById(scene.id);
+                            this.editScreen.currentData = updatedScene;
+                            
+                            // Update cast list
+                            const castListContainer = document.getElementById('sceneActorsList');
+                            if (castListContainer) {
+                                castListContainer.innerHTML = this.renderSceneActorsList(updatedScene);
+                                // Re-attach listeners
+                                this.attachInteractiveListeners();
+                            }
+                            
+                            // Close modal
+                            modal.close();
+                            modal.remove();
+                            
+                            // Show feedback
+                            console.log(`Added ${selectedActor.actor_name} to scene`);
+                        } catch (error) {
+                            console.error('Error adding actor to scene:', error);
+                            alert('Failed to add actor. Please try again.');
+                        }
+                    }
+                });
+                actorGrid.appendChild(card);
+            });
+            
+            // Search functionality
+            const searchInput = modal.querySelector('#actorSearchInput');
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const cards = actorGrid.querySelectorAll('.card');
+                cards.forEach(card => {
+                    const actorName = card.textContent.toLowerCase();
+                    card.style.display = actorName.includes(searchTerm) ? '' : 'none';
+                });
+            });
+            
+            // Close button
+            const closeBtn = modal.querySelector('[data-close-modal]');
+            closeBtn.addEventListener('click', () => {
+                modal.close();
+                modal.remove();
+            });
+            
+            // Show modal
+            modal.showModal();
+            
+        } catch (error) {
+            console.error('Error loading actors:', error);
+            alert('Failed to load actors. Please try again.');
+        }
+    }
+    
+    /**
+     * Remove actor from scene
+     */
+    async handleRemoveActorFromScene(sceneActorId, scene) {
+        // Dynamic import
+        const { SceneActorService } = await import('./services/sceneActorService.js');
+        
+        // Get scene actor details for confirmation
+        const sceneActor = scene.scene_actors?.find(sa => sa.id === sceneActorId);
+        if (!sceneActor) return;
+        
+        const actorName = sceneActor.actor?.actor_name || 'this actor';
+        
+        if (!confirm(`Remove ${actorName} from scene ${scene.scene_number}?`)) {
+            return;
+        }
+        
+        try {
+            await SceneActorService.delete(sceneActorId);
+            
+            // Reload scene data
+            const updatedScene = await SceneService.getById(scene.id);
+            this.editScreen.currentData = updatedScene;
+            
+            // Update cast list
+            const castListContainer = document.getElementById('sceneActorsList');
+            if (castListContainer) {
+                castListContainer.innerHTML = this.renderSceneActorsList(updatedScene);
+                // Re-attach listeners
+                this.attachInteractiveListeners();
+            }
+            
+            console.log(`Removed ${actorName} from scene`);
+        } catch (error) {
+            console.error('Error removing actor from scene:', error);
+            alert('Failed to remove actor. Please try again.');
+        }
+    }
+    
+    /**
+     * Show modal to edit scene actor continuity
+     */
+    async showEditSceneActorModal(sceneActorId) {
+        // This will be implemented in task #9
+        alert('Edit continuity feature coming in next implementation step');
     }
 }
 
