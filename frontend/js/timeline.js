@@ -405,9 +405,9 @@ function renderStoryOrder(container) {
         dragClass: 'sortable-drag',        // Item while dragging
         
         // Swap threshold settings for "between items" feeling
-        swapThreshold: 0.65,               // Percentage of item for swap (0-1)
+        swapThreshold: 0.15,               // Swap triggers at 15% overlap (was 0.65 - much more responsive!)
         invertSwap: true,                  // "Between items" effect
-        invertedSwapThreshold: 0.65,       // Threshold for inverted zones
+        invertedSwapThreshold: 0.15,       // Threshold for inverted zones (also 15%)
         
         // Direction
         direction: 'horizontal',           // Horizontal timeline
