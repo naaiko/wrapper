@@ -41,10 +41,40 @@
         <!-- Main Content -->
         <div class="flex flex-col h-screen">
             <!-- Timeline Container (Full Viewport) -->
-            <div class="flex-1 px-4 pt-20">
-                <!-- Horizontal Scrollable Timeline -->
-                <div id="sceneContainer" class="flex items-center overflow-x-auto gap-4 pb-4 h-full scrollbar-hide">
-                    <!-- Scenes will be dynamically inserted here -->
+            <div class="flex-1 px-4 pt-20 pb-16 flex flex-col items-center justify-center overflow-hidden">
+                <div class="flex flex-col w-full">
+                    <!-- Horizontal Scrollable Timeline -->
+                    <div id="sceneContainer" class="flex items-end overflow-x-auto gap-4 pb-4 scrollbar-hide">
+                        <!-- Scenes will be dynamically inserted here -->
+                    </div>
+                    
+                    <!-- Timeline Minimap (Overview) - Naturally positioned below cards -->
+                    <div class="flex justify-center items-center gap-4 py-4">
+                        <!-- Zoom Info -->
+                        <div class="flex items-center gap-2">
+                            <span id="zoomLevel" class="text-xs text-base-content/60 w-12 text-center">100%</span>
+                            <button id="zoomReset" class="btn btn-xs btn-ghost" title="Reset Zoom">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Minimap -->
+                        <div class="w-full max-w-[800px] px-4">
+                            <div id="timelineMinimap" class="relative h-3 bg-base-300/50 rounded-full overflow-hidden">
+                                <!-- Minimap scenes -->
+                                <div id="minimapScenes" class="absolute inset-0"></div>
+                                <!-- Viewport indicator with resize handles -->
+                                <div id="minimapViewport" class="absolute top-0 bottom-0 bg-primary/40 border border-primary rounded-full cursor-pointer group">
+                                    <!-- Left resize handle -->
+                                    <div class="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-primary/60" data-resize="left"></div>
+                                    <!-- Right resize handle -->
+                                    <div class="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-primary/60" data-resize="right"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

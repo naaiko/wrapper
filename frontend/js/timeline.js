@@ -15,6 +15,7 @@ const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 let addSceneScreen = null;
 let sceneEditScreen = null;
 let sortableInstance = null;
+let currentZoom = 1.0; // Zoom level: 0.5 (50%) to 2.0 (200%)
 
 /**
  * Get current project ID from localStorage
@@ -159,16 +160,24 @@ async function deleteScene(sceneId) {
  */
 async function updateSceneOrders(sceneUpdates) {
     try {
-        const promises = sceneUpdates.map(update => 
-            supabase
-                .from('scenes')
-                .update({ story_order: update.story_order })
-                .eq('id', update.id)
-        );
+        console.log('[UPDATE] Updating scene orders:', sceneUpdates.length, 'scenes');
         
-        await Promise.all(promises);
+        // Update only story_order for each scene sequentially to avoid conflicts
+        for (const scene of sceneUpdates) {
+            const { error } = await supabase
+                .from('scenes')
+                .update({ story_order: scene.story_order })
+                .eq('id', scene.id);
+            
+            if (error) {
+                console.error('[UPDATE] Error updating scene:', scene.id, error);
+                throw error;
+            }
+        }
+        
+        console.log('[UPDATE] Successfully updated', sceneUpdates.length, 'scenes');
     } catch (error) {
-        console.error('Error updating scene orders:', error);
+        console.error('[UPDATE] Error updating scene orders:', error);
         throw error;
     }
 }
@@ -393,6 +402,10 @@ function renderStoryOrder(container) {
         sortableInstance.destroy();
     }
     
+    console.log('[SORTABLE] Creating Sortable instance on container:', container);
+    console.log('[SORTABLE] Container classes:', container?.className);
+    console.log('[SORTABLE] Container scroll properties - scrollWidth:', container?.scrollWidth, 'clientWidth:', container?.clientWidth);
+    
     // Create new Sortable instance with optimized performance settings
     sortableInstance = Sortable.create(container, {
         // Performance-optimized animation settings
@@ -404,13 +417,19 @@ function renderStoryOrder(container) {
         chosenClass: 'sortable-chosen',    // Item when selected
         dragClass: 'sortable-drag',        // Item while dragging
         
-        // Swap threshold settings for "between items" feeling
-        swapThreshold: 0.15,               // Swap triggers at 15% overlap (was 0.65 - much more responsive!)
-        invertSwap: true,                  // "Between items" effect
-        invertedSwapThreshold: 0.15,       // Threshold for inverted zones (also 15%)
-        
         // Direction
         direction: 'horizontal',           // Horizontal timeline
+        
+        // Swap mode disabled - use standard insert/shift behavior for instant response
+        swap: false,                       // Don't use swap mode
+        swapThreshold: 0.65,              // Default value (not used when swap is false)
+        
+        // AutoScroll configuration - balanced responsiveness
+        scroll: true,                      // Enable autoscroll plugin
+        forceAutoScrollFallback: true,     // Always use SortableJS autoscroll (disable browser native)
+        scrollSensitivity: 140,            // px - triggers when moderately close to edge
+        scrollSpeed: 43,                   // px/frame - fast but controlled scrolling
+        bubbleScroll: true,                // Apply to parent elements too
         
         // Responsiveness optimizations
         delay: 0,                          // No delay - instant response
@@ -427,14 +446,12 @@ function renderStoryOrder(container) {
         
         // Events
         onStart: (evt) => {
-            // Visual feedback when drag starts
-            evt.item.style.opacity = '0.5';
+            console.log('[SORTABLE] Drag started');
+            // Keep dragged item fully visible
         },
         
         onEnd: async (evt) => {
-            // Reset opacity
-            evt.item.style.opacity = '1';
-            
+            console.log('[SORTABLE] Drag ended - oldIndex:', evt.oldIndex, 'newIndex:', evt.newIndex);
             const oldIndex = evt.oldIndex;
             const newIndex = evt.newIndex;
             
@@ -451,8 +468,20 @@ function renderStoryOrder(container) {
                         scene.story_order = index + 1;
                     });
                     
-                    // Save to database
-                    const updates = scenes.map(s => ({ id: s.id, story_order: s.story_order }));
+                    // Save to database - send complete scene objects to avoid null constraints
+                    const updates = scenes.map(s => ({
+                        id: s.id,
+                        project_id: s.project_id,
+                        scene_number: s.scene_number,
+                        description: s.description,
+                        story_order: s.story_order,
+                        shooting_order: s.shooting_order,
+                        location: s.location,
+                        int_ext: s.int_ext,
+                        time: s.time,
+                        setting: s.setting,
+                        condition: s.condition
+                    }));
                     await updateSceneOrders(updates);
                     
                     // Re-render to show updated state
@@ -573,86 +602,87 @@ function renderShootingOrder(container) {
 }
 
 // =================================================================
-// DRAG-TO-SCROLL FUNCTIONALITY (iPad-like smooth scrolling)
+// MANUAL SCROLLING - Drag empty space to scroll
 // =================================================================
+// Note: SortableJS handles dragging scene cards
+// This function handles dragging on EMPTY SPACE to scroll the timeline
 
-/**
- * Enable ultra-smooth drag-to-scroll with momentum, like iOS Safari.
- */
-function enableDragScroll() {
+function enableManualScroll() {
     const container = document.getElementById('sceneContainer');
-    let isDown = false;
+    const viewport = document.querySelector('.flex-1.px-4.pt-20'); // Main viewport
+    
+    console.log('[MANUAL SCROLL] Initializing manual scroll');
+    console.log('[MANUAL SCROLL] Container:', container);
+    console.log('[MANUAL SCROLL] Container scrollWidth:', container?.scrollWidth, 'clientWidth:', container?.clientWidth);
+    
+    let isScrolling = false;
     let startX;
     let scrollLeft;
-    let velocity = 0;
-    let lastX = 0;
-    let lastTime = Date.now();
-    let animationId = null;
     
-    // Momentum scrolling after release (iOS-like physics)
-    function applyMomentum() {
-        if (Math.abs(velocity) > 0.1) {
-            container.scrollLeft -= velocity;
-            velocity *= 0.92; // Smoother friction (iOS uses ~0.92)
-            animationId = requestAnimationFrame(applyMomentum);
-        } else {
-            velocity = 0;
+    // Handle mousedown on entire document to catch all empty space
+    document.addEventListener('mousedown', (e) => {
+        console.log('[MANUAL SCROLL] Mousedown event', e.target);
+        
+        // Check if clicking on excluded elements
+        const excludedSelectors = [
+            '.scene-card',
+            '.add-scene-placeholder',
+            '#timelineMinimap',
+            '#minimapViewport',
+            '#minimapScenes',
+            '.btn',
+            'button',
+            '#topNavigation',
+            'a',
+            'input',
+            'textarea',
+            'select'
+        ];
+        
+        const isExcluded = excludedSelectors.some(selector => e.target.closest(selector));
+        
+        if (isExcluded) {
+            console.log('[MANUAL SCROLL] Clicked on excluded element - ignoring');
+            return;
         }
-    }
-    
-    container.addEventListener('mousedown', (e) => {
-        isDown = true;
-        container.style.cursor = 'grabbing';
-        container.style.userSelect = 'none';
-        startX = e.pageX;
+        
+        console.log('[MANUAL SCROLL] Starting manual scroll on empty space');
+        isScrolling = true;
+        startX = e.pageX - container.offsetLeft;
         scrollLeft = container.scrollLeft;
-        lastX = e.pageX;
-        lastTime = Date.now();
-        velocity = 0;
-        
-        // Cancel any ongoing momentum
-        if (animationId) {
-            cancelAnimationFrame(animationId);
-            animationId = null;
+        document.body.style.cursor = 'grabbing';
+        e.preventDefault(); // Prevent text selection
+    });
+    
+    document.addEventListener('mouseleave', () => {
+        if (isScrolling) {
+            console.log('[MANUAL SCROLL] Mouse left document');
+            isScrolling = false;
+            document.body.style.cursor = 'default';
         }
     });
     
-    container.addEventListener('mouseleave', () => {
-        if (isDown) {
-            isDown = false;
-            container.style.cursor = 'grab';
-            applyMomentum();
+    document.addEventListener('mouseup', () => {
+        if (isScrolling) {
+            console.log('[MANUAL SCROLL] Mouse up');
+            isScrolling = false;
+            document.body.style.cursor = 'default';
         }
     });
     
-    container.addEventListener('mouseup', () => {
-        if (isDown) {
-            isDown = false;
-            container.style.cursor = 'grab';
-            applyMomentum();
-        }
-    });
-    
-    container.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
+    document.addEventListener('mousemove', (e) => {
+        if (!isScrolling) return;
         e.preventDefault();
-        
-        // Direct 1:1 pixel-perfect scrolling
-        const x = e.pageX;
-        const deltaX = x - lastX;
-        container.scrollLeft -= deltaX;
-        
-        // Calculate velocity for momentum (with time-based smoothing)
-        const now = Date.now();
-        const dt = Math.max(now - lastTime, 1);
-        velocity = deltaX / dt * 16; // Normalize to 60fps
-        
-        lastX = x;
-        lastTime = now;
+        const x = e.pageX - container.offsetLeft;
+        const walk = (x - startX) * 1.5; // Scroll speed multiplier
+        container.scrollLeft = scrollLeft - walk;
+        console.log('[MANUAL SCROLL] Scrolling - scrollLeft:', container.scrollLeft);
     });
     
-    // Set initial cursor
-    container.style.cursor = 'grab';
+    // Test regular scroll
+    container.addEventListener('scroll', () => {
+        console.log('[SCROLL EVENT] Container scrolled - scrollLeft:', container.scrollLeft);
+    });
 }
 
 // =================================================================
@@ -664,6 +694,96 @@ function enableDragScroll() {
 // - Touch device support
 // - Auto-scroll during drag
 // - Built-in visual feedback
+
+// =================================================================
+// TIMELINE MINIMAP (Overview)
+// =================================================================
+
+function updateMinimap() {
+    const container = document.getElementById('sceneContainer');
+    const minimapScenes = document.getElementById('minimapScenes');
+    const minimapViewport = document.getElementById('minimapViewport');
+    
+    if (!container || !minimapScenes || !minimapViewport) return;
+    
+    // Render minimap as continuous bar (no individual scenes)
+    minimapScenes.innerHTML = '<div class="minimap-continuous-bar"></div>';
+    
+    // Update viewport indicator
+    const updateViewport = () => {
+        const scrollLeft = container.scrollLeft;
+        const scrollWidth = container.scrollWidth;
+        const clientWidth = container.clientWidth;
+        
+        // Calculate viewport position and size as percentage
+        const viewportLeft = (scrollLeft / scrollWidth) * 100;
+        const viewportWidth = (clientWidth / scrollWidth) * 100;
+        
+        minimapViewport.style.left = `${viewportLeft}%`;
+        minimapViewport.style.width = `${viewportWidth}%`;
+    };
+    
+    // Initial update - use setTimeout to ensure DOM is fully rendered
+    setTimeout(updateViewport, 0);
+    
+    // Update on scroll
+    container.addEventListener('scroll', updateViewport);
+    
+    // Click minimap to jump to position
+    const minimap = document.getElementById('timelineMinimap');
+    minimap.addEventListener('click', (e) => {
+        const rect = minimap.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const percentage = clickX / rect.width;
+        const targetScroll = percentage * container.scrollWidth - (container.clientWidth / 2);
+        
+        container.scrollTo({
+            left: targetScroll,
+            behavior: 'smooth'
+        });
+    });
+    
+    // Drag viewport indicator - optimized for smooth dragging
+    let isDraggingViewport = false;
+    let minimapRect = null;
+    
+    minimapViewport.addEventListener('mousedown', (e) => {
+        isDraggingViewport = true;
+        minimapRect = minimap.getBoundingClientRect(); // Cache rect
+        e.stopPropagation();
+        e.preventDefault();
+        minimapViewport.style.cursor = 'grabbing';
+        minimapViewport.style.transition = 'none'; // Disable transition during drag
+        document.body.style.userSelect = 'none'; // Prevent text selection
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isDraggingViewport || !minimapRect) return;
+        
+        e.preventDefault(); // Prevent any default behavior
+        
+        // Calculate position directly from mouse X position
+        const relativeX = e.clientX - minimapRect.left;
+        const percentage = Math.max(0, Math.min(1, relativeX / minimapRect.width));
+        
+        // Calculate target scroll position
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        const targetScroll = percentage * maxScroll;
+        
+        // Direct scroll (no smooth behavior for instant response)
+        container.scrollLeft = targetScroll;
+    }, { passive: false });
+    
+    document.addEventListener('mouseup', () => {
+        if (isDraggingViewport) {
+            isDraggingViewport = false;
+            minimapRect = null;
+            minimapViewport.style.cursor = 'pointer';
+            minimapViewport.style.transition = ''; // Re-enable transition
+            document.body.style.userSelect = ''; // Re-enable text selection
+        }
+    });
+}
 
 // =================================================================
 // INITIALIZATION
@@ -694,7 +814,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (navCalendar) navCalendar.href = `calendar.html?project=${currentProject.id}`;
     
     renderTimeline();
-    enableDragScroll();
+    enableManualScroll(); // Enable drag-to-scroll on empty space
+    updateMinimap(); // Initialize minimap
+    initZoomControls(); // Initialize zoom functionality
     
     // Initialize screen components
     initializeAddSceneScreen();
@@ -710,6 +832,115 @@ document.addEventListener('DOMContentLoaded', async () => {
         checkAndStartOnboarding();
     }, 500);
 });
+
+// =================================================================
+// ZOOM CONTROLS
+// =================================================================
+
+function initZoomControls() {
+    const zoomResetBtn = document.getElementById('zoomReset');
+    const zoomLevelDisplay = document.getElementById('zoomLevel');
+    const minimapViewport = document.getElementById('minimapViewport');
+    const minimap = document.getElementById('timelineMinimap');
+    const container = document.getElementById('sceneContainer');
+    
+    if (!zoomResetBtn || !zoomLevelDisplay || !minimapViewport || !minimap) return;
+    
+    let isResizing = false;
+    let resizeSide = null;
+    let startX = 0;
+    let startWidth = 0;
+    let startLeft = 0;
+    
+    function updateZoom(newZoom) {
+        // Clamp zoom between 50% and 200%
+        currentZoom = Math.max(0.5, Math.min(2.0, newZoom));
+        
+        // Update display
+        zoomLevelDisplay.textContent = `${Math.round(currentZoom * 100)}%`;
+        
+        // Scale gap between cards (base gap is 16px = 1rem)
+        const baseGap = 16; // pixels
+        const scaledGap = baseGap * currentZoom;
+        container.style.gap = `${scaledGap}px`;
+        
+        // Scale card width (base width is 320px = w-80)
+        const baseWidth = 320; // pixels
+        const scaledWidth = baseWidth * currentZoom;
+        
+        // Apply actual width changes to cards (not transform scale)
+        const sceneCards = document.querySelectorAll('.scene-card, .add-scene-placeholder');
+        sceneCards.forEach(card => {
+            card.style.width = `${scaledWidth}px`;
+            card.style.minWidth = `${scaledWidth}px`;
+            card.style.fontSize = `${currentZoom}rem`; // Scale font too
+        });
+        
+        // Update minimap after zoom change
+        setTimeout(() => updateMinimap(), 50);
+    }
+    
+    // Viewport resize handlers for zoom control
+    minimapViewport.addEventListener('mousedown', (e) => {
+        const resizeHandle = e.target.closest('[data-resize]');
+        if (resizeHandle) {
+            isResizing = true;
+            resizeSide = resizeHandle.dataset.resize;
+            startX = e.clientX;
+            
+            const viewportRect = minimapViewport.getBoundingClientRect();
+            const minimapRect = minimap.getBoundingClientRect();
+            
+            startWidth = (viewportRect.width / minimapRect.width) * 100; // percentage
+            startLeft = ((viewportRect.left - minimapRect.left) / minimapRect.width) * 100; // percentage
+            
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        
+        const minimapRect = minimap.getBoundingClientRect();
+        const deltaX = e.clientX - startX;
+        const deltaPercent = (deltaX / minimapRect.width) * 100;
+        
+        let newWidth = startWidth;
+        
+        if (resizeSide === 'right') {
+            // Resize from right - increase/decrease width
+            newWidth = startWidth + deltaPercent;
+        } else if (resizeSide === 'left') {
+            // Resize from left - increase/decrease width (inverse)
+            newWidth = startWidth - deltaPercent;
+        }
+        
+        // Clamp viewport width between 10% and 100%
+        newWidth = Math.max(10, Math.min(100, newWidth));
+        
+        // Calculate zoom: smaller viewport = more zoomed in
+        // viewport 100% = zoom 0.5 (50% - see everything)
+        // viewport 50% = zoom 1.0 (100% - see half)
+        // viewport 10% = zoom 2.0 (200% - see 10%)
+        const newZoom = 100 / newWidth; // Inverse relationship
+        
+        updateZoom(newZoom);
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mouseup', () => {
+        isResizing = false;
+        resizeSide = null;
+    });
+    
+    zoomResetBtn.addEventListener('click', () => {
+        updateZoom(1.0);
+    });
+    
+    // Initial update
+    updateZoom(currentZoom);
+}
 
 // =================================================================
 // ONBOARDING
