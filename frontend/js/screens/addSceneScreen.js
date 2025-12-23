@@ -286,26 +286,12 @@ export class AddSceneScreen {
                 value: this.formData.location_id,
                 placeholder: 'Select...',
                 size: 'md',
-                canCreate: true,
-                createLabel: '+ Create new location',
-                onCreate: async (name) => {
-                    const newLocation = await LocationService.create(this.projectId, { 
-                        name: name.trim().toUpperCase() 
-                    });
-                    this.locations.push(newLocation);
-                    
-                    // Update dropdown options
-                    const updatedOptions = this.locations.map(loc => ({
-                        value: loc.id,
-                        label: loc.name
-                    }));
-                    this.locationDropdown.updateOptions(updatedOptions, newLocation.id);
-                    
-                    this.handleChange('location_id', newLocation.id);
-                    return newLocation.id;
-                },
+                searchable: true,
+                allowCreate: true,
+                createLabel: '+ Create new location...',
                 dropdownWidth: 'auto',
-                onChange: (value) => this.handleChange('location_id', value)
+                onChange: (value) => this.handleChange('location_id', value),
+                onCreate: () => this.handleCreateLocation()
             });
             this.locationDropdown.render();
         }
@@ -362,6 +348,37 @@ export class AddSceneScreen {
     handleChange(field, value) {
         this.formData[field] = value;
         this.updatePreview();
+    }
+
+    async handleCreateLocation() {
+        const name = prompt('Enter location name:');
+        if (!name || !name.trim()) return;
+
+        try {
+            const newLocation = await LocationService.create(this.projectId, {
+                name: name.trim()
+            });
+
+            // Add to local array and sort
+            this.locations.push(newLocation);
+            this.locations.sort((a, b) => a.name.localeCompare(b.name));
+
+            // Update dropdown options
+            const locationOptions = this.locations.map(loc => ({
+                value: loc.id,
+                label: loc.name
+            }));
+            this.locationDropdown.updateOptions(locationOptions);
+
+            // Select the new location
+            this.locationDropdown.setValue(newLocation.id);
+
+            // Update form data
+            this.handleChange('location_id', newLocation.id);
+        } catch (error) {
+            console.error('Failed to create location:', error);
+            alert('Failed to create location. Please try again.');
+        }
     }
     
     handleDateChange(dateValue) {

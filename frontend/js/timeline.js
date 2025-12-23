@@ -3,6 +3,7 @@
 // =================================================================
 
 import { AddSceneScreen } from './screens/addSceneScreen.js';
+import { SceneEditScreen } from './screens/sceneEditScreen.js';
 import settingsService from './services/settingsService.js';
 
 // =================================================================
@@ -11,6 +12,7 @@ import settingsService from './services/settingsService.js';
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 let addSceneScreen = null;
+let sceneEditScreen = null;
 
 /**
  * Get current project ID from localStorage
@@ -203,6 +205,37 @@ function initializeAddSceneScreen() {
     });
 }
 
+function initializeSceneEditScreen() {
+    if (!currentProject || !currentProject.id) {
+        console.error('Cannot initialize SceneEditScreen: currentProject not loaded');
+        return;
+    }
+    
+    sceneEditScreen = new SceneEditScreen({
+        projectId: currentProject.id,
+        locations: [],
+        times: currentProject.times || [],
+        conditions: currentProject.conditions || [],
+        continuityOptions: settingsService.getContinuityOptions(),
+        
+        onSceneUpdated: async (sceneId) => {
+            // Reload scenes from database to get latest changes
+            scenes = await getProjectScenes(currentProject.id);
+            
+            // Re-render timeline
+            renderTimeline();
+        },
+        
+        onSceneDeleted: async (sceneId) => {
+            // Remove from local array
+            scenes = scenes.filter(s => s.id !== sceneId);
+            
+            // Re-render timeline
+            renderTimeline();
+        }
+    });
+}
+
 /**
  * Delete a scene
  */
@@ -332,7 +365,23 @@ function renderStoryOrder(container) {
         </div>
     `).join('');
     
-    container.innerHTML = html;
+    // Add the "add scene" placeholder at the end
+    const addPlaceholder = `
+        <div class="add-scene-placeholder" id="addScenePlaceholder">
+            <div class="add-scene-placeholder__fill"></div>
+            <div class="add-scene-placeholder__icon">+</div>
+        </div>
+    `;
+    
+    container.innerHTML = html + addPlaceholder;
+    
+    // Add click listener for placeholder
+    const placeholder = container.querySelector('#addScenePlaceholder');
+    if (placeholder) {
+        placeholder.addEventListener('click', () => {
+            addSceneScreen.open();
+        });
+    }
     
     // Add event listeners for drag and drop
     const sceneCards = container.querySelectorAll('.scene-card');
@@ -350,6 +399,20 @@ function renderStoryOrder(container) {
             e.stopPropagation();
             const sceneId = btn.getAttribute('data-scene-id');
             deleteSceneById(sceneId);
+        });
+    });
+    
+    // Add click listeners to scene cards to open edit screen
+    sceneCards.forEach(card => {
+        card.addEventListener('click', (e) => {
+            // Don't trigger if clicking delete button
+            if (e.target.closest('.delete-scene-btn')) return;
+            
+            const sceneId = card.getAttribute('data-scene-id');
+            const scene = scenes.find(s => s.id === sceneId);
+            if (scene && sceneEditScreen) {
+                sceneEditScreen.open(scene);
+            }
         });
     });
 }
@@ -658,8 +721,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderTimeline();
     enableDragScroll();
     
-    // Initialize AddSceneScreen component
+    // Initialize screen components
     initializeAddSceneScreen();
+    initializeSceneEditScreen();
     
     // Setup event listeners
     document.getElementById('addSceneBtn').addEventListener('click', () => {

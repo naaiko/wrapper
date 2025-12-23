@@ -21,3 +21,54 @@
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
 }
+
+/* Add Scene Card - Dashed Outline with Hover Effect */
+.add-scene-placeholder {
+    width: 320px; /* Same as w-80 */
+    min-height: 200px; /* Same as scene cards */
+    border: 3px dashed oklch(var(--p) / 0.3);
+    border-radius: 1rem;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Plus icon in center */
+.add-scene-placeholder__icon {
+    font-size: 4rem;
+    color: oklch(var(--p) / 0.3);
+    transition: all 0.25s ease-in-out;
+    position: relative;
+    z-index: 2;
+}
+
+/* Background fill that fades in on hover */
+.add-scene-placeholder__fill {
+    position: absolute;
+    inset: 0;
+    background: oklch(var(--p) / 0);
+    transition: background 0.25s ease-in-out;
+    z-index: 1;
+}
+
+/* Hover state - similar to actor silhouette zones */
+.add-scene-placeholder:hover {
+    border-color: oklch(var(--p) / 0.75);
+    filter: drop-shadow(0 0 10px oklch(var(--p) / 0.3));
+}
+
+.add-scene-placeholder:hover .add-scene-placeholder__icon {
+    color: oklch(var(--p) / 0.75);
+    transform: scale(1.1);
+}
+
+.add-scene-placeholder:hover .add-scene-placeholder__fill {
+    background: oklch(var(--p) / 0.15);
+}

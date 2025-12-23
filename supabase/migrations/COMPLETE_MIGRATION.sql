@@ -222,11 +222,49 @@ LEFT JOIN users u ON p.manager_id = u.id
 ORDER BY p.created_at DESC;
 
 -- ============================================================================
+-- PART 4: TIME OF DAY CONFIGURATION
+-- ============================================================================
+
+-- Add time column to scenes (if not exists)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'scenes' AND column_name = 'time'
+    ) THEN
+        ALTER TABLE scenes ADD COLUMN time TEXT;
+        CREATE INDEX idx_scenes_time ON scenes(time);
+    END IF;
+END $$;
+
+-- Add times configuration to projects (if not exists)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'projects' AND column_name = 'times'
+    ) THEN
+        ALTER TABLE projects ADD COLUMN times JSONB;
+    END IF;
+END $$;
+
+-- Update ALL projects with Lucide SVG icons for time of day
+-- This ensures icons are always set correctly, even if already configured
+UPDATE projects
+SET times = '[
+  {"id": "morning", "label": "Morning", "icon": "<path d=\"M12 2v8\"/><path d=\"m4.93 10.93 1.41 1.41\"/><path d=\"M2 18h2\"/><path d=\"M20 18h2\"/><path d=\"m19.07 10.93-1.41 1.41\"/><path d=\"M22 22H2\"/><path d=\"m8 6 4-4 4 4\"/><path d=\"M16 18a4 4 0 0 0-8 0\"/>", "enabled": true},
+  {"id": "day", "label": "Day", "icon": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2\"/><path d=\"M12 20v2\"/><path d=\"m4.93 4.93 1.41 1.41\"/><path d=\"m17.66 17.66 1.41 1.41\"/><path d=\"M2 12h2\"/><path d=\"M20 12h2\"/><path d=\"m6.34 17.66-1.41 1.41\"/><path d=\"m19.07 4.93-1.41 1.41\"/>", "enabled": true},
+  {"id": "evening", "label": "Evening", "icon": "<path d=\"M12 10V2\"/><path d=\"m4.93 10.93 1.41 1.41\"/><path d=\"M2 18h2\"/><path d=\"M20 18h2\"/><path d=\"m19.07 10.93-1.41 1.41\"/><path d=\"M22 22H2\"/><path d=\"m16 6-4 4-4-4\"/><path d=\"M16 18a4 4 0 0 0-8 0\"/>", "enabled": true},
+  {"id": "night", "label": "Night", "icon": "<path d=\"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z\"/>", "enabled": true}
+]'::jsonb;
+
+-- ============================================================================
 -- DONE!
 -- ============================================================================
 -- You should see:
 -- - 2 users (admin@continuity.local and manager@continuity.local)
 -- - At least 1 project (Manager Test Project)
+-- - All projects have time of day icons (Morning, Day, Evening, Night)
 -- 
 -- Test accounts:
 -- Superadmin: admin@continuity.local (any password in dev mode)
