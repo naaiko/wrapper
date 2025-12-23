@@ -74,7 +74,7 @@
 }
 
 /* =================================================================
-   SORTABLEJS DRAG-AND-DROP CLASSES
+   SORTABLEJS DRAG-AND-DROP CLASSES - OPTIMIZED FOR PERFORMANCE
    ================================================================= */
 
 /* Ghost element - the placeholder left behind when dragging */
@@ -82,18 +82,26 @@
     opacity: 0.3;
     background: oklch(var(--p) / 0.1);
     border: 2px dashed oklch(var(--p) / 0.4);
+    /* Hardware acceleration */
+    transform: translateZ(0);
+    will-change: transform, opacity;
 }
 
 /* Chosen element - the item being dragged */
 .sortable-chosen {
     cursor: grabbing !important;
+    /* Disable transitions during drag for instant feedback */
+    transition: none !important;
 }
 
 /* Drag element - applied during the drag operation */
 .sortable-drag {
     opacity: 1;
-    transform: rotate(2deg);
+    transform: rotate(2deg) translateZ(0); /* Added translateZ for GPU */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     cursor: grabbing !important;
     z-index: 9999;
+    /* Hardware acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
 }

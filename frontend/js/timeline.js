@@ -393,13 +393,16 @@ function renderStoryOrder(container) {
         sortableInstance.destroy();
     }
     
-    // Create new Sortable instance
+    // Create new Sortable instance with optimized performance settings
     sortableInstance = Sortable.create(container, {
-        animation: 200,                    // Smooth animation (ms)
-        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Ease-out-quad
-        ghostClass: 'sortable-ghost',      // Class for dragged item
-        chosenClass: 'sortable-chosen',    // Class when item is selected
-        dragClass: 'sortable-drag',        // Class while dragging
+        // Performance-optimized animation settings
+        animation: 120,                    // Fast but smooth (was 200ms)
+        easing: 'cubic-bezier(0.23, 1, 0.32, 1)', // Ease-out-quint (snappier)
+        
+        // Visual feedback classes
+        ghostClass: 'sortable-ghost',      // Placeholder on original spot
+        chosenClass: 'sortable-chosen',    // Item when selected
+        dragClass: 'sortable-drag',        // Item while dragging
         
         // Swap threshold settings for "between items" feeling
         swapThreshold: 0.65,               // Percentage of item for swap (0-1)
@@ -408,6 +411,16 @@ function renderStoryOrder(container) {
         
         // Direction
         direction: 'horizontal',           // Horizontal timeline
+        
+        // Responsiveness optimizations
+        delay: 0,                          // No delay - instant response
+        delayOnTouchOnly: false,           // No delay on any device
+        touchStartThreshold: 3,            // Pixels to move before drag starts (lower = more sensitive)
+        
+        // Performance optimizations
+        forceFallback: false,              // Use native HTML5 DnD (faster)
+        fallbackTolerance: 0,              // Instant drag start (no mouse movement threshold)
+        removeCloneOnHide: true,           // Remove clone when hidden (better performance)
         
         // Only allow dragging scene cards (not placeholder)
         draggable: '.scene-card',
