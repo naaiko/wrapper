@@ -2,6 +2,7 @@
 // IMPORTS
 // =================================================================
 
+import Sortable from 'sortablejs';
 import { AddSceneScreen } from './screens/addSceneScreen.js';
 import { SceneEditScreen } from './screens/sceneEditScreen.js';
 import settingsService from './services/settingsService.js';
@@ -13,6 +14,7 @@ import settingsService from './services/settingsService.js';
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 let addSceneScreen = null;
 let sceneEditScreen = null;
+let sortableInstance = null;
 
 /**
  * Get current project ID from localStorage
@@ -383,13 +385,73 @@ function renderStoryOrder(container) {
         });
     }
     
-    // Add event listeners for drag and drop
+    // Initialize SortableJS for smooth drag-and-drop reordering
     const sceneCards = container.querySelectorAll('.scene-card');
-    sceneCards.forEach(card => {
-        card.addEventListener('dragstart', handleDragStart);
-        card.addEventListener('dragover', handleDragOver);
-        card.addEventListener('drop', handleDrop);
-        card.addEventListener('dragend', handleDragEnd);
+    
+    // Destroy previous instance if exists
+    if (sortableInstance) {
+        sortableInstance.destroy();
+    }
+    
+    // Create new Sortable instance
+    sortableInstance = Sortable.create(container, {
+        animation: 200,                    // Smooth animation (ms)
+        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Ease-out-quad
+        ghostClass: 'sortable-ghost',      // Class for dragged item
+        chosenClass: 'sortable-chosen',    // Class when item is selected
+        dragClass: 'sortable-drag',        // Class while dragging
+        
+        // Swap threshold settings for "between items" feeling
+        swapThreshold: 0.65,               // Percentage of item for swap (0-1)
+        invertSwap: true,                  // "Between items" effect
+        invertedSwapThreshold: 0.65,       // Threshold for inverted zones
+        
+        // Direction
+        direction: 'horizontal',           // Horizontal timeline
+        
+        // Only allow dragging scene cards (not placeholder)
+        draggable: '.scene-card',
+        
+        // Events
+        onStart: (evt) => {
+            // Visual feedback when drag starts
+            evt.item.style.opacity = '0.5';
+        },
+        
+        onEnd: async (evt) => {
+            // Reset opacity
+            evt.item.style.opacity = '1';
+            
+            const oldIndex = evt.oldIndex;
+            const newIndex = evt.newIndex;
+            
+            // If position actually changed, update database
+            if (oldIndex !== newIndex) {
+                try {
+                    // Update the scenes array based on new positions
+                    const movedScene = scenes[oldIndex];
+                    scenes.splice(oldIndex, 1);
+                    scenes.splice(newIndex, 0, movedScene);
+                    
+                    // Renumber story_order for all scenes
+                    scenes.forEach((scene, index) => {
+                        scene.story_order = index + 1;
+                    });
+                    
+                    // Save to database
+                    const updates = scenes.map(s => ({ id: s.id, story_order: s.story_order }));
+                    await updateSceneOrders(updates);
+                    
+                    // Re-render to show updated state
+                    renderTimeline();
+                } catch (error) {
+                    console.error('Error updating scene order:', error);
+                    alert('Failed to update scene order');
+                    // Revert on error
+                    renderTimeline();
+                }
+            }
+        }
     });
     
     // Add event listeners for delete buttons
@@ -581,114 +643,14 @@ function enableDragScroll() {
 }
 
 // =================================================================
-// DRAG AND DROP FOR REORDERING
+// DRAG AND DROP - Now handled by SortableJS
 // =================================================================
-
-/**
- * Handle drag start
- */
-function handleDragStart(event) {
-    if (currentMode !== 'story') {
-        event.preventDefault();
-        return;
-    }
-    
-    draggedElement = event.currentTarget;
-    const sceneId = draggedElement.getAttribute('data-scene-id');
-    draggedScene = scenes.find(s => s.id === sceneId);
-    
-    event.currentTarget.style.opacity = '0.4';
-    event.dataTransfer.effectAllowed = 'move';
-}
-
-/**
- * Handle drag over
- */
-function handleDragOver(event) {
-    if (event.preventDefault) {
-        event.preventDefault();
-    }
-    
-    event.dataTransfer.dropEffect = 'move';
-    
-    const targetElement = event.currentTarget;
-    if (targetElement !== draggedElement) {
-        targetElement.style.borderLeft = '3px solid #ff6ec7';
-    }
-    
-    return false;
-}
-
-/**
- * Handle drop
- */
-async function handleDrop(event) {
-    if (event.stopPropagation) {
-        event.stopPropagation();
-    }
-    
-    const targetElement = event.currentTarget;
-    targetElement.style.borderLeft = 'none';
-    
-    if (draggedElement !== targetElement) {
-        const targetSceneId = targetElement.getAttribute('data-scene-id');
-        const targetScene = scenes.find(s => s.id === targetSceneId);
-        
-        if (draggedScene && targetScene) {
-            // Reorder the scenes array
-            const draggedOrder = draggedScene.story_order;
-            const targetOrder = targetScene.story_order;
-            
-            // Update orders in local array
-            if (draggedOrder < targetOrder) {
-                // Moving forward
-                scenes.forEach(scene => {
-                    if (scene.story_order > draggedOrder && scene.story_order <= targetOrder) {
-                        scene.story_order--;
-                    }
-                });
-                draggedScene.story_order = targetOrder;
-            } else {
-                // Moving backward
-                scenes.forEach(scene => {
-                    if (scene.story_order >= targetOrder && scene.story_order < draggedOrder) {
-                        scene.story_order++;
-                    }
-                });
-                draggedScene.story_order = targetOrder;
-            }
-            
-            // Save to database
-            try {
-                const updates = scenes.map(s => ({ id: s.id, story_order: s.story_order }));
-                await updateSceneOrders(updates);
-                
-                // Re-render
-                renderTimeline();
-            } catch (error) {
-                console.error('Error updating scene order:', error);
-                alert('Failed to update scene order');
-            }
-        }
-    }
-    
-    return false;
-}
-
-/**
- * Handle drag end
- */
-function handleDragEnd(event) {
-    event.currentTarget.style.opacity = '1';
-    
-    // Remove all border highlights
-    document.querySelectorAll('.scene-card').forEach(card => {
-        card.style.borderLeft = 'none';
-    });
-    
-    draggedElement = null;
-    draggedScene = null;
-}
+// SortableJS provides:
+// - Smooth animations with intelligent swap zones
+// - "Between items" dragging effect (invertSwap)
+// - Touch device support
+// - Auto-scroll during drag
+// - Built-in visual feedback
 
 // =================================================================
 // INITIALIZATION

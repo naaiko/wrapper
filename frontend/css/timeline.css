@@ -72,3 +72,28 @@
 .add-scene-placeholder:hover .add-scene-placeholder__fill {
     background: oklch(var(--p) / 0.15);
 }
+
+/* =================================================================
+   SORTABLEJS DRAG-AND-DROP CLASSES
+   ================================================================= */
+
+/* Ghost element - the placeholder left behind when dragging */
+.sortable-ghost {
+    opacity: 0.3;
+    background: oklch(var(--p) / 0.1);
+    border: 2px dashed oklch(var(--p) / 0.4);
+}
+
+/* Chosen element - the item being dragged */
+.sortable-chosen {
+    cursor: grabbing !important;
+}
+
+/* Drag element - applied during the drag operation */
+.sortable-drag {
+    opacity: 1;
+    transform: rotate(2deg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    cursor: grabbing !important;
+    z-index: 9999;
+}
