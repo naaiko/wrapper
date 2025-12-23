@@ -1220,8 +1220,8 @@ function setupEventListeners() {
     document.getElementById('settingsBtn').addEventListener('click', toggleSettingsSubdock);
     document.getElementById('settingsBackdrop').addEventListener('click', closeSettingsSubdock);
     
-    // Tab switching
-    document.querySelectorAll('[role="tab"]').forEach(tab => {
+    // Tab switching - only for settings subdock tabs (not navigation tabs)
+    document.querySelectorAll('#settingsSubdock [role="tab"]').forEach(tab => {
         tab.addEventListener('click', (e) => {
             const tabName = e.target.dataset.tab;
             switchSettingsTab(tabName);
@@ -1384,8 +1384,8 @@ function closeSettingsSubdock() {
 function switchSettingsTab(tabName) {
     currentSettingsTab = tabName;
     
-    // Update tab buttons
-    document.querySelectorAll('[role="tab"]').forEach(tab => {
+    // Update tab buttons - only within settings subdock
+    document.querySelectorAll('#settingsSubdock [role="tab"]').forEach(tab => {
         if (tab.dataset.tab === tabName) {
             tab.classList.add('tab-active');
         } else {

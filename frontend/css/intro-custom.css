@@ -1,0 +1,215 @@
+/* =================================================================
+   INTRO.JS CUSTOM STYLING WITH DAISYUI
+   ================================================================= */
+
+/* Remove the dark overlay background */
+.introjs-overlay {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Tooltip container - DaisyUI card style with soft shadow */
+.introjs-tooltip {
+    background: hsl(var(--b1)) !important;
+    border: none !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+    padding: 1.5rem !important;
+    max-width: 400px !important;
+    min-width: 300px !important;
+}
+
+/* Tooltip header - clean DaisyUI style */
+.introjs-tooltip-header {
+    padding: 0 0 1rem 0 !important;
+    margin: 0 !important;
+    border: none !important;
+}
+
+.introjs-tooltip-title {
+    color: hsl(var(--bc)) !important;
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Skip button - subtle ghost button */
+.introjs-skipbutton {
+    color: hsl(var(--bc) / 0.6) !important;
+    font-weight: 500 !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.5rem !important;
+    transition: all 0.2s !important;
+}
+
+.introjs-skipbutton:hover {
+    color: hsl(var(--bc)) !important;
+    background: hsl(var(--b2)) !important;
+}
+
+/* Tooltip content */
+.introjs-tooltiptext {
+    color: hsl(var(--bc)) !important;
+    padding: 0 !important;
+    line-height: 1.6 !important;
+}
+
+/* Progress bar container */
+.introjs-progress {
+    background: hsl(var(--b2)) !important;
+    border-radius: 999px !important;
+    height: 0.5rem !important;
+    overflow: hidden !important;
+    margin: 1rem 0 !important;
+}
+
+/* Progress bar fill - DaisyUI primary color */
+.introjs-progressbar {
+    background: hsl(var(--p)) !important;
+    border-radius: 999px !important;
+    height: 100% !important;
+}
+
+/* Bullets (dots) - hidden by default, but styled if enabled */
+.introjs-bullets {
+    padding: 0.5rem 0 !important;
+}
+
+.introjs-bullets ul {
+    display: flex !important;
+    gap: 0.5rem !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.introjs-bullets ul li a {
+    width: 0.5rem !important;
+    height: 0.5rem !important;
+    background: hsl(var(--bc) / 0.2) !important;
+    border-radius: 999px !important;
+    border: none !important;
+    transition: all 0.2s !important;
+}
+
+.introjs-bullets ul li a:hover,
+.introjs-bullets ul li a.active {
+    background: hsl(var(--p)) !important;
+    width: 1.5rem !important;
+}
+
+/* Button container */
+.introjs-tooltipbuttons {
+    border: none !important;
+    padding: 1rem 0 0 0 !important;
+    display: flex !important;
+    gap: 0.5rem !important;
+    justify-content: flex-end !important;
+}
+
+/* Buttons - DaisyUI btn style */
+.introjs-button {
+    border: none !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    font-size: 0.875rem !important;
+}
+
+/* Previous button - ghost style */
+.introjs-prevbutton {
+    background: transparent !important;
+    color: hsl(var(--bc) / 0.7) !important;
+}
+
+.introjs-prevbutton:hover {
+    background: hsl(var(--b2)) !important;
+    color: hsl(var(--bc)) !important;
+}
+
+/* Next button - primary style */
+.introjs-nextbutton {
+    background: hsl(var(--p)) !important;
+    color: hsl(var(--pc)) !important;
+}
+
+.introjs-nextbutton:hover {
+    background: hsl(var(--p) / 0.9) !important;
+}
+
+/* Done button - primary style */
+.introjs-donebutton {
+    background: hsl(var(--p)) !important;
+    color: hsl(var(--pc)) !important;
+}
+
+.introjs-donebutton:hover {
+    background: hsl(var(--p) / 0.9) !important;
+}
+
+/* Disabled button state */
+.introjs-button:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* Arrow - DaisyUI themed */
+.introjs-arrow {
+    border: 12px solid transparent !important;
+}
+
+.introjs-arrow.top {
+    border-bottom-color: hsl(var(--b1)) !important;
+}
+
+.introjs-arrow.bottom {
+    border-top-color: hsl(var(--b1)) !important;
+}
+
+.introjs-arrow.left {
+    border-right-color: hsl(var(--b1)) !important;
+}
+
+.introjs-arrow.right {
+    border-left-color: hsl(var(--b1)) !important;
+}
+
+/* Highlighted element - subtle primary glow */
+.introjs-showElement {
+    z-index: 9999999 !important;
+}
+
+.introjs-relativePosition {
+    position: relative !important;
+}
+
+/* Helper layer - subtle highlight instead of dark overlay */
+.introjs-helperLayer {
+    background: transparent !important;
+    box-shadow: 0 0 0 2px hsl(var(--p) / 0.3), 
+                0 0 0 9999px rgba(0, 0, 0, 0.05) !important;
+    border-radius: 0.5rem !important;
+}
+
+/* Floating tooltip (no target element) */
+.introjs-floating {
+    margin-top: 2rem !important;
+}
+
+/* Tooltip hint dots */
+.introjs-hint {
+    background: hsl(var(--p)) !important;
+    color: hsl(var(--pc)) !important;
+    border: none !important;
+}
+
+.introjs-hint:hover {
+    background: hsl(var(--p) / 0.9) !important;
+}
+
+.introjs-hint-pulse {
+    border: 5px solid hsl(var(--p) / 0.3) !important;
+}

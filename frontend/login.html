@@ -6,6 +6,10 @@
     <title>Login - Continuity Manager</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         body {
             min-height: 100vh;
@@ -107,7 +111,8 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts - Load Supabase FIRST -->
+    <script src="js/supabase-config.js"></script>
     <script type="module">
         import authService from './js/services/authService.js';
 

@@ -1,8 +1,16 @@
 // =================================================================
+// IMPORTS
+// =================================================================
+
+import { AddSceneScreen } from './screens/addSceneScreen.js';
+import settingsService from './services/settingsService.js';
+
+// =================================================================
 // DATA MODEL
 // =================================================================
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
+let addSceneScreen = null;
 
 /**
  * Get current project ID from localStorage
@@ -170,80 +178,29 @@ let scenes = [];
 // =================================================================
 
 /**
- * Show add scene modal
+ * Initialize AddSceneScreen component
  */
-function showAddSceneModal() {
-    document.getElementById('sceneNumber').value = '';
-    document.getElementById('sceneDescription').value = '';
-    document.getElementById('sceneShootingDays').value = '';
-    document.getElementById('addSceneModal').showModal();
-}
-
-/**
- * Add a new scene
- */
-async function addScene(event) {
-    event.preventDefault();
-    
-    const sceneNumber = document.getElementById('sceneNumber').value.trim();
-    const description = document.getElementById('sceneDescription').value.trim();
-    const shootingDaysInput = document.getElementById('sceneShootingDays').value.trim();
-    
-    // Parse shooting days
-    const shootingDays = shootingDaysInput
-        .split(',')
-        .map(d => parseInt(d.trim()))
-        .filter(d => !isNaN(d));
-    
-    if (shootingDays.length === 0) {
-        alert('Please enter at least one valid shooting day');
+function initializeAddSceneScreen() {
+    if (!currentProject || !currentProject.id) {
+        console.error('Cannot initialize AddSceneScreen: currentProject not loaded');
         return;
     }
     
-    try {
-        // Get next story order
-        const maxOrder = scenes.length > 0 
-            ? Math.max(...scenes.map(s => s.story_order))
-            : 0;
+    addSceneScreen = new AddSceneScreen({
+        projectId: currentProject.id,
+        locations: [],
+        times: currentProject.times || [],
+        conditions: currentProject.conditions || [],
+        continuityOptions: settingsService.getContinuityOptions(),
         
-        // Create new scene
-        const newScene = {
-            project_id: currentProject.id,
-            scene_number: sceneNumber,
-            description: description,
-            story_order: maxOrder + 1,
-            shooting_days: shootingDays
-        };
-        
-        // Show loading
-        const submitBtn = event.target.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="loading loading-spinner"></span> Adding...';
-        
-        // Save to database
-        const savedScene = await saveScene(newScene);
-        
-        // Add to local scenes array
-        scenes.push(savedScene);
-        
-        // Re-render timeline
-        renderTimeline();
-        
-        // Close modal
-        document.getElementById('addSceneModal').close();
-        
-        // Reset button
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Add Scene';
-    } catch (error) {
-        console.error('Error adding scene:', error);
-        alert('Failed to add scene: ' + error.message);
-        
-        // Reset button
-        const submitBtn = event.target.querySelector('button[type="submit"]');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Add Scene';
-    }
+        onSceneAdded: async (newScene) => {
+            // Add to local scenes array
+            scenes.push(newScene);
+            
+            // Re-render timeline
+            renderTimeline();
+        }
+    });
 }
 
 /**
@@ -701,10 +658,169 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderTimeline();
     enableDragScroll();
     
+    // Initialize AddSceneScreen component
+    initializeAddSceneScreen();
+    
     // Setup event listeners
-    document.getElementById('addSceneBtn').addEventListener('click', showAddSceneModal);
-    document.getElementById('addSceneForm').addEventListener('submit', addScene);
-    document.getElementById('cancelSceneBtn').addEventListener('click', () => {
-        document.getElementById('addSceneModal').close();
+    document.getElementById('addSceneBtn').addEventListener('click', () => {
+        addSceneScreen.open();
     });
+
+    // Check if this is a new project (trigger onboarding after a short delay to ensure intro.js is loaded)
+    setTimeout(() => {
+        checkAndStartOnboarding();
+    }, 500);
 });
+
+// =================================================================
+// ONBOARDING
+// =================================================================
+
+/**
+ * Check if onboarding should start and launch it
+ */
+function checkAndStartOnboarding() {
+    console.log('Checking onboarding...', {
+        introJsDefined: typeof introJs !== 'undefined',
+        hasSeenOnboarding: localStorage.getItem('continuity_onboarding_completed'),
+        forceOnboarding: localStorage.getItem('continuity_force_onboarding')
+    });
+    
+    // Check if introJs is available
+    if (typeof introJs === 'undefined') {
+        console.warn('intro.js not loaded yet, skipping onboarding');
+        return;
+    }
+    
+    // Check if we should force onboarding (user checked the box)
+    const forceOnboarding = localStorage.getItem('continuity_force_onboarding');
+    if (forceOnboarding === 'true') {
+        localStorage.removeItem('continuity_force_onboarding');
+        console.log('Force starting onboarding (user requested)...');
+        startOnboarding();
+        return;
+    }
+    
+    // Check if user has seen onboarding before
+    const hasSeenOnboarding = localStorage.getItem('continuity_onboarding_completed');
+    
+    // Only show for new users
+    if (!hasSeenOnboarding) {
+        console.log('Starting onboarding...');
+        startOnboarding();
+    } else {
+        console.log('Onboarding already completed:', hasSeenOnboarding);
+    }
+}
+
+/**
+ * Start the onboarding wizard
+ */
+function startOnboarding() {
+    const intro = introJs();
+    
+    intro.setOptions({
+        steps: [
+            {
+                title: '👋 Welcome to Your Timeline',
+                intro: `
+                    <div class="text-left">
+                        <p class="mb-3">This is where your story comes to life. Let me show you around real quick.</p>
+                        <p class="text-sm opacity-70">Don't worry, this'll take less than a minute.</p>
+                    </div>
+                `,
+                position: 'floating'
+            },
+            {
+                element: '#timelineTitle',
+                title: '📖 Story vs Shooting Order',
+                intro: `
+                    <div class="text-left">
+                        <p class="mb-2">You can view your scenes in two ways:</p>
+                        <ul class="list-disc ml-4 mb-2">
+                            <li><strong>Story Order</strong> - How the story unfolds</li>
+                            <li><strong>Shooting Order</strong> - How you'll actually film</li>
+                        </ul>
+                        <p class="text-sm opacity-70">Switch between them with the buttons above.</p>
+                    </div>
+                `,
+                position: 'bottom'
+            },
+            {
+                element: '#sceneContainer',
+                title: '🎬 Your Scenes',
+                intro: `
+                    <div class="text-left">
+                        <p class="mb-2">Each scene is a card you can click to edit. You'll track:</p>
+                        <ul class="list-disc ml-4 mb-2">
+                            <li>Scene number & description</li>
+                            <li>Location (INT/EXT)</li>
+                            <li>Time of day</li>
+                            <li>Which actors appear</li>
+                        </ul>
+                        <p class="text-sm opacity-70">Drag scenes to reorder them. Easy.</p>
+                    </div>
+                `,
+                position: 'top'
+            },
+            {
+                element: '#addSceneBtn',
+                title: '➕ Add Scenes',
+                intro: `
+                    <div class="text-left">
+                        <p class="mb-2">Click here to add a new scene. That's pretty much it.</p>
+                        <p class="text-sm opacity-70">See? Told you I was lazy. You got this.</p>
+                    </div>
+                `,
+                position: 'top'
+            },
+            {
+                element: '#topNavigation',
+                title: '🧭 Navigation',
+                intro: `
+                    <div class="text-left">
+                        <p class="mb-2">Switch between:</p>
+                        <ul class="list-disc ml-4 mb-3">
+                            <li><strong>Actors</strong> - Manage your cast & continuity</li>
+                            <li><strong>Timeline</strong> - Where you are now</li>
+                            <li><strong>Calendar</strong> - Plan your shooting schedule</li>
+                        </ul>
+                        <p class="text-sm opacity-70">The home button takes you back to projects.</p>
+                    </div>
+                `,
+                position: 'left'
+            },
+            {
+                title: '🎉 You\'re All Set!',
+                intro: `
+                    <div class="text-left">
+                        <p class="mb-3">That's the grand tour. Now go make something cool.</p>
+                        <p class="mb-3">Remember: this is your creative playground. Try stuff. Break stuff. It's just software.</p>
+                        <p class="text-sm opacity-70 mb-3">Need help? Most things are pretty self-explanatory. Click around.</p>
+                        <p class="text-right italic">— Your Lazy Wizard ✨</p>
+                    </div>
+                `,
+                position: 'floating'
+            }
+        ],
+        showProgress: true,
+        showBullets: true,
+        exitOnOverlayClick: false,
+        disableInteraction: false,
+        doneLabel: 'Let\'s go! 🚀',
+        nextLabel: 'Next →',
+        prevLabel: '← Back',
+    });
+
+    intro.oncomplete(() => {
+        // Mark onboarding as complete
+        localStorage.setItem('continuity_onboarding_completed', 'true');
+        localStorage.setItem('continuity_onboarding_finished_at', Date.now().toString());
+    });
+
+    intro.onexit(() => {
+        // User skipped - mark as seen so we don't annoy them
+        localStorage.setItem('continuity_onboarding_completed', 'skipped');
+    });
+
+    intro.start();}

@@ -77,6 +77,12 @@ async function createNewProject(event) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="loading loading-spinner"></span> Creating...';
         
+        // Check if user wants onboarding
+        const showOnboarding = document.getElementById('showOnboarding').checked;
+        if (showOnboarding) {
+            localStorage.setItem('continuity_force_onboarding', 'true');
+        }
+        
         // Create project via service
         const project = await projectService.createProject({
             name: name,
@@ -103,6 +109,12 @@ async function createNewProject(event) {
  * Load an existing project
  */
 function loadProject(projectId) {
+    // Check if user wants onboarding
+    const showOnboarding = document.getElementById('showOnboardingOpen')?.checked;
+    if (showOnboarding) {
+        localStorage.setItem('continuity_force_onboarding', 'true');
+    }
+    
     setCurrentProjectId(projectId);
     window.location.href = 'timeline.html';
 }
@@ -276,10 +288,28 @@ async function renderRecentProjects() {
     const container = document.getElementById('recentProjectsList');
     const card = document.getElementById('recentProjectsCard');
     
+    // UI Elements
+    const emptyState = document.getElementById('emptyState');
+    const projectsList = document.getElementById('projectsList');
+    const navbar = document.getElementById('projectsNavbar');
+    const mainWrapper = document.getElementById('mainContentWrapper');
+    
     if (projects.length === 0) {
-        card.style.display = 'none';
+        // Show empty state, hide navbar
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (projectsList) projectsList.classList.add('hidden');
+        if (navbar) navbar.classList.add('hidden');
+        if (mainWrapper) mainWrapper.style.minHeight = '100vh';
         return;
     }
+    
+    // Show projects list, show navbar
+    if (emptyState) emptyState.classList.add('hidden');
+    if (projectsList) projectsList.classList.remove('hidden');
+    if (navbar) navbar.classList.remove('hidden');
+    if (mainWrapper) mainWrapper.style.minHeight = 'calc(100vh - 64px)';
+    
+    if (!container || !card) return;
     
     card.style.display = 'block';
     

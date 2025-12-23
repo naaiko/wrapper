@@ -110,19 +110,19 @@
         <!-- Bottom Dock (Actions) -->
         <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
             <div class="flex gap-2 bg-base-100 p-3 rounded-box shadow-xl">
-                <button id="addSceneBtn" class="btn btn-square btn-primary" title="Add Scene">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button id="addSceneBtn" class="btn btn-square btn-primary btn-sm" title="Add Scene">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
                 </button>
-                <button id="locationsConfigBtn" class="btn btn-square" title="Locations Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button id="locationsConfigBtn" class="btn btn-square btn-sm" title="Locations Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                 </button>
-                <button id="settingsBtn" class="btn btn-square" title="Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button id="settingsBtn" class="btn btn-square btn-sm" title="Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -424,7 +424,17 @@
         
         // Initialize navigation
         const urlParams = new URLSearchParams(window.location.search);
-        const projectId = urlParams.get('project');
+        let projectId = urlParams.get('project');
+        
+        // Fallback to localStorage if no project in URL
+        if (!projectId) {
+            projectId = localStorage.getItem('continuityManager_currentProject');
+            if (projectId) {
+                // Update URL with project ID
+                window.history.replaceState({}, '', `?project=${projectId}`);
+            }
+        }
+        
         if (projectId) {
             createNavigation(projectId, 'calendar');
         }

@@ -3,8 +3,10 @@
  * Handles user management (CRUD operations for superadmin)
  */
 
-import supabase from '../api/supabaseClient.js';
 import authService from './authService.js';
+
+// Access global supabase instance
+const supabase = window.supabase;
 
 class UserService {
     /**

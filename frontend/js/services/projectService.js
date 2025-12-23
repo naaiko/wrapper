@@ -3,8 +3,10 @@
  * Handles project CRUD with role-based access control and proper deletion
  */
 
-import supabase from '../api/supabaseClient.js';
 import authService from './authService.js';
+
+// Access global supabase instance
+const supabase = window.supabase;
 
 class ProjectService {
     /**

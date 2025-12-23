@@ -344,7 +344,17 @@
         
         // Initialize navigation
         const urlParams = new URLSearchParams(window.location.search);
-        const projectId = urlParams.get('project');
+        let projectId = urlParams.get('project');
+        
+        // Fallback to localStorage if no project in URL
+        if (!projectId) {
+            projectId = localStorage.getItem('continuityManager_currentProject');
+            if (projectId) {
+                // Update URL with project ID
+                window.history.replaceState({}, '', `?project=${projectId}`);
+            }
+        }
+        
         if (projectId) {
             createNavigation(projectId, 'actors');
         }

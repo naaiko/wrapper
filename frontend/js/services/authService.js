@@ -3,7 +3,8 @@
  * Handles user login, logout, session management, and role-based access control
  */
 
-import supabase from '../api/supabaseClient.js';
+// Access global supabase instance
+const supabase = window.supabase;
 
 class AuthService {
     constructor() {
@@ -162,7 +163,7 @@ class AuthService {
         } finally {
             this._clearSession();
             // Redirect to login
-            window.location.href = '/login.html';
+            window.location.href = 'login.html';
         }
     }
 
@@ -205,7 +206,7 @@ class AuthService {
     requireAuth(redirectUrl = null) {
         if (!this.isLoggedIn()) {
             const redirect = redirectUrl || window.location.href;
-            window.location.href = `/login.html?redirect=${encodeURIComponent(redirect)}`;
+            window.location.href = `login.html?redirect=${encodeURIComponent(redirect)}`;
             return false;
         }
         return true;
