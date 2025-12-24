@@ -74,9 +74,9 @@
 
         <!-- Main Content Container: fits between navigation and dock -->
         <div class="h-screen pt-20 pb-20 px-4">
-            <div class="grid grid-cols-12 gap-6 h-full">
-                <!-- Left Column (4 cols) - Actor Details -->
-                <div class="col-span-4 bg-base-100 rounded-lg p-6 overflow-y-auto h-full">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 h-full">
+                <!-- Left Column (4 cols) - Actor Details - Hidden on mobile -->
+                <div class="hidden md:block md:col-span-4 bg-base-100 rounded-lg p-6 overflow-y-auto h-full">
                     <div id="actorDetailsPanel">
                         <!-- Actor details will be rendered here -->
                         <div class="text-sm text-base-content/60 text-center py-8">
@@ -85,10 +85,10 @@
                     </div>
                 </div>
 
-                <!-- Middle Column (4 cols) - Silhouette + Toggle -->
-                <div class="col-span-4 flex flex-col gap-4 h-full min-h-0">
+                <!-- Middle Column (4 cols on desktop, full width on mobile) - Silhouette + Toggle -->
+                <div class="col-span-1 md:col-span-4 flex flex-col gap-4 h-full min-h-0">
                     <!-- Silhouette container - takes all available space -->
-                    <div class="flex-1 min-h-0 flex items-end justify-center">
+                    <div class="flex-1 min-h-0 flex items-center justify-center">
                         <svg class="actor-silhouette mode-bodyshots" viewBox="0 0 373 852" role="img" aria-label="Actor silhouette with layers">
                             <!-- Layers loaded from images/silhouette.svg on page load -->
                         </svg>
@@ -104,8 +104,8 @@
                     </div>
                 </div>
 
-                <!-- Right Column (4 cols) - Calendar -->
-                <div class="col-span-4 bg-base-100 rounded-lg p-6 flex flex-col h-full min-h-0">
+                <!-- Right Column (4 cols) - Calendar - Hidden on mobile -->
+                <div class="hidden md:block md:col-span-4 bg-base-100 rounded-lg p-6 flex flex-col h-full min-h-0">
                     <div class="flex-shrink-0 flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">Scenes Calendar</h3>
                         <div class="flex items-center gap-2">
