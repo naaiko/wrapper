@@ -1,0 +1,25 @@
+/* ============================================================================
+   GLOBAL STYLES - Application-wide styles
+   ============================================================================ */
+
+/* Completely hide scrollbars while keeping scroll functionality */
+html, body {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    overflow-y: scroll; /* Force scrollbar space to always be there */
+}
+
+/* Hide scrollbar for all elements */
+* {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Webkit/Blink - hide scrollbar */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}

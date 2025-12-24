@@ -368,10 +368,10 @@ export class AddSceneScreen {
                 value: loc.id,
                 label: loc.name
             }));
-            this.locationDropdown.updateOptions(locationOptions);
 
-            // Select the new location
+            // Set value first, then update options so checkmark appears on correct item
             this.locationDropdown.setValue(newLocation.id);
+            this.locationDropdown.updateOptions(locationOptions);
 
             // Update form data
             this.handleChange('location_id', newLocation.id);

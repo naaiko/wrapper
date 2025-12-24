@@ -475,6 +475,11 @@ export class ActorEditScreen {
             // Update local data
             actor[field] = updateValue;
             
+            // CRITICAL: Also update the EditScreen's currentData reference
+            if (this.editScreen.currentData) {
+                this.editScreen.currentData[field] = updateValue;
+            }
+            
             // Update preview
             this.updatePreview(actor);
             

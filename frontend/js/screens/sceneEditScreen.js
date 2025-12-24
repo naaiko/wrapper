@@ -571,13 +571,13 @@ export class SceneEditScreen {
                 value: loc.id,
                 label: loc.name
             }));
-            this.locationDropdown.updateOptions(locationOptions);
             
             // Close dropdown if open
             this.locationDropdown.close();
             
-            // Select the new location
+            // Set value first, then update options so checkmark appears on correct item
             this.locationDropdown.setValue(newLocation.id);
+            this.locationDropdown.updateOptions(locationOptions);
             
             // Trigger onChange to save
             await this.handleChange('location_id', newLocation.id, this.editScreen.currentData);

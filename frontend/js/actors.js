@@ -144,14 +144,19 @@ class ActorsApp {
                 times: this.times,
                 conditions: this.conditions,
                 onActorUpdated: async (actorId) => {
-                    // Reload actors and update UI
-                    await this.loadActors();
-                    // Reselect the updated actor
+                    // Don't reload all actors during editing - just update local data
+                    // This prevents race conditions when quickly changing multiple fields
                     const actor = this.actors.find(a => a.id === actorId);
                     if (actor) {
-                        this.currentActor = actor;
-                        this.currentActorIndex = this.actors.indexOf(actor);
-                        await this.showActorDetail(actor);
+                        // The actor data is already updated in the EditScreen's currentData
+                        // Just sync it to our local array
+                        const updatedActor = this.actorEditScreen.editScreen.currentData;
+                        if (updatedActor) {
+                            Object.assign(actor, updatedActor);
+                            this.currentActor = actor;
+                            // Update detail view (left panel) with new data
+                            this.renderActorDetails(actor);
+                        }
                     }
                 },
                 onActorDeleted: async (actorId) => {
@@ -588,10 +593,14 @@ class ActorsApp {
         const btnAddActor = document.getElementById('btnAddActor');
         const btnAddActorEmpty = document.getElementById('btnAddActorEmpty');
         const addActorForm = document.getElementById('addActorForm');
+        const btnCancelAddActor = document.getElementById('btnCancelAddActor');
         
         if (btnAddActor) btnAddActor.addEventListener('click', () => this.openAddActorDialog());
         if (btnAddActorEmpty) btnAddActorEmpty.addEventListener('click', () => this.openAddActorDialog());
         if (addActorForm) addActorForm.addEventListener('submit', (e) => this.handleAddActor(e));
+        if (btnCancelAddActor) btnCancelAddActor.addEventListener('click', () => {
+            document.getElementById('addActorDialog').close();
+        });
 
         // Navigation buttons
         const btnPrevActor = document.getElementById('btnPrevActor');
@@ -702,9 +711,9 @@ class ActorsApp {
 
         // Initialize or update dropdown
         if (this.actorDropdown) {
-            this.actorDropdown.options = options;
-            this.actorDropdown.value = this.currentActor?.id || '';
-            this.actorDropdown.render();
+            // Set value first, then update options so the checkmark appears on the correct item
+            this.actorDropdown.setValue(this.currentActor?.id || '');
+            this.actorDropdown.updateOptions(options);
         } else {
             this.actorDropdown = new CustomDropdown({
                 containerId: 'actorDropdownContainer',
@@ -716,7 +725,8 @@ class ActorsApp {
                 allowCreate: true,
                 createLabel: '+ Create new actor',
                 allowDelete: true,
-                size: 'md',
+                size: 'sm',
+                dropdownPosition: 'top',
                 onChange: (value, option) => this.onActorDropdownChange(value, option),
                 onCreate: (searchTerm) => this.openAddActorDialog(searchTerm),
                 onDelete: (value) => this.handleDeleteActorFromDropdown(value)

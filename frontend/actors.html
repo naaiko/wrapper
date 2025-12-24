@@ -14,6 +14,9 @@
     <!-- Toast UI Calendar CSS -->
     <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
     
+    <!-- Global Styles -->
+    <link rel="stylesheet" href="css/global.css">
+    
     <!-- Custom Styles -->
     <link rel="stylesheet" href="css/actors.css">
     <link rel="stylesheet" href="css/edit-screen.css">
@@ -83,33 +86,7 @@
                 </div>
 
                 <!-- Middle Column (4 cols) - Silhouette -->
-                <div class="col-span-4 flex flex-col gap-4 h-full">
-                    <!-- Actor Selector with Navigation -->
-                    <div class="card bg-base-100 shadow-lg">
-                        <div class="card-body py-3 px-4">
-                            <div class="flex items-center gap-3">
-                                <!-- Previous Actor Button -->
-                                <button id="btnPrevActor" class="btn btn-ghost btn-sm btn-circle" aria-label="Previous actor">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                    </svg>
-                                </button>
-                                
-                                <!-- Actor Dropdown -->
-                                <div id="actorDropdownContainer" class="flex-1">
-                                    <!-- Skeleton loader - prevents layout jump (matches input-bordered h-12 min-h-12) -->
-                                    <div class="skeleton h-12 min-h-12 w-full rounded-lg"></div>
-                                </div>
-                                
-                                <!-- Next Actor Button -->
-                                <button id="btnNextActor" class="btn btn-ghost btn-sm btn-circle" aria-label="Next actor">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-span-4 flex flex-col gap-4 h-full mt-16">
                     <!-- Silhouette with Layer System -->
                     <div class="flex-1 flex flex-col items-center justify-end overflow-hidden" role="region" aria-label="Actor visualization">
                         <!-- Mode Switcher (Tab Style) -->
@@ -169,12 +146,25 @@
 
         <!-- Dock (Bottom Center) -->
         <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
-            <div class="bg-base-100 shadow-2xl rounded-2xl px-6 py-3 flex gap-3">
-                <button id="btnAddActor" class="btn btn-primary gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            <div class="bg-base-100 shadow-2xl rounded-2xl px-4 py-2 flex items-center gap-2">
+                <!-- Previous Actor Button -->
+                <button id="btnPrevActor" class="btn btn-ghost btn-sm btn-circle" aria-label="Previous actor">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                     </svg>
-                    Add Actor
+                </button>
+                
+                <!-- Actor Dropdown -->
+                <div id="actorDropdownContainer" style="min-width: 250px;">
+                    <!-- Skeleton loader -->
+                    <div class="skeleton h-8 w-full rounded-lg"></div>
+                </div>
+                
+                <!-- Next Actor Button -->
+                <button id="btnNextActor" class="btn btn-ghost btn-sm btn-circle" aria-label="Next actor">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
                 </button>
             </div>
         </div>
@@ -275,42 +265,7 @@
                 </div>
 
                 <div class="modal-action">
-                    <button type="button" class="btn" onclick="addActorDialog.close()">Annuleren</button>
-                    <button type="submit" class="btn btn-primary">Opslaan</button>
-                </div>
-            </form>
-        </div>
-        <form method="dialog" class="modal-backdrop">
-            <button>close</button>
-        </form>
-    </dialog>
-
-    <!-- Simple Add Actor Dialog -->
-    <dialog id="addActorDialog" class="modal">
-        <div class="modal-box max-w-sm">
-            <h3 class="font-bold text-lg mb-4">Voeg Acteur Toe</h3>
-            
-            <form id="addActorForm" class="space-y-4" autocomplete="off">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Voornaam</span>
-                    </label>
-                    <input type="text" id="firstName" name="firstName" required 
-                           class="input input-bordered" placeholder="bijv. Margot" autofocus 
-                           autocomplete="new-password" data-1p-ignore />
-                </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Achternaam</span>
-                    </label>
-                    <input type="text" id="lastName" name="lastName" required 
-                           class="input input-bordered" placeholder="bijv. Robbie" 
-                           autocomplete="new-password" data-1p-ignore />
-                </div>
-
-                <div class="modal-action">
-                    <button type="button" class="btn" onclick="addActorDialog.close()">Annuleren</button>
+                    <button type="button" class="btn" id="btnCancelAddActor">Annuleren</button>
                     <button type="submit" class="btn btn-primary">Opslaan</button>
                 </div>
             </form>

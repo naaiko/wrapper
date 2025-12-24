@@ -168,6 +168,28 @@ export class EditScreen {
                 this.close();
             }
         });
+
+        // Enter key to save and close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && this.isOpen) {
+                // Check if we're in a textarea (allow line breaks there)
+                if (document.activeElement.tagName === 'TEXTAREA') {
+                    return;
+                }
+                
+                e.preventDefault();
+                
+                // Blur the active element to trigger onChange/save
+                if (document.activeElement) {
+                    document.activeElement.blur();
+                }
+                
+                // Small delay to ensure blur/onChange completes
+                setTimeout(() => {
+                    this.close();
+                }, 50);
+            }
+        });
     }
 
     /**

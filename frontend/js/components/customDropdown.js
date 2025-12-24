@@ -44,6 +44,7 @@ export class CustomDropdown {
         this.disabled = options.disabled !== undefined ? options.disabled : false;
         this.size = options.size || 'md'; // xs, sm, md, lg
         this.align = options.align || 'left'; // left, right
+        this.dropdownPosition = options.dropdownPosition || 'bottom'; // 'bottom', 'top', 'auto'
         this.dropdownWidth = options.dropdownWidth || 'auto'; // 'match' (match button), 'auto' (fit content), or specific width like '300px'
         this.onChange = options.onChange || null;
         this.onCreate = options.onCreate || null;
@@ -127,7 +128,7 @@ export class CustomDropdown {
                     <span class="custom-dropdown__display truncate text-left flex-1">
                         ${displayText}
                     </span>
-                    <svg class="custom-dropdown__chevron w-4 h-4 flex-shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="custom-dropdown__chevron w-4 h-4 flex-shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(${this.dropdownPosition === 'top' ? '180deg' : '0deg'})">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                 </button>
@@ -285,7 +286,6 @@ export class CustomDropdown {
         this.isOpen = true;
         this.menu.classList.remove('hidden');
         this.button.setAttribute('aria-expanded', 'true');
-        this.button.querySelector('.custom-dropdown__chevron').style.transform = 'rotate(180deg)';
         
         // Position menu relative to button
         requestAnimationFrame(() => {
@@ -293,9 +293,35 @@ export class CustomDropdown {
             const viewportHeight = window.innerHeight;
             const viewportWidth = window.innerWidth;
             
+            // Determine if menu should open upward or downward
+            let openUpward = this.dropdownPosition === 'top';
+            if (this.dropdownPosition === 'auto') {
+                const spaceBelow = viewportHeight - buttonRect.bottom;
+                const spaceAbove = buttonRect.top;
+                openUpward = spaceAbove > spaceBelow;
+            }
+            
+            // Set chevron rotation - flip to opposite direction when open
+            const chevron = this.button.querySelector('.custom-dropdown__chevron');
+            if (openUpward) {
+                chevron.style.transform = 'rotate(0deg)'; // Point down when open upward
+            } else {
+                chevron.style.transform = 'rotate(180deg)'; // Point up when open downward
+            }
+            
             // Calculate position
-            let top = buttonRect.bottom + 4;
-            let left = buttonRect.left;
+            let top, left;
+            
+            if (openUpward) {
+                // Open above button - need to measure menu height first
+                const menuHeight = this.menu.offsetHeight;
+                top = buttonRect.top - menuHeight - 4;
+            } else {
+                // Open below button
+                top = buttonRect.bottom + 4;
+            }
+            
+            left = buttonRect.left;
             
             // Handle right alignment
             if (this.align === 'right') {
@@ -320,8 +346,14 @@ export class CustomDropdown {
             }
             
             // Calculate available space and set max-height
-            const spaceBelow = viewportHeight - buttonRect.bottom - 16;
-            const maxHeight = Math.max(200, spaceBelow);
+            let maxHeight;
+            if (openUpward) {
+                const spaceAbove = buttonRect.top - 16;
+                maxHeight = Math.max(200, spaceAbove);
+            } else {
+                const spaceBelow = viewportHeight - buttonRect.bottom - 16;
+                maxHeight = Math.max(200, spaceBelow);
+            }
             
             // Apply styles
             this.menu.style.top = `${top}px`;
@@ -347,7 +379,14 @@ export class CustomDropdown {
         this.isOpen = false;
         this.menu.classList.add('hidden');
         this.button.setAttribute('aria-expanded', 'false');
-        this.button.querySelector('.custom-dropdown__chevron').style.transform = 'rotate(0deg)';
+        
+        // Reset chevron based on dropdown position
+        const chevron = this.button.querySelector('.custom-dropdown__chevron');
+        if (this.dropdownPosition === 'top') {
+            chevron.style.transform = 'rotate(180deg)'; // Point up when closed for upward dropdown
+        } else {
+            chevron.style.transform = 'rotate(0deg)'; // Point down when closed for downward dropdown
+        }
         
         // Reset search
         if (this.searchInput) {
@@ -508,9 +547,8 @@ export class CustomDropdown {
     updateOptions(newOptions) {
         this.options = newOptions;
         this.filteredOptions = [...newOptions];
-        if (this.isOpen) {
-            this.refreshOptions();
-        }
+        // Always refresh the options HTML so it's up-to-date when dropdown opens
+        this.refreshOptions();
     }
     
     /**
