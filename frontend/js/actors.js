@@ -682,14 +682,15 @@ class ActorsApp {
         // Hide empty state
         emptyState.classList.add('hidden');
         
-        // Render actor dropdown
-        this.renderActorDropdown();
-        
         // Show first actor in detail view if available
-        if (sortedActors.length > 0) {
+        if (sortedActors.length > 0 && !this.currentActor) {
             this.currentActorIndex = 0;
+            this.currentActor = sortedActors[0];
             this.showActorDetail(sortedActors[0]);
         }
+        
+        // Render actor dropdown (after setting currentActor)
+        this.renderActorDropdown();
     }
 
     renderActorDropdown() {

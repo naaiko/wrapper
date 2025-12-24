@@ -6,6 +6,7 @@ import Sortable from 'sortablejs';
 import { AddSceneScreen } from './screens/addSceneScreen.js';
 import { SceneEditScreen } from './screens/sceneEditScreen.js';
 import settingsService from './services/settingsService.js';
+import { loadOnboardingSteps } from './services/onboardingService.js';
 
 // =================================================================
 // DATA MODEL
@@ -16,6 +17,10 @@ let addSceneScreen = null;
 let sceneEditScreen = null;
 let sortableInstance = null;
 let currentZoom = 1.0; // Zoom level: 0.5 (50%) to 2.0 (200%)
+
+// Queue system for scene order updates
+let updateQueue = [];
+let isProcessingQueue = false;
 
 /**
  * Get current project ID from localStorage
@@ -156,30 +161,69 @@ async function deleteScene(sceneId) {
 }
 
 /**
- * Update story order for multiple scenes
+ * Update story order for multiple scenes (internal - called by queue processor)
  */
 async function updateSceneOrders(sceneUpdates) {
-    try {
-        console.log('[UPDATE] Updating scene orders:', sceneUpdates.length, 'scenes');
+    console.log('[UPDATE] Updating scene orders:', sceneUpdates.length, 'scenes');
+    
+    // Step 1: Set all story_order to negative values to avoid unique constraint conflicts
+    // Use random large negative offset to avoid conflicts with previous failed updates
+    const tempOffset = -100000 - Math.floor(Math.random() * 100000);
+    console.log('[UPDATE] Using temp offset:', tempOffset);
+    
+    for (let i = 0; i < sceneUpdates.length; i++) {
+        const scene = sceneUpdates[i];
+        const { error } = await supabase
+            .from('scenes')
+            .update({ story_order: tempOffset - i })
+            .eq('id', scene.id);
         
-        // Update only story_order for each scene sequentially to avoid conflicts
-        for (const scene of sceneUpdates) {
-            const { error } = await supabase
-                .from('scenes')
-                .update({ story_order: scene.story_order })
-                .eq('id', scene.id);
-            
-            if (error) {
-                console.error('[UPDATE] Error updating scene:', scene.id, error);
-                throw error;
-            }
+        if (error) {
+            console.error('[UPDATE] Error setting temp order for scene:', scene.id, error);
+            throw error;
         }
-        
-        console.log('[UPDATE] Successfully updated', sceneUpdates.length, 'scenes');
-    } catch (error) {
-        console.error('[UPDATE] Error updating scene orders:', error);
-        throw error;
     }
+    
+    // Step 2: Now set the actual story_order values
+    for (const scene of sceneUpdates) {
+        const { error } = await supabase
+            .from('scenes')
+            .update({ story_order: scene.story_order })
+            .eq('id', scene.id);
+        
+        if (error) {
+            console.error('[UPDATE] Error updating scene:', scene.id, error);
+            throw error;
+        }
+    }
+    
+    console.log('[UPDATE] Successfully updated', sceneUpdates.length, 'scenes');
+}
+
+/**
+ * Process the update queue one by one
+ */
+async function processUpdateQueue() {
+    if (isProcessingQueue || updateQueue.length === 0) {
+        return;
+    }
+    
+    isProcessingQueue = true;
+    
+    while (updateQueue.length > 0) {
+        // Take only the latest update (discard intermediate drags)
+        const update = updateQueue[updateQueue.length - 1];
+        updateQueue = []; // Clear queue - we're processing the latest state
+        
+        try {
+            await updateSceneOrders(update.sceneUpdates);
+        } catch (error) {
+            console.error('[QUEUE] Failed to process update:', error);
+            // Don't revert UI - user already moved on
+        }
+    }
+    
+    isProcessingQueue = false;
 }
 
 // Load scenes from current project
@@ -455,43 +499,38 @@ function renderStoryOrder(container) {
             const oldIndex = evt.oldIndex;
             const newIndex = evt.newIndex;
             
-            // If position actually changed, update database
+            // If position actually changed, update optimistically
             if (oldIndex !== newIndex) {
-                try {
-                    // Update the scenes array based on new positions
-                    const movedScene = scenes[oldIndex];
-                    scenes.splice(oldIndex, 1);
-                    scenes.splice(newIndex, 0, movedScene);
-                    
-                    // Renumber story_order for all scenes
-                    scenes.forEach((scene, index) => {
-                        scene.story_order = index + 1;
-                    });
-                    
-                    // Save to database - send complete scene objects to avoid null constraints
-                    const updates = scenes.map(s => ({
-                        id: s.id,
-                        project_id: s.project_id,
-                        scene_number: s.scene_number,
-                        description: s.description,
-                        story_order: s.story_order,
-                        shooting_order: s.shooting_order,
-                        location: s.location,
-                        int_ext: s.int_ext,
-                        time: s.time,
-                        setting: s.setting,
-                        condition: s.condition
-                    }));
-                    await updateSceneOrders(updates);
-                    
-                    // Re-render to show updated state
-                    renderTimeline();
-                } catch (error) {
-                    console.error('Error updating scene order:', error);
-                    alert('Failed to update scene order');
-                    // Revert on error
-                    renderTimeline();
-                }
+                // Update the scenes array immediately (optimistic update)
+                const movedScene = scenes[oldIndex];
+                scenes.splice(oldIndex, 1);
+                scenes.splice(newIndex, 0, movedScene);
+                
+                // Renumber story_order for all scenes
+                scenes.forEach((scene, index) => {
+                    scene.story_order = index + 1;
+                });
+                
+                // Update minimap immediately for responsive feel
+                updateMinimap();
+                
+                // Queue database update (non-blocking)
+                const updates = scenes.map(s => ({
+                    id: s.id,
+                    project_id: s.project_id,
+                    scene_number: s.scene_number,
+                    description: s.description,
+                    story_order: s.story_order,
+                    shooting_order: s.shooting_order,
+                    location: s.location,
+                    int_ext: s.int_ext,
+                    time: s.time,
+                    setting: s.setting,
+                    condition: s.condition
+                }));
+                
+                updateQueue.push({ sceneUpdates: updates });
+                processUpdateQueue(); // Start processing (non-blocking)
             }
         }
     });
@@ -711,6 +750,9 @@ function updateMinimap() {
     
     // Update viewport indicator
     const updateViewport = () => {
+        // Skip update if user is currently resizing the viewport
+        if (window.isResizingViewport) return;
+        
         const scrollLeft = container.scrollLeft;
         const scrollWidth = container.scrollWidth;
         const clientWidth = container.clientWidth;
@@ -728,6 +770,14 @@ function updateMinimap() {
     
     // Update on scroll
     container.addEventListener('scroll', updateViewport);
+    
+    // Also update when container size changes (but not during viewport resize)
+    const resizeObserver = new ResizeObserver(() => {
+        if (!window.isResizingViewport) {
+            updateViewport();
+        }
+    });
+    resizeObserver.observe(container);
     
     // Click minimap to jump to position
     const minimap = document.getElementById('timelineMinimap');
@@ -849,10 +899,12 @@ function initZoomControls() {
     let isResizing = false;
     let resizeSide = null;
     let startX = 0;
-    let startWidth = 0;
-    let startLeft = 0;
+    let startZoom = 1.0;
     
-    function updateZoom(newZoom) {
+    // Make isResizing accessible globally so updateMinimap can check it
+    window.isResizingViewport = false;
+    
+    function updateZoom(newZoom, skipMinimapUpdate = false) {
         // Clamp zoom between 50% and 200%
         currentZoom = Math.max(0.5, Math.min(2.0, newZoom));
         
@@ -876,23 +928,34 @@ function initZoomControls() {
             card.style.fontSize = `${currentZoom}rem`; // Scale font too
         });
         
-        // Update minimap after zoom change
-        setTimeout(() => updateMinimap(), 50);
+        // Update minimap viewport ONLY if not currently resizing
+        if (!skipMinimapUpdate) {
+            setTimeout(() => updateMinimap(), 50);
+        }
     }
     
-    // Viewport resize handlers for zoom control
+    // Resize handles on viewport edges for zoom control
+    let startViewportLeft = 0;
+    let startViewportWidth = 0;
+    let cachedMinimapRect = null;
+    
     minimapViewport.addEventListener('mousedown', (e) => {
         const resizeHandle = e.target.closest('[data-resize]');
         if (resizeHandle) {
+            // Set flag FIRST to prevent any viewport updates
+            window.isResizingViewport = true;
             isResizing = true;
             resizeSide = resizeHandle.dataset.resize;
             startX = e.clientX;
             
-            const viewportRect = minimapViewport.getBoundingClientRect();
-            const minimapRect = minimap.getBoundingClientRect();
+            // Cache the minimap rect for consistent calculations
+            cachedMinimapRect = minimap.getBoundingClientRect();
             
-            startWidth = (viewportRect.width / minimapRect.width) * 100; // percentage
-            startLeft = ((viewportRect.left - minimapRect.left) / minimapRect.width) * 100; // percentage
+            // Store initial viewport position and width in pixels
+            const viewportRect = minimapViewport.getBoundingClientRect();
+            
+            startViewportLeft = viewportRect.left - cachedMinimapRect.left; // pixels from minimap left
+            startViewportWidth = viewportRect.width; // pixels
             
             e.preventDefault();
             e.stopPropagation();
@@ -900,36 +963,58 @@ function initZoomControls() {
     });
     
     document.addEventListener('mousemove', (e) => {
-        if (!isResizing) return;
+        if (!isResizing || !cachedMinimapRect) return;
         
-        const minimapRect = minimap.getBoundingClientRect();
-        const deltaX = e.clientX - startX;
-        const deltaPercent = (deltaX / minimapRect.width) * 100;
+        const deltaX = e.clientX - startX; // How far the cursor moved
         
-        let newWidth = startWidth;
+        let newLeft, newWidth;
         
-        if (resizeSide === 'right') {
-            // Resize from right - increase/decrease width
-            newWidth = startWidth + deltaPercent;
-        } else if (resizeSide === 'left') {
-            // Resize from left - increase/decrease width (inverse)
-            newWidth = startWidth - deltaPercent;
+        if (resizeSide === 'left') {
+            // Dragging LEFT edge: left edge follows cursor EXACTLY, right edge stays fixed
+            newLeft = startViewportLeft + deltaX;
+            newWidth = startViewportWidth - deltaX; // Width shrinks when moving right
+            
+            // Don't let left edge go past right edge or beyond minimap
+            const minLeft = 0;
+            const maxLeft = startViewportLeft + startViewportWidth - 20; // Keep min 20px width
+            newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+            newWidth = startViewportLeft + startViewportWidth - newLeft;
+            
+        } else if (resizeSide === 'right') {
+            // Dragging RIGHT edge: right edge follows cursor EXACTLY, left edge stays fixed
+            newLeft = startViewportLeft; // Left stays fixed
+            newWidth = startViewportWidth + deltaX; // Width grows when moving right
+            
+            // Don't let right edge go beyond minimap or shrink too small
+            const minWidth = 20;
+            const maxWidth = cachedMinimapRect.width - newLeft;
+            newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
         }
         
-        // Clamp viewport width between 10% and 100%
-        newWidth = Math.max(10, Math.min(100, newWidth));
+        // Convert to percentages for CSS (use cached rect for consistency)
+        const leftPercent = (newLeft / cachedMinimapRect.width) * 100;
+        const widthPercent = (newWidth / cachedMinimapRect.width) * 100;
         
-        // Calculate zoom: smaller viewport = more zoomed in
-        // viewport 100% = zoom 0.5 (50% - see everything)
-        // viewport 50% = zoom 1.0 (100% - see half)
-        // viewport 10% = zoom 2.0 (200% - see 10%)
-        const newZoom = 100 / newWidth; // Inverse relationship
+        // Update viewport position IMMEDIATELY (no transition)
+        minimapViewport.style.left = `${leftPercent}%`;
+        minimapViewport.style.width = `${widthPercent}%`;
         
-        updateZoom(newZoom);
+        // Calculate and apply zoom
+        const newZoom = 50 / widthPercent; // Inverse relationship
+        updateZoom(newZoom, true); // Skip minimap update during resizing
+        
         e.preventDefault();
     });
     
     document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            // Clear cached rect
+            cachedMinimapRect = null;
+            // Clear flag after a short delay to prevent immediate viewport snap
+            setTimeout(() => {
+                window.isResizingViewport = false;
+            }, 100);
+        }
         isResizing = false;
         resizeSide = null;
     });

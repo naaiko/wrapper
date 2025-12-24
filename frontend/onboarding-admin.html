@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cupcake">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding Management - Continuity</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/supabase-config.js"></script>
+</head>
+<body class="bg-base-200">
+    <!-- Navigation -->
+    <div id="topNavigation" class="navbar bg-base-100 shadow-md fixed top-0 left-0 right-0 z-50">
+        <div class="flex-1">
+            <a href="index.html" class="btn btn-ghost text-xl">📋 Continuity</a>
+        </div>
+        <div class="flex-none gap-2">
+            <a href="users.html" class="btn btn-ghost">👥 Users</a>
+            <a href="onboarding-admin.html" class="btn btn-ghost btn-active">📚 Onboarding</a>
+            <div id="authControls"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 pt-24 pb-8">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Onboarding Management</h1>
+                <p class="text-base-content/70 mt-2">Manage intro.js tutorial steps for all pages</p>
+            </div>
+            <div class="flex gap-2">
+                <button id="addStepBtn" class="btn btn-primary">
+                    ➕ Add Step
+                </button>
+                <button id="saveAllBtn" class="btn btn-success">
+                    💾 Save All Changes
+                </button>
+            </div>
+        </div>
+
+        <!-- Page Selector -->
+        <div class="tabs tabs-boxed mb-6">
+            <button class="tab tab-active" data-page="timeline">Timeline</button>
+            <button class="tab" data-page="actors">Actors</button>
+            <button class="tab" data-page="calendar">Calendar</button>
+            <button class="tab" data-page="projects">Projects</button>
+        </div>
+
+        <!-- Steps List -->
+        <div id="stepsList" class="space-y-4">
+            <!-- Steps will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Add/Edit Step Modal -->
+    <dialog id="stepModal" class="modal">
+        <div class="modal-box max-w-2xl">
+            <h3 class="font-bold text-lg mb-4" id="modalTitle">Add Step</h3>
+            
+            <form id="stepForm" class="space-y-4">
+                <input type="hidden" id="stepId">
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Step Order</span>
+                    </label>
+                    <input type="number" id="stepOrder" class="input input-bordered" required min="1">
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Title (with emoji)</span>
+                    </label>
+                    <input type="text" id="stepTitle" class="input input-bordered" required 
+                           placeholder="👋 Welcome to Your Timeline">
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Content (HTML allowed)</span>
+                    </label>
+                    <textarea id="stepIntro" class="textarea textarea-bordered h-32" required 
+                              placeholder="<div class='text-left'><p>Your content here</p></div>"></textarea>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Element (CSS selector, leave empty for floating)</span>
+                    </label>
+                    <input type="text" id="stepElement" class="input input-bordered" 
+                           placeholder="#timelineTitle, .scene-card, etc.">
+                    <label class="label">
+                        <span class="label-text-alt">Use browser DevTools to find element selectors</span>
+                    </label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Position</span>
+                    </label>
+                    <select id="stepPosition" class="select select-bordered">
+                        <option value="floating">Floating (centered)</option>
+                        <option value="bottom">Bottom</option>
+                        <option value="top">Top</option>
+                        <option value="left">Left</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+
+                <div class="form-control">
+                    <label class="label cursor-pointer">
+                        <span class="label-text">Visible</span>
+                        <input type="checkbox" id="stepVisible" class="checkbox checkbox-primary" checked>
+                    </label>
+                </div>
+
+                <div class="modal-action">
+                    <button type="button" class="btn" onclick="stepModal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Step</button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <script type="module" src="js/onboarding-admin.js"></script>
+</body>
+</html>

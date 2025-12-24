@@ -39,12 +39,20 @@
                     <h1 class="text-3xl font-bold mb-2">User Management</h1>
                     <p class="text-base-content/70">Manage users and their access to projects</p>
                 </div>
-                <button onclick="showCreateUserModal()" class="btn btn-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Create User
-                </button>
+                <div class="flex gap-2">
+                    <a href="onboarding-admin.html" class="btn btn-outline">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Onboarding
+                    </a>
+                    <button onclick="showCreateUserModal()" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Create User
+                    </button>
+                </div>
             </div>
 
             <!-- Users Table -->
@@ -159,6 +167,7 @@
                     </label>
                     <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
                         <li><a href="index.html">Projects</a></li>
+                        <li><a href="onboarding-admin.html">Onboarding Admin</a></li>
                         <li><a onclick="authService.logout()">Logout</a></li>
                     </ul>
                 </div>
