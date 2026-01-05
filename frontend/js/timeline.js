@@ -7,6 +7,7 @@ import { AddSceneScreen } from './screens/addSceneScreen.js';
 import { SceneEditScreen } from './screens/sceneEditScreen.js';
 import settingsService from './services/settingsService.js';
 import { loadOnboardingSteps } from './services/onboardingService.js';
+import { version } from './version.js';
 
 // =================================================================
 // DATA MODEL

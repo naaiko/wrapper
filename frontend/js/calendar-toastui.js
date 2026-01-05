@@ -11,6 +11,7 @@ import { renderSceneCard, buildSceneHeading } from './components/sceneCardRender
 import demoDataService from './services/demoDataService.js';
 import { SceneEditScreen } from './screens/sceneEditScreen.js';
 import { AddSceneScreen } from './screens/addSceneScreen.js';
+import { version } from './version.js';
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 

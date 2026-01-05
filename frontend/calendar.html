@@ -440,5 +440,12 @@
         }
     </script>
     <script type="module" src="js/calendar-toastui.js"></script>
+    
+    <!-- Version Badge -->
+    <div id="versionBadge"></div>
+    <script type="module">
+        import { version } from './js/version.js';
+        document.getElementById('versionBadge').innerHTML = version.badge();
+    </script>
 </body>
 </html>

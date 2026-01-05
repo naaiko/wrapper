@@ -1,4 +1,7 @@
 {
+  "name": "continuity-manager",
+  "version": "1.0.0",
+  "description": "Film continuity management system",
   "dependencies": {
     "sortablejs": "^1.15.6"
   }

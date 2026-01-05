@@ -8,6 +8,7 @@ import { SVGProcessor } from './utils/svgProcessor.js';
 import { ActorEditScreen } from './screens/actorEditScreen.js';
 import { LocationService } from './services/locationService.js';
 import settingsService from './services/settingsService.js';
+import { version } from './version.js';
 
 // Default times (same as calendar-toastui.js)
 const DEFAULT_TIMES = [
