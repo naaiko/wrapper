@@ -450,7 +450,7 @@ function renderStoryOrder(container) {
     console.log('[SORTABLE] Container classes:', container?.className);
     console.log('[SORTABLE] Container scroll properties - scrollWidth:', container?.scrollWidth, 'clientWidth:', container?.clientWidth);
     
-    // Create new Sortable instance with optimized performance settings
+    // Create new Sortable instance with touch-optimized settings
     sortableInstance = Sortable.create(container, {
         // Performance-optimized animation settings
         animation: 120,                    // Fast but smooth (was 200ms)
@@ -468,34 +468,52 @@ function renderStoryOrder(container) {
         swap: false,                       // Don't use swap mode
         swapThreshold: 0.65,              // Default value (not used when swap is false)
         
-        // AutoScroll configuration - balanced responsiveness
+        // Touch-friendly intent detection
+        delay: 150,                        // 150ms observation window for scroll vs drag
+        delayOnTouchOnly: true,            // Only delay on touch devices, instant on desktop
+        touchStartThreshold: 8,            // 8px movement tolerance before drag starts
+        
+        // AutoScroll configuration - optimized for touch
         scroll: true,                      // Enable autoscroll plugin
-        forceAutoScrollFallback: true,     // Always use SortableJS autoscroll (disable browser native)
-        scrollSensitivity: 140,            // px - triggers when moderately close to edge
-        scrollSpeed: 43,                   // px/frame - fast but controlled scrolling
+        forceAutoScrollFallback: true,     // Use SortableJS autoscroll (not browser native)
+        scrollSensitivity: 80,             // px - trigger closer to edge for better UX
+        scrollSpeed: 12,                   // px/frame - smooth, controlled scrolling
         bubbleScroll: true,                // Apply to parent elements too
         
-        // Responsiveness optimizations
-        delay: 0,                          // No delay - instant response
-        delayOnTouchOnly: false,           // No delay on any device
-        touchStartThreshold: 3,            // Pixels to move before drag starts (lower = more sensitive)
-        
         // Performance optimizations
-        forceFallback: false,              // Use native HTML5 DnD (faster)
-        fallbackTolerance: 0,              // Instant drag start (no mouse movement threshold)
+        forceFallback: false,              // Use native HTML5 DnD (faster on desktop)
+        fallbackTolerance: 0,              // Instant drag start on desktop
         removeCloneOnHide: true,           // Remove clone when hidden (better performance)
         
         // Only allow dragging scene cards (not placeholder)
         draggable: '.scene-card',
         
+        // Touch gesture flow:
+        // 1. pointerdown on card → delay starts (150ms)
+        // 2. During delay:
+        //    - Horizontal swipe (>8px) = scroll intent → drag cancelled
+        //    - Vertical movement (>8px) = drag intent → drag activates
+        //    - No movement = wait for delay timeout
+        // 3. After delay: drag activates (onStart fires)
+        // 4. During drag: edge autoscroll + CSS touch-action: none
+        // 5. pointerup = drag end (onEnd fires)
+        
         // Events
         onStart: (evt) => {
-            console.log('[SORTABLE] Drag started');
-            // Keep dragged item fully visible
+            console.log('[SORTABLE] Drag started - touch-action now blocked');
+            // At this point:
+            // - .sortable-chosen class is added (triggers touch-action: none in CSS)
+            // - User can no longer scroll with this card
+            // - Edge autoscroll will handle scrolling during drag
         },
         
         onEnd: async (evt) => {
-            console.log('[SORTABLE] Drag ended - oldIndex:', evt.oldIndex, 'newIndex:', evt.newIndex);
+            console.log('[SORTABLE] Drag ended - touch-action restored');
+            // At this point:
+            // - .sortable-chosen class is removed
+            // - touch-action: pan-x is restored
+            // - User can scroll timeline again
+            
             const oldIndex = evt.oldIndex;
             const newIndex = evt.newIndex;
             

@@ -31,16 +31,30 @@ input[type="reset"] {
 
 /* Scene cards that can be dragged */
 .scene-card {
-    touch-action: none;
+    touch-action: pan-x;
+    /* Allow horizontal scroll, block vertical for drag intent detection */
     -webkit-user-select: none;
     user-select: none;
     /* Prevent text selection during drag */
 }
 
-/* Timeline container - horizontal drag-scroll */
+/* Block all touch during active drag (SortableJS classes) */
+.scene-card.sortable-chosen,
+.scene-card.sortable-drag,
+.scene-card.is-dragging {
+    touch-action: none !important;
+    /* Full control during drag, no scroll conflicts */
+}
+
+/* Timeline container - horizontally scrollable on touch */
 #sceneContainer {
-    touch-action: pan-y pinch-zoom;
-    /* Allow vertical scroll and pinch zoom, but handle horizontal ourselves */
+    touch-action: pan-x pan-y pinch-zoom;
+    /* Allow horizontal swipe scroll AND vertical if needed, plus pinch zoom */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* iOS momentum scrolling */
+    overscroll-behavior-x: contain;
+    /* Prevent scroll chaining */
 }
 
 /* Minimap viewport - custom drag behavior */
@@ -402,11 +416,6 @@ button:active,
     
     /* Drag threshold (set in JS, used for visual feedback) */
     --drag-threshold: 3px;
-}
-
-/* Touch-device class applied via JS */
-.touch-device {
-    /* Can add device-specific overrides here */
 }
 
 /* =================================================================
