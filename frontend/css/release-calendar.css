@@ -2,9 +2,8 @@
    RELEASE CALENDAR - Toast UI Calendar Styling
    ================================================================= */
 
-/* Calendar Container */
-.release-calendar-toastui {
-    height: 600px;
+/* Calendar Container - use inline height in JS */
+#releaseCalendar {
     border-radius: 0.5rem;
     overflow: hidden;
     background: var(--fallback-b1, oklch(var(--b1)));

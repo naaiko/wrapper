@@ -412,13 +412,30 @@ class ReleaseBrowser {
     renderCalendar(modal) {
         const container = modal.querySelector('#calendarView');
         
+        // Check if Toast UI Calendar is available
+        if (typeof tui === 'undefined' || !tui.Calendar) {
+            console.error('[RELEASE BROWSER] Toast UI Calendar not loaded');
+            container.innerHTML = `
+                <div class="alert alert-error">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                        <h3 class="font-bold">Calendar Not Available</h3>
+                        <div class="text-sm">Toast UI Calendar library not loaded. Please reload the page.</div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
         // Clean up existing calendar
         if (this.calendar) {
             this.calendar.destroy();
         }
         
         // Create calendar container
-        container.innerHTML = '<div id="releaseCalendar" class="release-calendar-toastui"></div>';
+        container.innerHTML = '<div id="releaseCalendar" style="height: 600px;"></div>';
         const calendarEl = container.querySelector('#releaseCalendar');
         
         // Initialize Toast UI Calendar
