@@ -69,8 +69,9 @@ class AuthService {
      */
     async login(email, password) {
         try {
-            // For now, we'll do simple authentication
-            // In production, this should use proper password hashing (bcrypt)
+            console.log('Attempting login for:', email);
+            
+            // Get user from database
             const { data: users, error } = await supabase
                 .from('users')
                 .select('*')
@@ -78,52 +79,36 @@ class AuthService {
                 .eq('is_active', true)
                 .single();
 
+            console.log('User lookup result:', { users, error });
+
             if (error || !users) {
+                console.error('User not found or error:', error);
                 return {
                     success: false,
                     error: 'Invalid email or password'
                 };
             }
 
-            // TEMPORARY: For testing, accept any password
-            // TODO: Implement proper bcrypt password verification
-            const passwordValid = true; // await this.verifyPassword(password, users.password_hash);
+            // DEVELOPMENT MODE: Accept any password
+            // TODO: Implement proper password verification in production
+            console.log('User found, accepting login');
 
-            if (!passwordValid) {
-                return {
-                    success: false,
-                    error: 'Invalid email or password'
-                };
-            }
-
-            // Create session
+            // Create session (simple version without database)
             const sessionToken = this._generateSessionToken();
             const expiresAt = new Date();
             expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour session
 
-            const { error: sessionError } = await supabase
-                .from('user_sessions')
-                .insert({
-                    user_id: users.id,
-                    session_token: sessionToken,
-                    expires_at: expiresAt.toISOString()
-                });
-
-            if (sessionError) {
-                console.error('Error creating session:', sessionError);
-                return {
-                    success: false,
-                    error: 'Failed to create session'
-                };
+            // Try to update last login (non-blocking if it fails)
+            try {
+                await supabase
+                    .from('users')
+                    .update({ last_login: new Date().toISOString() })
+                    .eq('id', users.id);
+            } catch (e) {
+                console.warn('Could not update last_login:', e);
             }
 
-            // Update last login
-            await supabase
-                .from('users')
-                .update({ last_login: new Date().toISOString() })
-                .eq('id', users.id);
-
-            // Save session
+            // Save session to localStorage
             const user = {
                 id: users.id,
                 email: users.email,
@@ -132,6 +117,7 @@ class AuthService {
             };
             this._saveSession(user, sessionToken, expiresAt.toISOString());
 
+            console.log('Login successful for:', user.email);
             return {
                 success: true,
                 user
@@ -140,7 +126,7 @@ class AuthService {
             console.error('Login error:', error);
             return {
                 success: false,
-                error: 'An unexpected error occurred'
+                error: 'An unexpected error occurred: ' + error.message
             };
         }
     }

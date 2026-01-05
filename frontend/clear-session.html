@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Session</title>
+</head>
+<body>
+    <h1>Clearing session...</h1>
+    <script>
+        // Clear all authentication data
+        localStorage.removeItem('cm_session');
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Redirect to login
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 500);
+    </script>
+</body>
+</html>
