@@ -1,221 +1,247 @@
 /* =================================================================
-   RELEASE CALENDAR - Toast UI Calendar Styling
+   RELEASE TIMELINE - Metro Line Visualization
    ================================================================= */
 
-/* Calendar Container - use inline height in JS */
-#releaseCalendar {
-    border-radius: 0.5rem;
-    overflow: hidden;
-    background: var(--fallback-b1, oklch(var(--b1)));
+.release-timeline {
+    padding: 2rem 1rem;
+    overflow-y: auto;
+    max-height: 600px;
 }
 
-/* Hide scrollbars */
-#releaseCalendar .toastui-calendar-panel,
-#releaseCalendar .toastui-calendar-week-view,
-#releaseCalendar .toastui-calendar-time {
-    overflow: hidden !important;
+/* Timeline Track - The metro line */
+.timeline-track {
+    position: relative;
+    padding-left: 3rem;
 }
 
-/* Hide time grid completely */
-.toastui-calendar-time {
-    display: none !important;
+.timeline-track::before {
+    content: '';
+    position: absolute;
+    left: 1.5rem;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, 
+        var(--fallback-p, oklch(var(--p))) 0%,
+        var(--fallback-s, oklch(var(--s))) 100%);
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Make allday section full height */
-.toastui-calendar-panel.toastui-calendar-allday {
-    height: 100% !important;
-    flex: 1 !important;
+/* Date Groups */
+.timeline-date-group {
+    position: relative;
+    margin-bottom: 2rem;
 }
 
-.toastui-calendar-week-view-day-names {
-    border-bottom: 2px solid var(--fallback-b3, oklch(var(--b3)));
+.timeline-date-group.today .timeline-date-label {
+    color: var(--fallback-p, oklch(var(--p)));
+    font-weight: 700;
 }
 
-/* Calendar Header (Month/Year display) */
-.toastui-calendar-layout {
-    background: transparent;
-}
-
-.toastui-calendar-month {
-    background: transparent;
-}
-
-/* Day Headers */
-.toastui-calendar-day-names {
-    background: var(--fallback-b2, oklch(var(--b2)));
-}
-
-.toastui-calendar-day-name {
-    color: var(--fallback-bc, oklch(var(--bc) / 0.6));
+.timeline-date-label {
+    position: absolute;
+    left: -3rem;
+    top: 0;
+    font-size: 0.75rem;
     font-weight: 600;
-    font-size: 0.875rem;
-    padding: 0.5rem;
+    color: var(--fallback-bc, oklch(var(--bc) / 0.5));
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    white-space: nowrap;
 }
 
-/* Day Cells */
-.toastui-calendar-daygrid-cell {
-    border-color: var(--fallback-b3, oklch(var(--b3)));
+/* Stations Container */
+.timeline-stations {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Station - Individual Release */
+.timeline-station {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
     transition: all 0.2s ease;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background: var(--fallback-b1, oklch(var(--b1)));
+    border: 2px solid transparent;
+    margin-left: -0.5rem;
 }
 
-.toastui-calendar-daygrid-cell:hover {
-    background: var(--fallback-b2, oklch(var(--b2) / 0.5));
+.timeline-station:hover {
+    background: var(--fallback-b2, oklch(var(--b2)));
+    border-color: var(--fallback-bc, oklch(var(--bc) / 0.1));
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Today marker */
-.toastui-calendar-today {
-    background: var(--fallback-p, oklch(var(--p) / 0.1)) !important;
-}
-
-.toastui-calendar-today .toastui-calendar-template-monthDayName {
-    background: var(--fallback-p, oklch(var(--p)));
-    color: var(--fallback-pc, oklch(var(--pc)));
-    border-radius: 50%;
+/* Station Marker - The dot on the line */
+.station-marker {
+    position: absolute;
+    left: -2.5rem;
+    top: 50%;
+    transform: translateY(-50%);
     width: 2rem;
     height: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
 }
 
-/* Day Numbers */
-.toastui-calendar-template-monthDayName {
-    color: var(--fallback-bc, oklch(var(--bc)));
-    font-weight: 500;
-}
-
-/* Other Month Days */
-.toastui-calendar-extra-date .toastui-calendar-template-monthDayName {
-    color: var(--fallback-bc, oklch(var(--bc) / 0.3));
-}
-
-/* Release Events */
-.toastui-calendar-weekday-event {
-    cursor: pointer;
-    border: none !important;
-    border-radius: 0.375rem;
-    padding: 0.5rem;
-    margin: 2px 4px;
-    font-size: 0.875rem;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    height: auto !important;
-    min-height: 2.5rem;
-}
-
-.toastui-calendar-weekday-event:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Release Event Content */
-.toastui-calendar-weekday-event-dot {
-    display: none; /* Hide default dot */
-}
-
-.toastui-calendar-weekday-event-title {
-    font-size: 0.875rem;
-    line-height: 1.4;
-    font-weight: 500;
-}
-
-/* More Events Indicator */
-.toastui-calendar-more-view {
+/* Station Dot - Different styles for patch/minor/major */
+.station-dot {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
     background: var(--fallback-b1, oklch(var(--b1)));
-    border: 1px solid var(--fallback-b3, oklch(var(--b3)));
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.toastui-calendar-more-title {
-    background: var(--fallback-b2, oklch(var(--b2)));
-    color: var(--fallback-bc, oklch(var(--bc)));
-    padding: 0.75rem;
-    font-weight: 600;
-}
-
-.toastui-calendar-more-close {
-    color: var(--fallback-bc, oklch(var(--bc) / 0.6));
-}
-
-.toastui-calendar-more-close:hover {
-    color: var(--fallback-bc, oklch(var(--bc)));
-}
-
-/* Navigation Buttons */
-.toastui-calendar-btn {
-    background: transparent;
-    border: none;
-    color: var(--fallback-bc, oklch(var(--bc) / 0.6));
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 0.25rem;
+    position: relative;
+    z-index: 2;
     transition: all 0.2s ease;
 }
 
-.toastui-calendar-btn:hover {
-    background: var(--fallback-b2, oklch(var(--b2)));
-    color: var(--fallback-bc, oklch(var(--bc)));
-}
-
-/* Month/Year Display */
-.toastui-calendar-header-info {
-    color: var(--fallback-bc, oklch(var(--bc)));
-    font-weight: 700;
-    font-size: 1.125rem;
-}
-
-/* Grid Header */
-.toastui-calendar-template-monthGridHeader {
-    padding: 0.25rem;
-}
-
-.toastui-calendar-template-monthGridHeaderExceed {
-    color: var(--fallback-bc, oklch(var(--bc) / 0.5));
-    font-size: 0.75rem;
-    cursor: pointer;
-}
-
-.toastui-calendar-template-monthGridHeaderExceed:hover {
-    color: var(--fallback-bc, oklch(var(--bc)));
-    text-decoration: underline;
-}
-
-/* Popups */
-.toastui-calendar-popup {
+/* Patch - Hollow circle */
+.station-patch .station-dot {
+    border: 3px solid var(--fallback-su, oklch(var(--su)));
     background: var(--fallback-b1, oklch(var(--b1)));
-    border: 1px solid var(--fallback-b3, oklch(var(--b3)));
-    border-radius: 0.5rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-.toastui-calendar-popup-section {
+.station-patch:hover .station-dot {
+    border-color: var(--fallback-su, oklch(var(--su)));
+    box-shadow: 0 0 0 4px oklch(var(--su) / 0.2);
+}
+
+/* Minor - Filled circle */
+.station-minor .station-dot {
+    background: var(--fallback-in, oklch(var(--in)));
+    border: 3px solid var(--fallback-in, oklch(var(--in)));
+}
+
+.station-minor:hover .station-dot {
+    box-shadow: 0 0 0 4px oklch(var(--in) / 0.2);
+}
+
+/* Major - Double circle */
+.station-major .station-dot {
+    background: var(--fallback-er, oklch(var(--er)));
+    border: 3px solid var(--fallback-er, oklch(var(--er)));
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.station-dot-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--fallback-b1, oklch(var(--b1)));
+    z-index: 3;
+}
+
+.station-major:hover .station-dot {
+    box-shadow: 0 0 0 4px oklch(var(--er) / 0.2);
+}
+
+/* Station Info */
+.station-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.station-version {
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--fallback-bc, oklch(var(--bc)));
+    margin-bottom: 0.25rem;
 }
 
-/* Loading */
-.toastui-calendar-loading {
-    background: var(--fallback-b2, oklch(var(--b2) / 0.9));
+.station-patch .station-version {
+    color: var(--fallback-su, oklch(var(--su)));
+}
+
+.station-minor .station-version {
+    color: var(--fallback-in, oklch(var(--in)));
+}
+
+.station-major .station-version {
+    color: var(--fallback-er, oklch(var(--er)));
+}
+
+.station-name {
+    font-size: 0.875rem;
+    color: var(--fallback-bc, oklch(var(--bc) / 0.8));
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.station-features {
+    font-size: 0.75rem;
+    color: var(--fallback-bc, oklch(var(--bc) / 0.5));
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.station-features::before {
+    content: '✨';
+    font-size: 0.875rem;
+}
+
+/* Scrollbar Styling */
+.release-timeline::-webkit-scrollbar {
+    width: 8px;
+}
+
+.release-timeline::-webkit-scrollbar-track {
+    background: var(--fallback-b2, oklch(var(--b2)));
+    border-radius: 4px;
+}
+
+.release-timeline::-webkit-scrollbar-thumb {
+    background: var(--fallback-bc, oklch(var(--bc) / 0.3));
+    border-radius: 4px;
+}
+
+.release-timeline::-webkit-scrollbar-thumb:hover {
+    background: var(--fallback-bc, oklch(var(--bc) / 0.5));
 }
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
-    .release-calendar-toastui {
-        height: 500px;
+    .timeline-track {
+        padding-left: 2.5rem;
     }
     
-    .toastui-calendar-day-name {
-        font-size: 0.75rem;
-        padding: 0.25rem;
+    .timeline-track::before {
+        left: 1rem;
     }
     
-    .toastui-calendar-weekday-event {
+    .timeline-date-label {
+        left: -2.5rem;
         font-size: 0.625rem;
-        padding: 0.0625rem 0.125rem;
-        margin: 0.5px 1px;
     }
     
-    .toastui-calendar-template-monthDayName {
+    .station-marker {
+        left: -2rem;
+    }
+    
+    .timeline-station {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .station-version {
+        font-size: 0.875rem;
+    }
+    
+    .station-name {
         font-size: 0.75rem;
     }
 }

@@ -12,7 +12,6 @@ class ReleaseBrowser {
         this.currentReleaseIndex = 0;
         this.viewMode = 'list'; // 'list' or 'calendar'
         this.calendarDate = new Date();
-        this.calendar = null; // Toast UI Calendar instance
     }
     
     /**
@@ -392,12 +391,6 @@ class ReleaseBrowser {
             searchBar.classList.remove('hidden');
             calendarContainer.classList.add('hidden');
             
-            // Clean up calendar if it exists
-            if (this.calendar) {
-                this.calendar.destroy();
-                this.calendar = null;
-            }
-            
             // Show navigation only if not searching
             if (!this.searchTerm) {
                 navigation.classList.remove('hidden');
@@ -412,113 +405,76 @@ class ReleaseBrowser {
     renderCalendar(modal) {
         const container = modal.querySelector('#calendarView');
         
-        // Check if Toast UI Calendar is available
-        if (typeof tui === 'undefined' || !tui.Calendar) {
-            console.error('[RELEASE BROWSER] Toast UI Calendar not loaded');
-            container.innerHTML = `
-                <div class="alert alert-error">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                        <h3 class="font-bold">Calendar Not Available</h3>
-                        <div class="text-sm">Toast UI Calendar library not loaded. Please reload the page.</div>
+        // Create timeline view
+        container.innerHTML = '<div id="releaseTimeline" class="release-timeline"></div>';
+        const timelineEl = container.querySelector('#releaseTimeline');
+        
+        // Group releases by date for better visualization
+        const releasesByDate = {};
+        this.releases.forEach(release => {
+            if (!releasesByDate[release.date]) {
+                releasesByDate[release.date] = [];
+            }
+            releasesByDate[release.date].push(release);
+        });
+        
+        // Sort dates descending (newest first)
+        const sortedDates = Object.keys(releasesByDate).sort((a, b) => new Date(b) - new Date(a));
+        
+        let html = '<div class="timeline-track">';
+        
+        sortedDates.forEach((date, dateIndex) => {
+            const releases = releasesByDate[date];
+            const dateObj = new Date(date);
+            const isToday = dateObj.toDateString() === new Date().toDateString();
+            
+            // Format date
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const formattedDate = `${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
+            
+            html += `
+                <div class="timeline-date-group ${isToday ? 'today' : ''}">
+                    <div class="timeline-date-label">${formattedDate}</div>
+                    <div class="timeline-stations">
+            `;
+            
+            releases.forEach((release, idx) => {
+                const typeClass = `station-${release.type}`;
+                const releaseIndex = this.releases.findIndex(r => r.version === release.version);
+                
+                html += `
+                    <div class="timeline-station ${typeClass}" data-release-index="${releaseIndex}" title="${release.name}">
+                        <div class="station-marker">
+                            <div class="station-dot"></div>
+                            ${release.type === 'major' ? '<div class="station-dot-inner"></div>' : ''}
+                        </div>
+                        <div class="station-info">
+                            <div class="station-version">v${release.version}</div>
+                            <div class="station-name">${release.name}</div>
+                            ${release.features ? `<div class="station-features">${release.features.length} feature${release.features.length !== 1 ? 's' : ''}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
                     </div>
                 </div>
             `;
-            return;
-        }
-        
-        // Clean up existing calendar
-        if (this.calendar) {
-            this.calendar.destroy();
-        }
-        
-        // Create calendar container
-        container.innerHTML = '<div id="releaseCalendar" style="height: 600px;"></div>';
-        const calendarEl = container.querySelector('#releaseCalendar');
-        
-        // Initialize Toast UI Calendar
-        this.calendar = new tui.Calendar(calendarEl, {
-            defaultView: 'week',
-            useFormPopup: false,
-            useDetailPopup: false,
-            isReadOnly: true,
-            week: {
-                startDayOfWeek: 1, // Monday start
-                showTimezoneCollapseButton: false,
-                timezonesCollapsed: false,
-                hourStart: 0,
-                hourEnd: 24,
-                taskView: false,
-                eventView: ['allday'],
-                showNowIndicator: false,
-            },
-            month: {
-                startDayOfWeek: 1,
-                visibleEventCount: 3,
-            },
-            template: {
-                monthGridHeaderExceed(hiddenEvents) {
-                    return `<span class="text-xs">+${hiddenEvents}</span>`;
-                },
-                monthDayName(model) {
-                    return `<span class="text-sm font-semibold">${model.label}</span>`;
-                },
-                weekDayName(model) {
-                    const date = new Date(model.date);
-                    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                    return `
-                        <div class="text-center">
-                            <div class="text-xs font-semibold text-base-content/60">${dayNames[date.getDay()]}</div>
-                            <div class="text-lg font-bold">${date.getDate()}</div>
-                        </div>
-                    `;
-                },
-                allday(event) {
-                    const release = event.raw;
-                    const typeColors = {
-                        'major': 'badge-error',
-                        'minor': 'badge-info', 
-                        'patch': 'badge-success'
-                    };
-                    const badgeClass = typeColors[release.type] || 'badge-neutral';
-                    
-                    return `
-                        <div class="flex items-center gap-2 px-2 py-1 h-full">
-                            <span class="badge ${badgeClass} badge-sm font-semibold">v${release.version}</span>
-                            <span class="text-sm font-medium truncate flex-1">${release.name}</span>
-                        </div>
-                    `;
-                }
-            }
         });
         
-        // Convert releases to calendar events
-        const events = this.releases.map(release => ({
-            id: release.version,
-            calendarId: '1',
-            title: `v${release.version} - ${release.name}`,
-            start: release.date,
-            end: release.date,
-            isAllday: true,
-            backgroundColor: this.getReleaseColor(release.type),
-            borderColor: this.getReleaseColor(release.type),
-            raw: release
-        }));
+        html += '</div>';
         
-        this.calendar.createEvents(events);
+        timelineEl.innerHTML = html;
         
-        // Set to current date
-        this.calendar.setDate(this.calendarDate);
-        
-        // Add click handler for events
-        this.calendar.on('clickEvent', ({ event }) => {
-            const release = event.raw;
-            const index = this.releases.findIndex(r => r.version === release.version);
-            this.currentReleaseIndex = index;
-            this.viewMode = 'list';
-            this.updateView(modal);
+        // Add click handlers
+        timelineEl.querySelectorAll('.timeline-station').forEach(station => {
+            station.addEventListener('click', () => {
+                const index = parseInt(station.dataset.releaseIndex);
+                this.currentReleaseIndex = index;
+                this.viewMode = 'list';
+                this.updateView(modal);
+            });
         });
     }
     
