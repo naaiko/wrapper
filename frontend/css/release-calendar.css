@@ -9,6 +9,28 @@
     background: var(--fallback-b1, oklch(var(--b1)));
 }
 
+/* Hide scrollbars */
+#releaseCalendar .toastui-calendar-panel,
+#releaseCalendar .toastui-calendar-week-view,
+#releaseCalendar .toastui-calendar-time {
+    overflow: hidden !important;
+}
+
+/* Hide time grid completely */
+.toastui-calendar-time {
+    display: none !important;
+}
+
+/* Make allday section full height */
+.toastui-calendar-panel.toastui-calendar-allday {
+    height: 100% !important;
+    flex: 1 !important;
+}
+
+.toastui-calendar-week-view-day-names {
+    border-bottom: 2px solid var(--fallback-b3, oklch(var(--b3)));
+}
+
 /* Calendar Header (Month/Year display) */
 .toastui-calendar-layout {
     background: transparent;
@@ -72,16 +94,18 @@
 .toastui-calendar-weekday-event {
     cursor: pointer;
     border: none !important;
-    border-radius: 0.25rem;
-    padding: 0.125rem 0.25rem;
-    margin: 1px 2px;
-    font-size: 0.75rem;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    margin: 2px 4px;
+    font-size: 0.875rem;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    height: auto !important;
+    min-height: 2.5rem;
 }
 
 .toastui-calendar-weekday-event:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Release Event Content */
@@ -90,8 +114,9 @@
 }
 
 .toastui-calendar-weekday-event-title {
-    font-size: 0.75rem;
-    line-height: 1.2;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 500;
 }
 
 /* More Events Indicator */

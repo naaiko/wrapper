@@ -440,12 +440,19 @@ class ReleaseBrowser {
         
         // Initialize Toast UI Calendar
         this.calendar = new tui.Calendar(calendarEl, {
-            defaultView: 'month',
+            defaultView: 'week',
             useFormPopup: false,
             useDetailPopup: false,
             isReadOnly: true,
             week: {
                 startDayOfWeek: 1, // Monday start
+                showTimezoneCollapseButton: false,
+                timezonesCollapsed: false,
+                hourStart: 0,
+                hourEnd: 24,
+                taskView: false,
+                eventView: ['allday'],
+                showNowIndicator: false,
             },
             month: {
                 startDayOfWeek: 1,
@@ -458,6 +465,16 @@ class ReleaseBrowser {
                 monthDayName(model) {
                     return `<span class="text-sm font-semibold">${model.label}</span>`;
                 },
+                weekDayName(model) {
+                    const date = new Date(model.date);
+                    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    return `
+                        <div class="text-center">
+                            <div class="text-xs font-semibold text-base-content/60">${dayNames[date.getDay()]}</div>
+                            <div class="text-lg font-bold">${date.getDate()}</div>
+                        </div>
+                    `;
+                },
                 allday(event) {
                     const release = event.raw;
                     const typeColors = {
@@ -468,9 +485,9 @@ class ReleaseBrowser {
                     const badgeClass = typeColors[release.type] || 'badge-neutral';
                     
                     return `
-                        <div class="flex items-center gap-1 px-1">
-                            <span class="badge ${badgeClass} badge-xs">v${release.version}</span>
-                            <span class="text-xs truncate">${release.name}</span>
+                        <div class="flex items-center gap-2 px-2 py-1 h-full">
+                            <span class="badge ${badgeClass} badge-sm font-semibold">v${release.version}</span>
+                            <span class="text-sm font-medium truncate flex-1">${release.name}</span>
                         </div>
                     `;
                 }
