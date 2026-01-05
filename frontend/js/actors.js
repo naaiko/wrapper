@@ -397,173 +397,257 @@ class ActorsApp {
             
             console.log('Silhouette SVG loaded from source, working copy created');
             
-            // Add hover event listeners for all zones
-            this.setupBodyshotHoverEffects();
-            this.setupAccessoryHoverEffects();
-            this.setupOutfitHoverEffects();
+            // Initialize zone selection state
+            this.initializeZoneSelection();
+            
+            // Add touch-friendly click/tap event listeners for all zones
+            this.setupBodyshotSelection();
+            this.setupAccessorySelection();
+            this.setupOutfitSelection();
         } catch (error) {
             console.error('Failed to load silhouette SVG:', error);
         }
     }
 
     /**
-     * Setup hover effects for bodyshot zones
-     * Dims other zones when hovering one zone
+     * Initialize zone selection state manager
      */
-    setupBodyshotHoverEffects() {
+    initializeZoneSelection() {
+        this.actorZoneState = {
+            selectedBodyshot: null,
+            selectedAccessory: null,
+            selectedOutfit: null,
+            currentLayer: null
+        };
+        
+        // Global deselect on outside click
+        document.addEventListener('pointerdown', (e) => {
+            if (!e.isPrimary) return;
+            
+            // Check if click is outside all actor zones
+            const isInsideActorZone = e.target.closest('.layer-bodyshots, .layer-accesories, .layer-outfit');
+            
+            if (!isInsideActorZone) {
+                // Deselect all zones
+                this.deselectZone('Bodyshot');
+                this.deselectZone('Accessory');
+                this.deselectZone('Outfit');
+            }
+        });
+    }
+
+    /**
+     * Select a zone (bodyshot, accessory, or outfit)
+     */
+    selectZone(element, overlay, layer, type, index) {
+        console.log(`✅ Selecting ${type} zone ${index}`);
+        
+        const stateKey = `selected${type}`;
+        this.actorZoneState[stateKey] = index;
+        this.actorZoneState.currentLayer = layer;
+        
+        // Visual feedback
+        layer.classList.add('has-selection');
+        element.classList.add('zone-selected');
+        overlay.style.opacity = '1';
+        
+        // Position plus symbol
+        const centerX = overlay.getAttribute('data-center-x');
+        const centerY = overlay.getAttribute('data-center-y');
+        const plusSymbol = document.querySelector('#plus-symbol');
+        if (plusSymbol && centerX && centerY) {
+            plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
+            plusSymbol.style.display = 'block';
+        }
+    }
+
+    /**
+     * Deselect a zone type
+     */
+    deselectZone(type) {
+        const stateKey = `selected${type}`;
+        const selectedIndex = this.actorZoneState[stateKey];
+        
+        if (selectedIndex === null) return;
+        
+        console.log(`❌ Deselecting ${type} zone ${selectedIndex}`);
+        
+        // Find layer and elements
+        const layerMap = {
+            'Bodyshot': '.layer-bodyshots',
+            'Accessory': '.layer-accesories',
+            'Outfit': '.layer-outfit'
+        };
+        
+        const layer = document.querySelector(layerMap[type]);
+        if (!layer) return;
+        
+        // Remove selection state
+        layer.classList.remove('has-selection');
+        
+        const elements = layer.querySelectorAll(':scope > :not(.bodyshot-overlay):not(.accessory-overlay):not(.outfit-overlay)');
+        const overlayClass = type === 'Bodyshot' ? '.bodyshot-overlay' : type === 'Accessory' ? '.accessory-overlay' : '.outfit-overlay';
+        const overlays = layer.querySelectorAll(overlayClass);
+        
+        if (elements[selectedIndex]) {
+            elements[selectedIndex].classList.remove('zone-selected');
+        }
+        
+        if (overlays[selectedIndex]) {
+            overlays[selectedIndex].style.opacity = '0';
+        }
+        
+        // Hide plus symbol
+        const plusSymbol = document.querySelector('#plus-symbol');
+        if (plusSymbol) {
+            plusSymbol.style.display = 'none';
+        }
+        
+        // Clear state
+        this.actorZoneState[stateKey] = null;
+        if (this.actorZoneState.currentLayer === layer) {
+            this.actorZoneState.currentLayer = null;
+        }
+    }
+
+    /**
+     * Toggle zone selection
+     */
+    toggleZoneSelection(element, overlay, layer, type, index) {
+        const stateKey = `selected${type}`;
+        const isCurrentlySelected = this.actorZoneState[stateKey] === index;
+        
+        if (isCurrentlySelected) {
+            // Deselect
+            this.deselectZone(type);
+        } else {
+            // Deselect other zones of same type first
+            this.deselectZone(type);
+            
+            // Select this zone
+            this.selectZone(element, overlay, layer, type, index);
+        }
+    }
+
+    /**
+     * Setup touch-friendly selection for bodyshot zones (replaces hover)
+     */
+    setupBodyshotSelection() {
         const bodyshotsLayer = document.querySelector('.layer-bodyshots');
         if (!bodyshotsLayer) return;
         
         const rects = bodyshotsLayer.querySelectorAll('rect:not(.bodyshot-overlay)');
         const overlays = bodyshotsLayer.querySelectorAll('.bodyshot-overlay');
-        const plusSymbol = document.querySelector('#plus-symbol');
         
         rects.forEach((rect, index) => {
             const overlay = overlays[index];
             if (!overlay) return;
             
-            console.log(`Setting up bodyshot ${index}:`, {
-                rect: rect.id || rect.getAttribute('id'),
-                hasOverlay: !!overlay,
-                rectPointerEvents: window.getComputedStyle(rect).pointerEvents,
-                overlayPointerEvents: window.getComputedStyle(overlay).pointerEvents
+            console.log(`Setting up bodyshot ${index} with click/tap selection`);
+            
+            // Pointer-based click/tap detection
+            let pointerDown = null;
+            
+            rect.addEventListener('pointerdown', (e) => {
+                if (!e.isPrimary) return;
+                pointerDown = { x: e.clientX, y: e.clientY, time: Date.now() };
             });
             
-            rect.addEventListener('mouseenter', () => {
-                console.log(`🟢 Bodyshot mouseenter ${index}:`, rect.id || 'no-id');
-                bodyshotsLayer.classList.add('has-hover');
+            rect.addEventListener('pointerup', (e) => {
+                if (!e.isPrimary || !pointerDown) return;
                 
-                // Show overlay with plus cutout
-                overlay.style.opacity = '1';
-                console.log(`  → Overlay opacity set to 1`);
+                // Check if it was a click/tap (not drag)
+                const dx = Math.abs(e.clientX - pointerDown.x);
+                const dy = Math.abs(e.clientY - pointerDown.y);
+                const dt = Date.now() - pointerDown.time;
                 
-                // Position plus symbol at center of this rect
-                const centerX = overlay.getAttribute('data-center-x');
-                const centerY = overlay.getAttribute('data-center-y');
-                if (plusSymbol && centerX && centerY) {
-                    plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
-                    console.log(`  → Plus positioned at (${centerX}, ${centerY})`);
+                if (dx < 10 && dy < 10 && dt < 500) {
+                    this.toggleZoneSelection(rect, overlay, bodyshotsLayer, 'Bodyshot', index);
                 }
-            });
-            
-            rect.addEventListener('mouseleave', () => {
-                console.log(`🔴 Bodyshot mouseleave ${index}:`, rect.id || 'no-id');
-                // Hide overlay
-                overlay.style.opacity = '0';
                 
-                // Small delay to prevent flicker when moving between zones
-                setTimeout(() => {
-                    const isAnyRectHovered = Array.from(rects).some(r => r.matches(':hover'));
-                    if (!isAnyRectHovered) {
-                        bodyshotsLayer.classList.remove('has-hover');
-                    }
-                }, 10);
+                pointerDown = null;
             });
         });
     }
 
     /**
-     * Setup hover effects for accessory zones
-     * Dims other zones when hovering one zone
+     * Setup touch-friendly selection for accessory zones (replaces hover)
      */
-    setupAccessoryHoverEffects() {
+    setupAccessorySelection() {
         const accessoriesLayer = document.querySelector('.layer-accesories');
         if (!accessoriesLayer) return;
         
         const circles = accessoriesLayer.querySelectorAll('circle:not(.accessory-overlay)');
         const overlays = accessoriesLayer.querySelectorAll('.accessory-overlay');
-        const plusSymbol = document.querySelector('#plus-symbol');
         
         circles.forEach((circle, index) => {
             const overlay = overlays[index];
             if (!overlay) return;
             
-            console.log(`Setting up accessory ${index}:`, {
-                circle: circle.id || circle.getAttribute('id'),
-                hasOverlay: !!overlay,
-                circlePointerEvents: window.getComputedStyle(circle).pointerEvents,
-                overlayPointerEvents: window.getComputedStyle(overlay).pointerEvents,
-                cx: circle.getAttribute('cx'),
-                cy: circle.getAttribute('cy')
+            console.log(`Setting up accessory ${index} with click/tap selection`);
+            
+            // Pointer-based click/tap detection
+            let pointerDown = null;
+            
+            circle.addEventListener('pointerdown', (e) => {
+                if (!e.isPrimary) return;
+                pointerDown = { x: e.clientX, y: e.clientY, time: Date.now() };
             });
             
-            circle.addEventListener('mouseenter', () => {
-                console.log(`🟢 Accessory mouseenter ${index}:`, circle.id || 'no-id');
-                accessoriesLayer.classList.add('has-hover');
-                overlay.style.opacity = '1';
-                console.log(`  → Overlay opacity set to 1`);
+            circle.addEventListener('pointerup', (e) => {
+                if (!e.isPrimary || !pointerDown) return;
                 
-                // Position plus symbol at circle center
-                const centerX = overlay.getAttribute('data-center-x');
-                const centerY = overlay.getAttribute('data-center-y');
-                if (plusSymbol && centerX && centerY) {
-                    plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
-                    console.log(`  → Plus positioned at (${centerX}, ${centerY})`);
+                // Check if it was a click/tap (not drag)
+                const dx = Math.abs(e.clientX - pointerDown.x);
+                const dy = Math.abs(e.clientY - pointerDown.y);
+                const dt = Date.now() - pointerDown.time;
+                
+                if (dx < 10 && dy < 10 && dt < 500) {
+                    this.toggleZoneSelection(circle, overlay, accessoriesLayer, 'Accessory', index);
                 }
-            });
-            
-            circle.addEventListener('mouseleave', () => {
-                console.log(`🔴 Accessory mouseleave ${index}:`, circle.id || 'no-id');
-                overlay.style.opacity = '0';
                 
-                setTimeout(() => {
-                    const isAnyCircleHovered = Array.from(circles).some(c => c.matches(':hover'));
-                    if (!isAnyCircleHovered) {
-                        accessoriesLayer.classList.remove('has-hover');
-                    }
-                }, 10);
+                pointerDown = null;
             });
         });
     }
 
     /**
-     * Setup hover effects for outfit zones
-     * Dims other zones when hovering one zone
+     * Setup touch-friendly selection for outfit zones (replaces hover)
      */
-    setupOutfitHoverEffects() {
+    setupOutfitSelection() {
         const outfitLayer = document.querySelector('.layer-outfit');
         if (!outfitLayer) return;
         
         const paths = outfitLayer.querySelectorAll('path:not(.outfit-overlay)');
         const overlays = outfitLayer.querySelectorAll('.outfit-overlay');
-        const plusSymbol = document.querySelector('#plus-symbol');
         
         paths.forEach((path, index) => {
             const overlay = overlays[index];
             if (!overlay) return;
             
-            console.log(`Setting up outfit ${index}:`, {
-                path: path.id || path.getAttribute('id'),
-                hasOverlay: !!overlay,
-                pathPointerEvents: window.getComputedStyle(path).pointerEvents,
-                overlayPointerEvents: window.getComputedStyle(overlay).pointerEvents
+            console.log(`Setting up outfit ${index} with click/tap selection`);
+            
+            // Pointer-based click/tap detection
+            let pointerDown = null;
+            
+            path.addEventListener('pointerdown', (e) => {
+                if (!e.isPrimary) return;
+                pointerDown = { x: e.clientX, y: e.clientY, time: Date.now() };
             });
             
-            path.addEventListener('mouseenter', () => {
-                console.log(`🟢 Outfit mouseenter ${index}:`, path.id || 'no-id');
-                outfitLayer.classList.add('has-hover');
-                overlay.style.opacity = '1';
-                console.log(`  → Overlay opacity set to 1`);
+            path.addEventListener('pointerup', (e) => {
+                if (!e.isPrimary || !pointerDown) return;
                 
-                // Position plus symbol at path center
-                const centerX = overlay.getAttribute('data-center-x');
-                const centerY = overlay.getAttribute('data-center-y');
-                if (plusSymbol && centerX && centerY) {
-                    plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
-                    console.log(`  → Plus positioned at (${centerX}, ${centerY})`);
+                // Check if it was a click/tap (not drag)
+                const dx = Math.abs(e.clientX - pointerDown.x);
+                const dy = Math.abs(e.clientY - pointerDown.y);
+                const dt = Date.now() - pointerDown.time;
+                
+                if (dx < 10 && dy < 10 && dt < 500) {
+                    this.toggleZoneSelection(path, overlay, outfitLayer, 'Outfit', index);
                 }
-            });
-            
-            path.addEventListener('mouseleave', () => {
-                console.log(`🔴 Outfit mouseleave ${index}:`, path.id || 'no-id');
-                overlay.style.opacity = '0';
                 
-                setTimeout(() => {
-                    const isAnyPathHovered = Array.from(paths).some(p => p.matches(':hover'));
-                    if (!isAnyPathHovered) {
-                        outfitLayer.classList.remove('has-hover');
-                    }
-                }, 10);
+                pointerDown = null;
             });
         });
     }
