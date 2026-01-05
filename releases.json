@@ -1,0 +1,86 @@
+{
+  "releases": [
+    {
+      "version": "0.2.0",
+      "date": "2026-01-06",
+      "name": "Cast Grid Feature",
+      "type": "minor",
+      "branch": "feature-cast-grid",
+      "commits": [
+        "cc923c2",
+        "a3f35fe"
+      ],
+      "features": [
+        "Polaroid-style grid view for actors",
+        "Filter actors by role (All/Hoofdrol/Bijrol/Figurant)",
+        "Sort actors by name, scene count, or recently added",
+        "Real-time search by actor name",
+        "Quick Add modal with photo upload support",
+        "Actor detail screen with prev/next navigation",
+        "Keyboard shortcuts (← → ESC)",
+        "Touch swipe navigation for mobile/iPad",
+        "Toast notification system",
+        "Loading skeletons and empty states",
+        "URL state preservation for back navigation"
+      ],
+      "bugfixes": [
+        "Fixed viewport meta tag typo in actors.html",
+        "Fixed input zoom on iOS devices",
+        "Fixed photo preview not clearing on modal close"
+      ],
+      "technical": [
+        "Created ActorCard component",
+        "Implemented CastGridApp controller",
+        "Built ActorDetailApp controller",
+        "Added Toast utility for notifications",
+        "Backed up original actors files",
+        "Mobile-first responsive CSS"
+      ],
+      "breaking": [],
+      "deprecated": [],
+      "documentation": [
+        "CAST_GRID_COMPLETE.md",
+        "Updated VERSION_GUIDE.md"
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2026-01-05",
+      "name": "Initial Release with Version System",
+      "type": "minor",
+      "branch": "main",
+      "commits": [],
+      "features": [
+        "Semantic versioning system",
+        "Version badge display",
+        "Base continuity management system",
+        "Project and scene management",
+        "Actor management (list view)",
+        "Location management",
+        "Calendar integration",
+        "SVG silhouette system",
+        "User authentication"
+      ],
+      "bugfixes": [],
+      "technical": [
+        "Vanilla JavaScript ES6 modules",
+        "DaisyUI + Tailwind CSS",
+        "Supabase backend",
+        "SortableJS for drag-and-drop",
+        "Toast UI Calendar"
+      ],
+      "breaking": [],
+      "deprecated": [],
+      "documentation": [
+        "VERSION_GUIDE.md"
+      ]
+    }
+  ],
+  "unreleased": {
+    "features": [],
+    "bugfixes": [],
+    "technical": [],
+    "breaking": [],
+    "deprecated": []
+  }
+}

@@ -1,8 +1,18 @@
 # Version Management System
 
+## 🚨 IMPORTANT: Release Notes Are Mandatory
+
+**Every version change MUST be accompanied by release notes!**
+
+See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for the complete mandatory process.
+
 ## Overview
 
 Dit project gebruikt **Semantic Versioning (SemVer)** volgens [semver.org](https://semver.org/).
+
+All changes are tracked in:
+- **CHANGELOG.md** - Human-readable changelog
+- **releases.json** - Machine-readable release data
 
 ## Versie Format
 
@@ -14,15 +24,28 @@ MAJOR.MINOR.PATCH
 - **MINOR**: Nieuwe functionaliteit, backwards compatible
 - **PATCH**: Bug fixes, kleine verbeteringen
 
+## 📋 Quick Release Checklist
+
+Before committing a version bump:
+
+- [ ] Updated `frontend/js/version.js`
+- [ ] Updated `package.json`
+- [ ] Added entry to `CHANGELOG.md`
+- [ ] Added entry to `releases.json`
+- [ ] Created git tag `vX.Y.Z`
+- [ ] Pushed commits and tags
+
+**⚠️ Skip ANY step = Invalid release!**
+
 ## Hoe Versie Updaten
 
 ### 1. Update `frontend/js/version.js`
 
 ```javascript
 export const version = {
-    major: 1,
-    minor: 0,
-    patch: 0,  // ← Verhoog dit getal
+    major: 0,
+    minor: 2,
+    patch: 0,  // ← Verhoog het juiste getal
     // ...
 };
 ```
@@ -31,16 +54,53 @@ export const version = {
 
 ```json
 {
-  "version": "1.0.0"  // ← Zelfde versie als version.js
+  "version": "0.2.0"  // ← Zelfde versie als version.js
 }
 ```
 
-### 3. Commit met versienummer
+### 3. Update `CHANGELOG.md`
+
+Add a new section with your changes:
+
+```markdown
+## [0.2.0] - 2026-01-06
+
+### Added
+- New feature 1
+- New feature 2
+
+### Fixed
+- Bug fix 1
+```
+
+### 4. Update `releases.json`
+
+Add a new release object (at the start of the releases array):
+
+```json
+{
+  "version": "0.2.0",
+  "date": "2026-01-06",
+  "name": "Release Name",
+  "type": "minor",
+  "features": ["Feature 1", "Feature 2"],
+  "bugfixes": ["Bug fix 1"]
+}
+```
+
+### 5. Commit met versienummer
 
 ```bash
-git commit -m "v1.0.1: Fix scrollbar bug"
-git tag v1.0.1
-git push origin main --tags
+git commit -m "chore: Release v0.2.0
+
+- Updated version.js to 0.2.0
+- Updated package.json to 0.2.0
+- Added release notes to CHANGELOG.md
+- Updated releases.json
+"
+git tag -a v0.2.0 -m "Release version 0.2.0"
+git push origin branch-name
+git push origin v0.2.0
 ```
 
 ## Versie Badge
@@ -48,6 +108,7 @@ git push origin main --tags
 Elke pagina toont automatisch een versie badge linksonder:
 - Gebaseerd op `version.js`
 - Hover voor details
+- Click to show release notes (via ReleaseNotes.showModal())
 - Automatisch ge-inject via module import
 
 ## Wanneer Welk Getal Verhogen?

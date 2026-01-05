@@ -1,0 +1,114 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Planning
+- Calendar full integration in actor detail screen
+- Silhouette zone data integration
+- Bulk actor operations (select multiple, delete/edit)
+- Drag & drop grid reordering
+- Advanced filters (scene count range, date range)
+- Actor tags system
+- Export cast list (PDF/CSV)
+
+---
+
+## [0.2.0] - 2026-01-06
+
+### Added - Cast Grid Feature
+- **Polaroid-style grid view** for actors with responsive layout (4→3→2→1 columns)
+- **ActorCard component** with photo, name, role badge, and scene count
+- **Filter system**: Filter actors by role (All/Hoofdrol/Bijrol/Figurant)
+- **Sort options**: Sort by name (A-Z), scene count, or recently added
+- **Real-time search**: Filter actors by name with instant results
+- **Quick Add modal**: Create actors with name, role, and photo (URL or file upload)
+- **Photo upload**: Support for both URL input and local file picker with live preview
+- **Actor detail screen** with prev/next navigation through filtered list
+- **Keyboard shortcuts**: ← → for navigation, ESC to return to grid
+- **Touch swipe navigation**: Swipe left/right to navigate actors on mobile/iPad
+- **Toast notification system**: Success/error feedback for user actions
+- **Loading skeletons**: Smooth loading states during data fetching
+- **Empty states**: User-friendly messages for no actors or no search results
+- **FAB button**: Fixed action button for quick actor creation
+- **URL state preservation**: Filter/sort/search state maintained in URL for back navigation
+
+### Changed
+- Transformed actors screen from list view to modern grid layout
+- Enhanced mobile responsiveness with touch-friendly tap targets (min 44x44px)
+- Improved hover animations with lift effect and shadow
+- Updated to responsive breakpoints for optimal viewing on all devices
+
+### Technical
+- Created `ActorCard` component for reusable polaroid cards
+- Implemented `CastGridApp` controller for grid management
+- Built `ActorDetailApp` controller with navigation logic
+- Added `Toast` utility for user notifications
+- Backed up original files: `actors-old.html`, `actors-old.js`
+- Comprehensive mobile-first CSS with smooth scroll and transitions
+
+### Fixed
+- Viewport meta tag typo in actors.html
+- Input zoom prevention on iOS (font-size 16px)
+- Photo preview not clearing on modal close
+
+### Documentation
+- Created CAST_GRID_COMPLETE.md with full feature documentation
+- Updated VERSION_GUIDE.md with release process
+- Comprehensive testing checklist for all devices
+
+---
+
+## [0.1.0] - 2026-01-05
+
+### Added - Version System
+- **Semantic versioning system** (MAJOR.MINOR.PATCH)
+- version.js module with centralized version control
+- Version badge display on all pages
+- VERSION_GUIDE.md documentation
+
+### Initial Release
+- Base continuity management system
+- Project management
+- Scene management with drag-and-drop timeline
+- Actor management (original list view)
+- Location management
+- Settings and conditions
+- Calendar integration with Toast UI
+- SVG-based silhouette system with multi-layer support
+- User authentication with Supabase
+- Role-based permissions (admin/user)
+
+### Technical
+- Vanilla JavaScript ES6 modules
+- DaisyUI + Tailwind CSS
+- Supabase backend (PostgreSQL + Auth)
+- SortableJS for drag-and-drop
+- Toast UI Calendar
+
+---
+
+## Version History Legend
+
+### Types of Changes
+- **Added** - New features
+- **Changed** - Changes in existing functionality
+- **Deprecated** - Soon-to-be removed features
+- **Removed** - Removed features
+- **Fixed** - Bug fixes
+- **Security** - Vulnerability fixes
+- **Technical** - Internal improvements, refactoring, dependencies
+- **Documentation** - Documentation updates
+
+### Semantic Versioning
+- **MAJOR** (X.0.0) - Incompatible API changes, major features
+- **MINOR** (0.X.0) - New functionality, backwards compatible
+- **PATCH** (0.0.X) - Bug fixes, small improvements
+
+[Unreleased]: https://github.com/naaiko/wrapper/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/naaiko/wrapper/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/naaiko/wrapper/releases/tag/v0.1.0
