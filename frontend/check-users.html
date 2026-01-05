@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Users</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Checking users in database...</h1>
+    <pre id="output"></pre>
+    
+    <script src="js/supabase-config.js"></script>
+    <script>
+        const output = document.getElementById('output');
+        
+        async function checkUsers() {
+            try {
+                output.textContent = 'Connecting to Supabase...\n';
+                output.textContent += 'URL: ' + window.supabase.supabaseUrl + '\n\n';
+                
+                const { data, error } = await window.supabase
+                    .from('users')
+                    .select('id, email, name, role, is_active');
+                
+                if (error) {
+                    output.textContent += 'ERROR: ' + JSON.stringify(error, null, 2);
+                    return;
+                }
+                
+                output.textContent += 'Found ' + (data?.length || 0) + ' users:\n\n';
+                output.textContent += JSON.stringify(data, null, 2);
+            } catch (err) {
+                output.textContent += 'EXCEPTION: ' + err.message + '\n';
+                output.textContent += err.stack;
+            }
+        }
+        
+        checkUsers();
+    </script>
+</body>
+</html>
