@@ -22,19 +22,55 @@
         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: 1rem;
     }
+    
+    /* Touch-friendly spacing */
+    .actor-card {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Larger tap targets for mobile */
+    button, .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Search input larger */
+    #searchInput {
+        font-size: 16px; /* Prevent iOS zoom */
+    }
+    
+    /* FAB positioning */
+    .fab {
+        bottom: 1rem;
+        right: 1rem;
+    }
+    
+    /* Smooth scroll */
+    html {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 /* Actor Card Enhancements */
 .actor-card {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
 }
 
 .actor-card:hover {
-    transform: translateY(-4px) scale(1.02);
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .actor-card:active {
     transform: translateY(-2px) scale(1.01);
+    transition: all 0.1s ease;
+}
+
+.actor-card:focus-visible {
+    outline: 2px solid oklch(var(--p));
+    outline-offset: 4px;
 }
 
 /* Polaroid effect */

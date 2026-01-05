@@ -4,6 +4,7 @@
 
 import { ActorService } from './services/actorService.js';
 import { ActorCard } from './components/actorCard.js';
+import Toast from './utils/toast.js';
 import { version } from './version.js';
 
 class CastGridApp {
@@ -106,6 +107,38 @@ class CastGridApp {
         this.quickAddForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             await this.handleQuickAdd();
+        });
+        
+        // Photo preview handling
+        const photoUrlInput = document.getElementById('actorPhotoInput');
+        const photoFileInput = document.getElementById('actorPhotoFile');
+        const photoPreview = document.getElementById('photoPreview');
+        const photoPreviewImg = photoPreview.querySelector('img');
+        
+        photoUrlInput.addEventListener('input', (e) => {
+            const url = e.target.value.trim();
+            if (url) {
+                photoPreviewImg.src = url;
+                photoPreview.classList.remove('hidden');
+                photoFileInput.value = ''; // Clear file if URL is used
+            } else {
+                photoPreview.classList.add('hidden');
+            }
+        });
+        
+        photoFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    photoPreviewImg.src = event.target.result;
+                    photoPreview.classList.remove('hidden');
+                    photoUrlInput.value = event.target.result; // Store data URL
+                };
+                reader.readAsDataURL(file);
+            } else {
+                photoPreview.classList.add('hidden');
+            }
         });
         
         // Clear filters button
@@ -266,6 +299,7 @@ class CastGridApp {
     async handleQuickAdd() {
         const name = document.getElementById('actorNameInput').value.trim();
         const role = document.getElementById('actorRoleSelect').value;
+        const photoUrl = document.getElementById('actorPhotoInput').value.trim();
         
         if (!name) {
             alert('Please enter an actor name');
@@ -273,10 +307,11 @@ class CastGridApp {
         }
         
         try {
-            // Create actor
+            // Create actor with photo URL if provided
             const newActor = await ActorService.create(this.projectId, {
                 name: name,
-                role: role || null
+                role: role || null,
+                photo_url: photoUrl || null
             });
             
             // Add to local state with scene count 0
@@ -286,16 +321,17 @@ class CastGridApp {
             // Close modal and reset form
             this.quickAddModal.close();
             this.quickAddForm.reset();
+            document.getElementById('photoPreview').classList.add('hidden');
             
             // Re-filter and render
             this.filterAndRender();
             
-            // Show success feedback (optional)
-            console.log(`[CAST GRID] Created actor: ${newActor.name}`);
+            // Show success toast
+            Toast.success(`Actor "${newActor.name}" created successfully!`);
             
         } catch (error) {
             console.error('[CAST GRID] Error creating actor:', error);
-            alert('Failed to create actor. Please try again.');
+            Toast.error('Failed to create actor. Please try again.');
         }
     }
 }

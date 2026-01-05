@@ -1,0 +1,167 @@
+/* =================================================================
+   ACTOR DETAIL SCREEN - Mobile Responsive Styles
+   ================================================================= */
+
+/* Silhouette container */
+.actor-silhouette-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.actor-silhouette {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 2;
+}
+
+/* Layer modes */
+.actor-silhouette.mode-bodyshots .layer-accessories,
+.actor-silhouette.mode-bodyshots .layer-outfit {
+    opacity: 0.15;
+}
+
+.actor-silhouette.mode-accessories .layer-bodyshots,
+.actor-silhouette.mode-accessories .layer-outfit {
+    opacity: 0.15;
+}
+
+.actor-silhouette.mode-outfit .layer-bodyshots,
+.actor-silhouette.mode-outfit .layer-accessories {
+    opacity: 0.15;
+}
+
+/* Layer toggle tabs */
+.layer-modes {
+    margin-top: 1rem;
+}
+
+.layer-mode-btn {
+    font-size: 0.875rem;
+}
+
+/* Calendar section */
+#actorCalendar {
+    min-height: 600px;
+}
+
+/* Responsive: Mobile */
+@media (max-width: 768px) {
+    /* Stack columns on mobile */
+    .grid.grid-cols-12 {
+        grid-template-columns: 1fr;
+    }
+    
+    .md\:col-span-4 {
+        grid-column: span 1;
+    }
+    
+    /* Full width silhouette */
+    .actor-silhouette-container {
+        max-width: 100%;
+    }
+    
+    /* Reduce calendar height on mobile */
+    #actorCalendar {
+        min-height: 400px;
+    }
+    
+    /* Navbar buttons smaller */
+    #btnPrevActor,
+    #btnNextActor {
+        padding: 0.5rem;
+    }
+    
+    #btnPrevActor span,
+    #btnNextActor span {
+        display: none;
+    }
+    
+    /* Touch-friendly tap targets */
+    button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Prevent zoom on input focus */
+    input, select, textarea {
+        font-size: 16px;
+    }
+    
+    /* Smooth scroll for touch */
+    html {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Responsive: Tablet */
+@media (min-width: 768px) and (max-width: 1024px) {
+    /* 2-column layout on tablet: details + silhouette | calendar full width below */
+    .grid.grid-cols-12 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .md\:col-span-4:nth-child(1),
+    .md\:col-span-4:nth-child(2) {
+        grid-column: span 1;
+    }
+    
+    .md\:col-span-4:nth-child(3) {
+        grid-column: span 2;
+    }
+}
+
+/* Loading skeleton states */
+.skeleton-detail {
+    background: linear-gradient(90deg, 
+        rgba(255,255,255,0) 0%, 
+        rgba(255,255,255,0.1) 50%, 
+        rgba(255,255,255,0) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Actor details panel */
+#actorDetailsPanel {
+    animation: fade-in 0.3s ease;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Navigation button hints */
+.btn-ghost[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    pointer-events: none;
+    margin-bottom: 0.5rem;
+}
