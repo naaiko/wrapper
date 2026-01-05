@@ -1,0 +1,150 @@
+/* =================================================================
+   CAST GRID STYLES
+   ================================================================= */
+
+/* Grid Layout */
+.cast-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1024px) {
+    .cast-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .cast-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+}
+
+/* Actor Card Enhancements */
+.actor-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.actor-card:hover {
+    transform: translateY(-4px) scale(1.02);
+}
+
+.actor-card:active {
+    transform: translateY(-2px) scale(1.01);
+}
+
+/* Polaroid effect */
+.actor-card figure {
+    background: linear-gradient(135deg, oklch(var(--b3)) 0%, oklch(var(--b2)) 100%);
+}
+
+/* Smooth fade-in animation for cards */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.actor-card {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* Stagger animation for grid load */
+.actor-card:nth-child(1) { animation-delay: 0ms; }
+.actor-card:nth-child(2) { animation-delay: 50ms; }
+.actor-card:nth-child(3) { animation-delay: 100ms; }
+.actor-card:nth-child(4) { animation-delay: 150ms; }
+.actor-card:nth-child(5) { animation-delay: 200ms; }
+.actor-card:nth-child(6) { animation-delay: 250ms; }
+.actor-card:nth-child(7) { animation-delay: 300ms; }
+.actor-card:nth-child(8) { animation-delay: 350ms; }
+
+/* After 8 cards, no more delay to avoid long wait */
+.actor-card:nth-child(n+9) { animation-delay: 0ms; }
+
+/* Active filter badge */
+.filter-option.active,
+.sort-option.active {
+    background: oklch(var(--p) / 0.1);
+    font-weight: 600;
+}
+
+/* FAB hover effect */
+.btn-circle.btn-lg {
+    width: 4rem;
+    height: 4rem;
+}
+
+.btn-circle.btn-lg:hover {
+    transform: scale(1.1) rotate(90deg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Empty state improvements */
+#emptyState svg,
+#noResultsState svg {
+    filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.1));
+}
+
+/* Loading skeleton animation */
+.skeleton {
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Search input focus state */
+#searchInput:focus {
+    outline: 2px solid oklch(var(--p));
+    outline-offset: 2px;
+}
+
+/* Dropdown menu improvements */
+.dropdown-content {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Ensure grid doesn't overflow on small screens */
+.container {
+    max-width: 1400px;
+}
+
+/* Card title truncation with tooltip */
+.card-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-title:hover {
+    overflow: visible;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Smooth scroll behavior */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Controls bar shadow on scroll */
+.sticky {
+    transition: box-shadow 0.2s ease-in-out;
+}
