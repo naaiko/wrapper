@@ -97,6 +97,29 @@ export class SceneActorService {
      */
     static async create(sceneActorData) {
         try {
+            // Check if scene_actor already exists to prevent 409 conflicts
+            const { data: existing } = await window.supabase
+                .from('scene_actors')
+                .select('id')
+                .eq('scene_id', sceneActorData.scene_id)
+                .eq('actor_id', sceneActorData.actor_id)
+                .maybeSingle();
+            
+            if (existing) {
+                console.warn('Scene actor already exists, returning existing record');
+                // Return the existing record with full details
+                const { data } = await window.supabase
+                    .from('scene_actors')
+                    .select(`
+                        *,
+                        actor:actors (*),
+                        scene:scenes (*)
+                    `)
+                    .eq('id', existing.id)
+                    .single();
+                return data;
+            }
+            
             const sceneActor = {
                 scene_id: sceneActorData.scene_id,
                 actor_id: sceneActorData.actor_id,

@@ -7,6 +7,7 @@ import { CustomDropdown } from './components/customDropdown.js';
 import { SVGProcessor } from './utils/svgProcessor.js';
 import { ActorEditScreen } from './screens/actorEditScreen.js';
 import { LocationService } from './services/locationService.js';
+import { SceneSelectorMobile } from './components/sceneSelectorMobile.js';
 import settingsService from './services/settingsService.js';
 
 // Default times (same as calendar-toastui.js)
@@ -86,6 +87,7 @@ class ActorsApp {
         this.currentFilter = 'all';
         this.searchTerm = '';
         this.actorDropdown = null;
+        this.sceneSelectorMobile = null;
         this.actorEditScreen = null;
         this.actorCalendar = null; // Toast UI Calendar instance
         this.locations = [];
@@ -733,6 +735,31 @@ class ActorsApp {
             });
             this.actorDropdown.render();
         }
+        
+        // Initialize mobile scene selector (mobile only)
+        if (!this.sceneSelectorMobile) {
+            const container = document.getElementById('sceneSelectorMobile');
+            if (container) {
+                this.sceneSelectorMobile = new SceneSelectorMobile(container, {
+                    onSceneSelect: (sceneId) => this.onSceneSelected(sceneId)
+                });
+            }
+        }
+        
+        // Update scenes for current actor
+        if (this.sceneSelectorMobile && this.currentActor) {
+            this.sceneSelectorMobile.updateScenes(this.currentActor.id, this.projectId);
+        }
+    }
+    
+    /**
+     * Handle scene selection from mobile scene selector
+     */
+    onSceneSelected(sceneId) {
+        console.log('Scene selected:', sceneId);
+        // TODO: Update UI to show selected scene details
+        // This could trigger loading continuity photos for that scene
+        // or highlighting the scene in the calendar (if visible on desktop)
     }
 
     onActorDropdownChange(value, option) {
@@ -740,6 +767,11 @@ class ActorsApp {
         if (actor) {
             this.currentActorIndex = this.actors.indexOf(actor);
             this.showActorDetail(actor);
+            
+            // Update mobile scene selector
+            if (this.sceneSelectorMobile) {
+                this.sceneSelectorMobile.updateScenes(actor.id, this.projectId);
+            }
         }
     }
 
@@ -755,6 +787,11 @@ class ActorsApp {
             this.actorDropdown.render();
         }
         
+        // Update mobile scene selector
+        if (this.sceneSelectorMobile) {
+            this.sceneSelectorMobile.updateScenes(actor.id, this.projectId);
+        }
+        
         this.showActorDetail(actor);
     }
 
@@ -768,6 +805,11 @@ class ActorsApp {
         if (this.actorDropdown) {
             this.actorDropdown.value = actor.id;
             this.actorDropdown.render();
+        }
+        
+        // Update mobile scene selector
+        if (this.sceneSelectorMobile) {
+            this.sceneSelectorMobile.updateScenes(actor.id, this.projectId);
         }
         
         this.showActorDetail(actor);

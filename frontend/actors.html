@@ -140,7 +140,7 @@
                 </button>
                 
                 <!-- Actor Dropdown -->
-                <div id="actorDropdownContainer" style="min-width: 250px;">
+                <div id="actorDropdownContainer" style="min-width: 200px; max-width: 250px;">
                     <!-- Skeleton loader -->
                     <div class="skeleton h-8 w-full rounded-lg"></div>
                 </div>
@@ -151,6 +151,11 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                     </svg>
                 </button>
+                
+                <!-- Scene Selector (Mobile Only) -->
+                <div id="sceneSelectorMobile" class="md:hidden">
+                    <!-- Scene selector will be rendered here -->
+                </div>
             </div>
         </div>
 
@@ -278,7 +283,6 @@
     <!-- Scripts -->
     <script src="js/supabase-config.js"></script>
     <!-- Application Scripts -->
-    <script src="js/supabase-config.js"></script>
     <script type="module">
         import { createNavigation } from './js/components/navigation.js';
         
