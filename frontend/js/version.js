@@ -21,7 +21,7 @@
 export const version = {
     major: 0,
     minor: 2,
-    patch: 0,
+    patch: 1,
     
     get full() {
         return `${this.major}.${this.minor}.${this.patch}`;
@@ -57,10 +57,17 @@ export const version = {
     async setupReleaseNotes() {
         try {
             const { default: ReleaseNotes } = await import('./utils/releaseNotes.js');
+            const { default: ReleaseBrowser } = await import('./utils/releaseBrowser.js');
             
-            // Make showReleaseNotes globally available
+            // Make showReleaseNotes globally available (current version)
             window.showReleaseNotes = async () => {
                 await ReleaseNotes.showModal();
+            };
+            
+            // Make browsReleases globally available (all versions)
+            window.browseReleases = async () => {
+                const browser = new ReleaseBrowser();
+                await browser.show();
             };
             
             // Check if current version has release notes

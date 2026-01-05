@@ -188,6 +188,9 @@ class ReleaseNotes {
                 </form>
                 ${this.renderRelease(release)}
                 <div class="modal-action">
+                    <button class="btn btn-outline" onclick="window.browseReleases && window.browseReleases(); this.closest('dialog').close()">
+                        Browse All Releases
+                    </button>
                     <form method="dialog">
                         <button class="btn">Close</button>
                     </form>

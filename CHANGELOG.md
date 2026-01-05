@@ -8,7 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planning
-- Calendar full integration in actor detail screen
+- Advanced search in release notes
+- Release comparison view
+
+---
+
+## [0.2.1] - 2026-01-06
+
+### Added
+- **Release Browser**: Browse all previous releases with search functionality
+- **Release Viewer UI**: Interactive modal to view any release notes
+- **Documentation Organization**: Structured docs folder with release-specific documentation
+- **Release Search**: Search through all releases by features, fixes, or keywords
+- **Documentation Index**: Easy access to all release documentation
+
+### Changed
+- Reorganized documentation into `/docs` folder structure
+- Release-specific docs now in `/docs/releases/vX.Y.Z/`
+- General guides moved to `/docs/guides/`
+- Improved release notes modal with navigation controls
+
+### Technical
+- Created release browser component
+- Added search indexing for releases
+- Structured documentation by semantic version
+- Enhanced ReleaseNotes utility with search methods
+
+### Documentation
+- Created `/docs/releases/` structure for version-specific docs
+- Moved CAST_GRID_*.md to v0.2.0 folder
+- Moved implementation docs to v0.1.0 folder
+- Created `/docs/guides/` for general documentation
+
+---
+
+## [Unreleased archive moved above]
 - Silhouette zone data integration
 - Bulk actor operations (select multiple, delete/edit)
 - Drag & drop grid reordering
@@ -109,6 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MINOR** (0.X.0) - New functionality, backwards compatible
 - **PATCH** (0.0.X) - Bug fixes, small improvements
 
-[Unreleased]: https://github.com/naaiko/wrapper/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/naaiko/wrapper/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/naaiko/wrapper/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/naaiko/wrapper/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/naaiko/wrapper/releases/tag/v0.1.0
