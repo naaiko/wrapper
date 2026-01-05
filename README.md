@@ -1,8 +1,42 @@
-# SaaS MVP - Cloudflare Pages Deployment
+# Continuity Manager
 
-This is a minimal SaaS MVP designed for rapid prototyping and deployment on Cloudflare Pages.
+Film continuity management system with cast, scene, and location management.
 
-## Current Setup: CDN-Based (No Build Step)
+**Version**: 0.2.0 | [Release Notes](CHANGELOG.md) | [What's New](#whats-new)
+
+## 📋 Documentation
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Full release history
+- **[RELEASE_NOTES_SYSTEM.md](RELEASE_NOTES_SYSTEM.md)** - Release notes system overview
+- **[RELEASE_PROCESS.md](RELEASE_PROCESS.md)** - How to make a release
+- **[VERSION_GUIDE.md](VERSION_GUIDE.md)** - Quick version update guide
+
+## 🚀 What's New
+
+### v0.2.0 - Cast Grid Feature (2026-01-06)
+
+Complete redesign of the actors screen with modern grid interface:
+
+✨ **New Features:**
+- Polaroid-style grid view for actors
+- Filter by role (Hoofdrol/Bijrol/Figurant)
+- Sort by name, scene count, or recently added
+- Real-time search
+- Quick Add with photo upload
+- Actor detail screen with prev/next navigation
+- Keyboard shortcuts (← → ESC)
+- Touch swipe navigation for mobile/iPad
+- Toast notifications
+- Integrated release notes system
+
+🐛 **Bug Fixes:**
+- Fixed viewport meta tag
+- Fixed iOS input zoom
+- Fixed photo preview reset
+
+See [CHANGELOG.md](CHANGELOG.md) for complete history.
+
+## 🔧 Current Setup: CDN-Based (No Build Step)
 
 ### Why CDN-Based?
 
@@ -17,7 +51,10 @@ This project currently uses **CDN-based Tailwind CSS and DaisyUI** for the follo
 
 - **Tailwind CSS** (via CDN) - Utility-first CSS framework
 - **DaisyUI** (via CDN) - Component library that extends Tailwind CSS
-- **index.html** - Demo page showcasing DaisyUI components
+- **Vanilla JavaScript** - ES6 modules
+- **Supabase** - Backend (PostgreSQL + Auth)
+- **SortableJS** - Drag-and-drop
+- **Toast UI Calendar** - Calendar integration
 - **Documentation** - See `docs/frontend.md` for technical details
 
 ### Deployment Instructions
@@ -28,6 +65,19 @@ This project currently uses **CDN-based Tailwind CSS and DaisyUI** for the follo
    - **Build command**: Leave empty
    - **Build output directory**: `/`
 4. Deploy - the site will be live immediately
+
+## 📦 Release Management
+
+This project uses an **integrated release notes system**. Every version change requires:
+
+1. Update `frontend/js/version.js`
+2. Update `package.json`
+3. Add entry to `CHANGELOG.md`
+4. Add entry to `releases.json`
+5. Run validation: `npm run validate-release`
+6. Commit with tag: `git tag vX.Y.Z`
+
+See [RELEASE_PROCESS.md](RELEASE_PROCESS.md) for detailed instructions.
 
 ## Important: This is a Temporary MVP Setup
 
