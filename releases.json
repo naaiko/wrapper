@@ -6,7 +6,8 @@
       "name": "Release Browser & Documentation Organization",
       "type": "patch",
       "branch": "feature-cast-grid",
-      "commits": [],
+      "commits": ["cf0afa720ea41c46a02e996c9f6490c226864902"],
+      "commitMessage": "feat: Release v0.2.1 - Release Browser & Documentation Organization\n\nFeatures:\n- Release Browser with search functionality\n- Browse all previous releases interactively\n- Search through features, bug fixes, and keywords\n- Navigate between releases with prev/next controls\n- Enhanced release notes modal with 'Browse All Releases' button\n\nDocumentation Organization:\n- Created /docs folder structure\n- Release-specific docs in /docs/releases/vX.Y.Z/\n- General guides in /docs/guides/\n- Added INDEX.md for easy navigation\n- README.md in each release folder\n\nTechnical:\n- Created ReleaseBrowser component\n- Enhanced ReleaseNotes utility\n- Added global browseReleases() function\n- Search indexing across all releases\n- Statistics display (total releases, features)\n\nFiles Reorganized:\n- Moved all implementation docs to appropriate release folders\n- v0.1.0 docs: ACTORS_*, SCENE_*\n- v0.2.0 docs: CAST_GRID_*\n- Guides: RELEASE_*, VERSION_*, SVG_*, etc.\n\nThis makes it easy to:\n- Find documentation for any release\n- Search across all release history\n- Browse releases chronologically\n- Access version-specific implementation details",
       "features": [
         "Release Browser - Browse all previous releases",
         "Release Viewer UI with navigation controls",
@@ -37,8 +38,9 @@
       "branch": "feature-cast-grid",
       "commits": [
         "cc923c2",
-        "a3f35fe"
+        "a3f35fe655f68ecddeaa50663ef1cba5b479d44c"
       ],
+      "commitMessage": "feat: Complete Cast Grid feature v0.2.0\n\nPhases 4-8 Implementation:\n- Phase 4: Detail screen with prev/next navigation, keyboard shortcuts, URL state\n- Phase 5: Mobile responsive with touch swipe, tap targets, breakpoints\n- Phase 6: Quick add with photo upload (URL + file picker with preview)\n- Phase 7: Toast notifications, enhanced animations, error handling\n- Phase 8: Complete documentation and version bump\n\nNew Features:\n- Actor detail screen with grid navigation (prev/next through filtered list)\n- Keyboard shortcuts: ← → for navigation, ESC for back\n- Touch swipe navigation on mobile/iPad\n- Toast notification system for user feedback\n- Photo upload in quick add (URL or file with preview)\n- Comprehensive error handling with retry\n- Enhanced hover/focus animations\n- Mobile responsive throughout\n\nFiles Added:\n- actors-detail.html (detail view)\n- actors-detail.js (detail controller)\n- actors-detail.css (detail styles)\n- toast.js (notification utility)\n- toast.css (notification styles)\n- CAST_GRID_COMPLETE.md (full documentation)\n\nFiles Modified:\n- actors.html (added photo upload to quick add)\n- actors-grid.js (toast integration, photo handling)\n- actors-grid.css (enhanced mobile responsive, animations)\n- version.js (bumped to 0.2.0)\n- package.json (bumped to 0.2.0)\n\nReady for testing on iPad and mobile devices.",
       "features": [
         "Polaroid-style grid view for actors",
         "Filter actors by role (All/Hoofdrol/Bijrol/Figurant)",
@@ -79,6 +81,7 @@
       "type": "minor",
       "branch": "main",
       "commits": [],
+      "commitMessage": "Initial release with semantic versioning system.\n\nAdded:\n- Semantic versioning system (MAJOR.MINOR.PATCH)\n- version.js module with centralized version control\n- Version badge display on all pages\n- VERSION_GUIDE.md documentation\n\nInitial Features:\n- Base continuity management system\n- Project and scene management\n- Actor management (original list view)\n- Location management\n- Settings and conditions\n- Calendar integration with Toast UI\n- SVG-based silhouette system\n- User authentication with Supabase\n- Role-based permissions (admin/user)\n\nTechnical:\n- Vanilla JavaScript ES6 modules\n- DaisyUI + Tailwind CSS\n- Supabase backend (PostgreSQL + Auth)\n- SortableJS for drag-and-drop\n- Toast UI Calendar",
       "features": [
         "Semantic versioning system",
         "Version badge display",

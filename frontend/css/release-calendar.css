@@ -1,0 +1,143 @@
+/* =================================================================
+   RELEASE CALENDAR STYLES
+   ================================================================= */
+
+.release-calendar {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.calendar-month {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.calendar-day-header {
+    text-align: center;
+    font-weight: 600;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    color: oklch(var(--bc) / 0.6);
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    border: 1px solid oklch(var(--bc) / 0.1);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.calendar-day:hover {
+    border-color: oklch(var(--p) / 0.5);
+    background: oklch(var(--p) / 0.05);
+}
+
+.calendar-day.has-release {
+    background: oklch(var(--p) / 0.1);
+    border-color: oklch(var(--p));
+    cursor: pointer;
+}
+
+.calendar-day.has-release:hover {
+    background: oklch(var(--p) / 0.2);
+    transform: scale(1.05);
+}
+
+.calendar-day.other-month {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.calendar-day.today {
+    border-color: oklch(var(--s));
+    border-width: 2px;
+}
+
+.day-number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.day-releases {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    overflow: hidden;
+}
+
+.release-dot {
+    width: 100%;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.release-dot.minor {
+    background: oklch(var(--p));
+    color: oklch(var(--pc));
+}
+
+.release-dot.patch {
+    background: oklch(var(--s));
+    color: oklch(var(--sc));
+}
+
+.release-dot.major {
+    background: oklch(var(--er));
+    color: oklch(var(--erc));
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+    .calendar-grid {
+        gap: 0.25rem;
+    }
+    
+    .calendar-day {
+        padding: 0.25rem;
+    }
+    
+    .day-number {
+        font-size: 0.75rem;
+    }
+    
+    .release-dot {
+        font-size: 0.5rem;
+        padding: 0.0625rem 0.125rem;
+    }
+    
+    .calendar-month {
+        font-size: 1.25rem;
+    }
+}
+
+/* Calendar navigation buttons */
+.calendar-nav-btn {
+    min-width: 2.5rem;
+}

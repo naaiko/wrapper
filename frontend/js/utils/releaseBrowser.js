@@ -10,6 +10,8 @@ class ReleaseBrowser {
         this.filteredReleases = [];
         this.searchTerm = '';
         this.currentReleaseIndex = 0;
+        this.viewMode = 'list'; // 'list' or 'calendar'
+        this.calendarDate = new Date();
     }
     
     /**
@@ -52,9 +54,23 @@ class ReleaseBrowser {
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-2xl font-bold">Release History</h2>
-                    <form method="dialog">
-                        <button class="btn btn-sm btn-circle btn-ghost">✕</button>
-                    </form>
+                    <div class="flex gap-2">
+                        <div class="join">
+                            <button id="listViewBtn" class="btn btn-sm join-item" title="List View">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                </svg>
+                            </button>
+                            <button id="calendarViewBtn" class="btn btn-sm join-item" title="Calendar View">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <form method="dialog">
+                            <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+                        </form>
+                    </div>
                 </div>
                 
                 <!-- Search Bar -->
@@ -101,6 +117,11 @@ class ReleaseBrowser {
                     </div>
                 </div>
                 
+                <!-- Calendar View -->
+                <div id="calendarView" class="hidden mb-4 flex-1 overflow-y-auto">
+                    <!-- Calendar will be rendered here -->
+                </div>
+                
                 <!-- Release Details -->
                 <div id="releaseDetails" class="flex-1 overflow-y-auto">
                     <!-- Current release will be rendered here -->
@@ -136,6 +157,19 @@ class ReleaseBrowser {
         const prevBtn = modal.querySelector('#prevRelease');
         const nextBtn = modal.querySelector('#nextRelease');
         const releaseList = modal.querySelector('#releaseList');
+        const listViewBtn = modal.querySelector('#listViewBtn');
+        const calendarViewBtn = modal.querySelector('#calendarViewBtn');
+        
+        // View mode toggles
+        listViewBtn.addEventListener('click', () => {
+            this.viewMode = 'list';
+            this.updateView(modal);
+        });
+        
+        calendarViewBtn.addEventListener('click', () => {
+            this.viewMode = 'calendar';
+            this.updateView(modal);
+        });
         
         // Search
         searchInput.addEventListener('input', (e) => {
@@ -329,6 +363,188 @@ class ReleaseBrowser {
         modal.querySelector('#totalReleases').textContent = this.releases.length;
         modal.querySelector('#latestVersion').textContent = `v${this.releases[0]?.version || '-'}`;
         modal.querySelector('#totalFeatures').textContent = totalFeatures;
+    }
+    
+    updateView(modal) {
+        const listView = modal.querySelector('#listViewBtn');
+        const calendarView = modal.querySelector('#calendarViewBtn');
+        const searchBar = modal.querySelector('.form-control');
+        const navigation = modal.querySelector('#prevRelease').closest('.flex');
+        const releaseDetails = modal.querySelector('#releaseDetails');
+        const calendarContainer = modal.querySelector('#calendarView');
+        
+        if (this.viewMode === 'calendar') {
+            // Calendar mode
+            calendarView.classList.add('btn-active');
+            listView.classList.remove('btn-active');
+            searchBar.classList.add('hidden');
+            navigation.classList.add('hidden');
+            releaseDetails.classList.add('hidden');
+            calendarContainer.classList.remove('hidden');
+            this.renderCalendar(modal);
+        } else {
+            // List mode
+            listView.classList.add('btn-active');
+            calendarView.classList.remove('btn-active');
+            searchBar.classList.remove('hidden');
+            calendarContainer.classList.add('hidden');
+            this.handleSearch(modal);
+        }
+    }
+    
+    renderCalendar(modal) {
+        const container = modal.querySelector('#calendarView');
+        const year = this.calendarDate.getFullYear();
+        const month = this.calendarDate.getMonth();
+        
+        // Get first and last day of month
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDay = firstDay.getDay(); // 0 = Sunday
+        const daysInMonth = lastDay.getDate();
+        
+        // Get releases for this month
+        const monthReleases = this.releases.filter(r => {
+            const releaseDate = new Date(r.date);
+            return releaseDate.getMonth() === month && releaseDate.getFullYear() === year;
+        });
+        
+        // Group releases by day
+        const releasesByDay = {};
+        monthReleases.forEach(release => {
+            const day = new Date(release.date).getDate();
+            if (!releasesByDay[day]) releasesByDay[day] = [];
+            releasesByDay[day].push(release);
+        });
+        
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        
+        let html = `
+            <div class="release-calendar">
+                <div class="calendar-header">
+                    <button id="prevMonth" class="btn btn-sm btn-ghost calendar-nav-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div class="calendar-month">${monthNames[month]} ${year}</div>
+                    <button id="nextMonth" class="btn btn-sm btn-ghost calendar-nav-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="calendar-grid">
+        `;
+        
+        // Day headers
+        dayNames.forEach(day => {
+            html += `<div class="calendar-day-header">${day}</div>`;
+        });
+        
+        // Empty cells before first day
+        for (let i = 0; i < startDay; i++) {
+            const prevMonthDay = new Date(year, month, -startDay + i + 1).getDate();
+            html += `<div class="calendar-day other-month"><div class="day-number">${prevMonthDay}</div></div>`;
+        }
+        
+        // Days of month
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+            const hasReleases = releasesByDay[day];
+            const todayClass = isToday ? 'today' : '';
+            const releaseClass = hasReleases ? 'has-release' : '';
+            
+            html += `
+                <div class="calendar-day ${todayClass} ${releaseClass}" data-day="${day}">
+                    <div class="day-number">${day}</div>
+                    <div class="day-releases">
+            `;
+            
+            if (hasReleases) {
+                hasReleases.forEach(release => {
+                    html += `
+                        <div class="release-dot ${release.type}" title="${release.name}">
+                            v${release.version}
+                        </div>
+                    `;
+                });
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Empty cells after last day
+        const totalCells = startDay + daysInMonth;
+        const remainingCells = 7 - (totalCells % 7);
+        if (remainingCells < 7) {
+            for (let i = 1; i <= remainingCells; i++) {
+                html += `<div class="calendar-day other-month"><div class="day-number">${i}</div></div>`;
+            }
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+        
+        // Add event listeners for calendar navigation
+        container.querySelector('#prevMonth').addEventListener('click', () => {
+            this.calendarDate.setMonth(this.calendarDate.getMonth() - 1);
+            this.renderCalendar(modal);
+        });
+        
+        container.querySelector('#nextMonth').addEventListener('click', () => {
+            this.calendarDate.setMonth(this.calendarDate.getMonth() + 1);
+            this.renderCalendar(modal);
+        });
+        
+        // Add click handlers for days with releases
+        container.querySelectorAll('.calendar-day.has-release').forEach(dayEl => {
+            dayEl.addEventListener('click', () => {
+                const day = parseInt(dayEl.dataset.day);
+                const releases = releasesByDay[day];
+                
+                if (releases.length === 1) {
+                    // Single release - show it directly
+                    const index = this.releases.findIndex(r => r.version === releases[0].version);
+                    this.currentReleaseIndex = index;
+                    this.viewMode = 'list';
+                    this.updateView(modal);
+                } else {
+                    // Multiple releases - show list
+                    this.showReleasesForDay(modal, releases);
+                }
+            });
+        });
+    }
+    
+    showReleasesForDay(modal, releases) {
+        // Switch to list view and filter to these releases
+        this.filteredReleases = releases;
+        this.viewMode = 'list';
+        modal.querySelector('#listViewBtn').classList.add('btn-active');
+        modal.querySelector('#calendarViewBtn').classList.remove('btn-active');
+        modal.querySelector('.form-control').classList.add('hidden');
+        modal.querySelector('#releaseList').classList.remove('hidden');
+        modal.querySelector('#releaseDetails').classList.add('hidden');
+        modal.querySelector('#calendarView').classList.add('hidden');
+        modal.querySelector('#prevRelease').closest('.flex').classList.add('hidden');
+        
+        const count = releases.length;
+        modal.querySelector('#searchResultCount').textContent = 
+            `${count} release${count !== 1 ? 's' : ''} on ${releases[0].date}`;
+        
+        this.renderSearchResults(modal);
     }
 }
 
