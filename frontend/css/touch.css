@@ -410,5 +410,50 @@ button:active,
 }
 
 /* =================================================================
+   16. CALENDAR DRAG-DROP VISUAL FEEDBACK
+   ================================================================= */
+
+/* Ghost element during drag */
+.dragging-ghost {
+    cursor: grabbing !important;
+    rotate: 2deg;
+    animation: float 0.3s ease-out;
+}
+
+@keyframes float {
+    from {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    to {
+        transform: translate(-50%, -50%) scale(1.05);
+    }
+}
+
+/* Drop target highlighting */
+.drop-target-valid {
+    background: oklch(var(--su) / 0.15) !important;
+    outline: 2px solid oklch(var(--su)) !important;
+    outline-offset: -2px;
+    transition: all 0.15s ease;
+}
+
+.drop-target-invalid {
+    background: oklch(var(--er) / 0.1) !important;
+    outline: 2px dashed oklch(var(--er) / 0.6) !important;
+    outline-offset: -2px;
+    transition: all 0.15s ease;
+}
+
+/* Unscheduled scene cards - smooth opacity transition */
+.unscheduled-scene-card {
+    transition: opacity 0.2s ease;
+}
+
+/* Calendar cells - prepare for drop target highlighting */
+.toastui-calendar-daygrid-cell {
+    transition: background 0.15s ease, outline 0.15s ease;
+}
+
+/* =================================================================
    END OF TOUCH OPTIMIZATIONS
    ================================================================= */

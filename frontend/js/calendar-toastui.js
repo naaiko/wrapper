@@ -11,6 +11,7 @@ import { renderSceneCard, buildSceneHeading } from './components/sceneCardRender
 import demoDataService from './services/demoDataService.js';
 import { SceneEditScreen } from './screens/sceneEditScreen.js';
 import { AddSceneScreen } from './screens/addSceneScreen.js';
+import { PointerInput } from './utils/pointerInput.js';
 
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 
@@ -986,7 +987,106 @@ function formatDateReadable(dateStr) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-let draggedSceneId = null;
+// =================================================================
+// DRAG-DROP STATE (Pointer-based, Touch-compatible)
+// =================================================================
+
+const dragState = {
+    isDragging: false,
+    sceneId: null,
+    sceneData: null,
+    ghostElement: null,
+    startX: 0,
+    startY: 0,
+    currentDropTarget: null
+};
+
+function createGhostElement(sourceCard, x, y) {
+    const ghost = sourceCard.cloneNode(true);
+    
+    ghost.style.position = 'fixed';
+    ghost.style.left = `${x}px`;
+    ghost.style.top = `${y}px`;
+    ghost.style.transform = 'translate(-50%, -50%)';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.opacity = '0.8';
+    ghost.style.zIndex = '9999';
+    ghost.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+    ghost.style.transition = 'none';
+    ghost.style.willChange = 'transform';
+    ghost.classList.add('dragging-ghost');
+    
+    // Remove any interactive elements from clone
+    const newGhost = ghost.cloneNode(true);
+    return newGhost;
+}
+
+function getCellDateFromPoint(x, y) {
+    const element = document.elementFromPoint(x, y);
+    const cell = element?.closest('.toastui-calendar-daygrid-cell');
+    
+    if (!cell) return null;
+    
+    const dayCells = document.querySelectorAll('.toastui-calendar-daygrid-cell');
+    const cellIndex = Array.from(dayCells).indexOf(cell);
+    
+    if (cellIndex === -1) return null;
+    
+    const currentDate = calendar.getDate();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const startDayOfWeek = firstDayOfMonth.getDay();
+    const daysFromPrevMonth = (startDayOfWeek === 0 ? 6 : startDayOfWeek - 1);
+    const gridStartDate = new Date(currentYear, currentMonth, 1 - daysFromPrevMonth);
+    
+    const cellDate = new Date(gridStartDate);
+    cellDate.setDate(gridStartDate.getDate() + cellIndex);
+    
+    const year = cellDate.getFullYear();
+    const month = cellDate.getMonth();
+    const day = cellDate.getDate();
+    
+    return {
+        cell,
+        dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        year,
+        month,
+        day,
+        isCurrentMonth: month === currentMonth && year === currentYear
+    };
+}
+
+function cleanupDrag() {
+    console.log('🧹 Cleaning up drag state');
+    
+    // Remove ghost
+    if (dragState.ghostElement) {
+        dragState.ghostElement.remove();
+        dragState.ghostElement = null;
+    }
+    
+    // Restore original card
+    if (dragState.sceneId) {
+        const card = document.querySelector(`[data-scene-id="${dragState.sceneId}"]`);
+        if (card) {
+            card.style.opacity = '';
+            card.style.pointerEvents = '';
+        }
+    }
+    
+    // Clear drop target highlight
+    if (dragState.currentDropTarget) {
+        dragState.currentDropTarget.classList.remove('drop-target-valid', 'drop-target-invalid');
+    }
+    
+    // Reset state
+    dragState.isDragging = false;
+    dragState.sceneId = null;
+    dragState.sceneData = null;
+    dragState.currentDropTarget = null;
+}
 
 // =================================================================
 // UNSCHEDULED SCENES
@@ -1010,7 +1110,7 @@ function renderUnscheduledScenes() {
 }
 
 function createUnscheduledSceneCard(scene) {
-    console.log('🎬 Creating card for scene:', scene.scene_number, 'time:', scene.time, 'conditions:', scene.conditions);
+    console.log('🎬 Creating card for scene:', scene.scene_number);
     
     // Use the reusable scene card renderer
     const card = renderSceneCard(scene, {
@@ -1026,161 +1126,100 @@ function createUnscheduledSceneCard(scene) {
         continuityOptions: settingsService.getContinuityOptions()
     });
     
-    // Make it draggable
-    card.draggable = true;
-    card.classList.add('cursor-move');
+    // Add data attribute for cleanup
+    card.setAttribute('data-scene-id', scene.id);
     
-    console.log('✅ Card draggable attribute:', card.draggable, 'element:', card);
-    
-    // Drag start
-    card.addEventListener('dragstart', (e) => {
-        console.log('🎯 DRAGSTART handler fired!', e);
-        draggedSceneId = scene.id;
-        e.dataTransfer.setData('sceneId', scene.id);
-        e.dataTransfer.setData('text/plain', scene.id); // Add this for compatibility
-        e.dataTransfer.effectAllowed = 'move';
-        card.classList.add('opacity-50');
-        console.log('🔵 DRAG START:', { 
-            scene: scene.scene_number, 
-            id: scene.id,
-            hasLocation: !!scene.location_id,
-            hasIntExt: !!scene.int_ext,
-            dataTransfer: e.dataTransfer
-        });
+    // Pointer-based drag (touch + mouse compatible)
+    const pointerInput = new PointerInput(card, {
+        threshold: 5, // Touch-friendly threshold
+        
+        onStart: (data) => {
+            console.log('🎯 Drag start:', scene.scene_number);
+            
+            // Update state
+            dragState.isDragging = true;
+            dragState.sceneId = scene.id;
+            dragState.sceneData = scene;
+            dragState.startX = data.x;
+            dragState.startY = data.y;
+            
+            // Create ghost element
+            dragState.ghostElement = createGhostElement(card, data.x, data.y);
+            document.body.appendChild(dragState.ghostElement);
+            
+            // Hide original (semi-transparent)
+            card.style.opacity = '0.4';
+            card.style.pointerEvents = 'none';
+        },
+        
+        onMove: (data) => {
+            if (!dragState.isDragging || !dragState.ghostElement) return;
+            
+            // Update ghost position
+            dragState.ghostElement.style.left = `${data.x}px`;
+            dragState.ghostElement.style.top = `${data.y}px`;
+            
+            // Detect drop target
+            const cellData = getCellDateFromPoint(data.x, data.y);
+            
+            // Update drop target highlighting
+            if (cellData?.cell !== dragState.currentDropTarget) {
+                // Clear previous highlight
+                if (dragState.currentDropTarget) {
+                    dragState.currentDropTarget.classList.remove('drop-target-valid', 'drop-target-invalid');
+                }
+                
+                // Highlight new target
+                if (cellData) {
+                    const isValid = cellData.isCurrentMonth && !isNonShootingDay(cellData.dateStr);
+                    cellData.cell.classList.add(isValid ? 'drop-target-valid' : 'drop-target-invalid');
+                }
+                
+                dragState.currentDropTarget = cellData?.cell || null;
+            }
+        },
+        
+        onEnd: async (data) => {
+            if (!dragState.isDragging) return;
+            
+            console.log('🎯 Drag ended');
+            
+            // Find drop target
+            const cellData = getCellDateFromPoint(data.x, data.y);
+            
+            if (cellData) {
+                // Check validity
+                if (isNonShootingDay(cellData.dateStr)) {
+                    alert('Cannot schedule scenes on non-shooting days');
+                } else if (!cellData.isCurrentMonth) {
+                    // Navigate to that month
+                    console.log('🔄 Dropped on other month, navigating...');
+                    calendar.setDate(new Date(cellData.year, cellData.month, 1));
+                    updateCalendarTitle();
+                    setTimeout(() => applyNonShootingDayStyling(), 100);
+                } else {
+                    // Schedule the scene
+                    console.log('📅 Scheduling scene', dragState.sceneId, 'on', cellData.dateStr);
+                    await scheduleScene(dragState.sceneId, cellData.dateStr);
+                }
+            }
+            
+            // Cleanup
+            cleanupDrag();
+        },
+        
+        onCancel: () => {
+            console.log('🚫 Drag cancelled');
+            cleanupDrag();
+        }
     });
     
-    card.addEventListener('dragend', () => {
-        card.classList.remove('opacity-50');
-        console.log('🔴 DRAG END for scene:', scene.scene_number);
-        draggedSceneId = null;
-    });
+    pointerInput.enable();
+    
+    // Store reference for cleanup
+    card._pointerInput = pointerInput;
     
     return card;
-}
-
-// Setup drop zone on calendar
-function setupCalendarDropZone() {
-    const calendarEl = document.getElementById('calendar');
-    const calendarContainer = calendarEl.parentElement; // The flex-1 overflow-hidden p-6 div
-    
-    console.log('🎯 Setting up calendar drop zone on:', {
-        calendar: calendarEl,
-        container: calendarContainer
-    });
-    
-    // Try document-level listeners to catch everything
-    document.addEventListener('dragover', (e) => {
-        console.log('🌍 Document DRAGOVER - draggedSceneId:', draggedSceneId);
-        
-        // Only handle if we're dragging a scene
-        if (!draggedSceneId) return;
-        
-        // Check if we're over the calendar area
-        const rect = calendarEl.getBoundingClientRect();
-        if (e.clientX >= rect.left && e.clientX <= rect.right &&
-            e.clientY >= rect.top && e.clientY <= rect.bottom) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            console.log('🔄 DRAGOVER calendar area');
-        }
-    });
-    
-    document.addEventListener('drop', async (e) => {
-        // Only handle if we're dragging a scene
-        if (!draggedSceneId) return;
-        
-        // Check if we're over the calendar area
-        const rect = calendarEl.getBoundingClientRect();
-        if (!(e.clientX >= rect.left && e.clientX <= rect.right &&
-              e.clientY >= rect.top && e.clientY <= rect.bottom)) {
-            console.log('⚠️ Drop outside calendar area');
-            return;
-        }
-        
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('💧💧💧 DROP EVENT FIRED 💧💧💧');
-        
-        if (!draggedSceneId) {
-            console.log('⚠️ No draggedSceneId on drop');
-            return;
-        }
-        
-        console.log('💧 DROP EVENT triggered');
-        
-        // Find the calendar cell - Toast UI uses 'toastui-calendar-daygrid-cell'
-        let cell = e.target.closest('.toastui-calendar-daygrid-cell');
-        if (!cell && e.target.classList.contains('toastui-calendar-daygrid-cell')) {
-            cell = e.target;
-        }
-        
-        if (!cell) {
-            console.log('⚠️ Could not find calendar cell');
-            draggedSceneId = null;
-            return;
-        }
-        
-        console.log('📍 Found cell!');
-        
-        // Get all cells to calculate index
-        const dayCells = document.querySelectorAll('.toastui-calendar-daygrid-cell');
-        const cellIndex = Array.from(dayCells).indexOf(cell);
-        
-        if (cellIndex === -1) {
-            console.log('⚠️ Could not find cell index');
-            draggedSceneId = null;
-            return;
-        }
-        
-        // Calculate the exact date using same logic as applyNonShootingDayStyling
-        const currentDate = calendar.getDate();
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth(); // 0-indexed
-        
-        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-        const startDayOfWeek = firstDayOfMonth.getDay();
-        const daysFromPrevMonth = (startDayOfWeek === 0 ? 6 : startDayOfWeek - 1);
-        const gridStartDate = new Date(currentYear, currentMonth, 1 - daysFromPrevMonth);
-        
-        // Calculate the actual date for this cell
-        const cellDate = new Date(gridStartDate);
-        cellDate.setDate(gridStartDate.getDate() + cellIndex);
-        
-        const dropYear = cellDate.getFullYear();
-        const dropMonth = cellDate.getMonth(); // 0-indexed
-        const dropDay = cellDate.getDate();
-        const dateStr = `${dropYear}-${String(dropMonth + 1).padStart(2, '0')}-${String(dropDay).padStart(2, '0')}`;
-        
-        console.log('📅 Drop date calculated:', {
-            cellIndex,
-            dropYear,
-            dropMonth: dropMonth + 1,
-            dropDay,
-            fullDate: dateStr,
-        });
-        
-        // Check if dropping on a different month - navigate there instead
-        if (dropMonth !== currentMonth || dropYear !== currentYear) {
-            console.log('🔄 Dropped on other month, navigating...');
-            calendar.setDate(new Date(dropYear, dropMonth, 1));
-            updateCalendarTitle();
-            setTimeout(() => applyNonShootingDayStyling(), 100);
-            draggedSceneId = null;
-            return;
-        }
-        
-        // Check if trying to drop on a non-shooting day
-        if (isNonShootingDay(dateStr)) {
-            alert('Cannot schedule scenes on non-shooting days');
-            draggedSceneId = null;
-            return;
-        }
-        
-        // Schedule the scene
-        const sceneIdToSchedule = draggedSceneId;
-        draggedSceneId = null;
-        await scheduleScene(sceneIdToSchedule, dateStr);
-    });
 }
 
 // =================================================================
@@ -1278,9 +1317,6 @@ function setupEventListeners() {
     });
     
     // Settings configuration button - old drawer form handlers removed (now using EditScreen component)
-    
-    // Setup calendar drop zone
-    setupCalendarDropZone();
     
     // Initial title
     updateCalendarTitle();
