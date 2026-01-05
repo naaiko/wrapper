@@ -658,9 +658,12 @@ function enableManualScroll() {
     let startX;
     let scrollLeft;
     
-    // Handle mousedown on entire document to catch all empty space
-    document.addEventListener('mousedown', (e) => {
-        console.log('[MANUAL SCROLL] Mousedown event', e.target);
+    // Handle pointerdown on entire document to catch all empty space (touch + mouse + pen)
+    document.addEventListener('pointerdown', (e) => {
+        // Only handle primary pointer
+        if (!e.isPrimary) return;
+        
+        console.log('[MANUAL SCROLL] Pointerdown event', e.target);
         
         // Check if clicking on excluded elements
         const excludedSelectors = [
@@ -690,27 +693,27 @@ function enableManualScroll() {
         startX = e.pageX - container.offsetLeft;
         scrollLeft = container.scrollLeft;
         document.body.style.cursor = 'grabbing';
-        e.preventDefault(); // Prevent text selection
+        e.preventDefault(); // Prevent text selection and default touch behaviors
     });
     
-    document.addEventListener('mouseleave', () => {
-        if (isScrolling) {
-            console.log('[MANUAL SCROLL] Mouse left document');
+    document.addEventListener('pointerup', (e) => {
+        if (isScrolling && e.isPrimary) {
+            console.log('[MANUAL SCROLL] Pointer up');
             isScrolling = false;
             document.body.style.cursor = 'default';
         }
     });
     
-    document.addEventListener('mouseup', () => {
-        if (isScrolling) {
-            console.log('[MANUAL SCROLL] Mouse up');
+    document.addEventListener('pointercancel', (e) => {
+        if (isScrolling && e.isPrimary) {
+            console.log('[MANUAL SCROLL] Pointer cancelled');
             isScrolling = false;
             document.body.style.cursor = 'default';
         }
     });
     
-    document.addEventListener('mousemove', (e) => {
-        if (!isScrolling) return;
+    document.addEventListener('pointermove', (e) => {
+        if (!isScrolling || !e.isPrimary) return;
         e.preventDefault();
         const x = e.pageX - container.offsetLeft;
         const walk = (x - startX) * 1.5; // Scroll speed multiplier
@@ -793,26 +796,38 @@ function updateMinimap() {
         });
     });
     
-    // Drag viewport indicator - optimized for smooth dragging
+    // Drag viewport indicator - optimized for smooth dragging (touch + mouse + pen)
     let isDraggingViewport = false;
     let minimapRect = null;
+    let viewportPointerId = null;
     
-    minimapViewport.addEventListener('mousedown', (e) => {
+    minimapViewport.addEventListener('pointerdown', (e) => {
+        // Only handle primary pointer
+        if (!e.isPrimary) return;
+        
         isDraggingViewport = true;
+        viewportPointerId = e.pointerId;
         minimapRect = minimap.getBoundingClientRect(); // Cache rect
         e.stopPropagation();
         e.preventDefault();
         minimapViewport.style.cursor = 'grabbing';
         minimapViewport.style.transition = 'none'; // Disable transition during drag
         document.body.style.userSelect = 'none'; // Prevent text selection
+        
+        // Capture pointer for reliable tracking
+        try {
+            minimapViewport.setPointerCapture(e.pointerId);
+        } catch (err) {
+            console.warn('Pointer capture failed:', err);
+        }
     });
     
-    document.addEventListener('mousemove', (e) => {
-        if (!isDraggingViewport || !minimapRect) return;
+    minimapViewport.addEventListener('pointermove', (e) => {
+        if (!isDraggingViewport || !minimapRect || e.pointerId !== viewportPointerId) return;
         
         e.preventDefault(); // Prevent any default behavior
         
-        // Calculate position directly from mouse X position
+        // Calculate position directly from pointer X position
         const relativeX = e.clientX - minimapRect.left;
         const percentage = Math.max(0, Math.min(1, relativeX / minimapRect.width));
         
@@ -822,15 +837,27 @@ function updateMinimap() {
         
         // Direct scroll (no smooth behavior for instant response)
         container.scrollLeft = targetScroll;
-    }, { passive: false });
+    });
     
-    document.addEventListener('mouseup', () => {
-        if (isDraggingViewport) {
+    minimapViewport.addEventListener('pointerup', (e) => {
+        if (isDraggingViewport && e.pointerId === viewportPointerId) {
             isDraggingViewport = false;
             minimapRect = null;
+            viewportPointerId = null;
             minimapViewport.style.cursor = 'pointer';
             minimapViewport.style.transition = ''; // Re-enable transition
             document.body.style.userSelect = ''; // Re-enable text selection
+        }
+    });
+    
+    minimapViewport.addEventListener('pointercancel', (e) => {
+        if (isDraggingViewport && e.pointerId === viewportPointerId) {
+            isDraggingViewport = false;
+            minimapRect = null;
+            viewportPointerId = null;
+            minimapViewport.style.cursor = 'pointer';
+            minimapViewport.style.transition = '';
+            document.body.style.userSelect = '';
         }
     });
 }
@@ -939,7 +966,10 @@ function initZoomControls() {
     let startViewportWidth = 0;
     let cachedMinimapRect = null;
     
-    minimapViewport.addEventListener('mousedown', (e) => {
+    minimapViewport.addEventListener('pointerdown', (e) => {
+        // Only handle primary pointer
+        if (!e.isPrimary) return;
+        
         const resizeHandle = e.target.closest('[data-resize]');
         if (resizeHandle) {
             // Set flag FIRST to prevent any viewport updates
@@ -959,18 +989,25 @@ function initZoomControls() {
             
             e.preventDefault();
             e.stopPropagation();
+            
+            // Capture pointer for reliable tracking
+            try {
+                minimapViewport.setPointerCapture(e.pointerId);
+            } catch (err) {
+                // Might already be captured for drag
+            }
         }
     });
     
-    document.addEventListener('mousemove', (e) => {
-        if (!isResizing || !cachedMinimapRect) return;
+    document.addEventListener('pointermove', (e) => {
+        if (!isResizing || !cachedMinimapRect || !e.isPrimary) return;
         
-        const deltaX = e.clientX - startX; // How far the cursor moved
+        const deltaX = e.clientX - startX; // How far the pointer moved
         
         let newLeft, newWidth;
         
         if (resizeSide === 'left') {
-            // Dragging LEFT edge: left edge follows cursor EXACTLY, right edge stays fixed
+            // Dragging LEFT edge: left edge follows pointer EXACTLY, right edge stays fixed
             newLeft = startViewportLeft + deltaX;
             newWidth = startViewportWidth - deltaX; // Width shrinks when moving right
             
@@ -981,7 +1018,7 @@ function initZoomControls() {
             newWidth = startViewportLeft + startViewportWidth - newLeft;
             
         } else if (resizeSide === 'right') {
-            // Dragging RIGHT edge: right edge follows cursor EXACTLY, left edge stays fixed
+            // Dragging RIGHT edge: right edge follows pointer EXACTLY, left edge stays fixed
             newLeft = startViewportLeft; // Left stays fixed
             newWidth = startViewportWidth + deltaX; // Width grows when moving right
             
@@ -1006,17 +1043,28 @@ function initZoomControls() {
         e.preventDefault();
     });
     
-    document.addEventListener('mouseup', () => {
-        if (isResizing) {
+    document.addEventListener('pointerup', (e) => {
+        if (isResizing && e.isPrimary) {
             // Clear cached rect
             cachedMinimapRect = null;
             // Clear flag after a short delay to prevent immediate viewport snap
             setTimeout(() => {
                 window.isResizingViewport = false;
             }, 100);
+            isResizing = false;
+            resizeSide = null;
         }
-        isResizing = false;
-        resizeSide = null;
+    });
+    
+    document.addEventListener('pointercancel', (e) => {
+        if (isResizing && e.isPrimary) {
+            cachedMinimapRect = null;
+            setTimeout(() => {
+                window.isResizingViewport = false;
+            }, 100);
+            isResizing = false;
+            resizeSide = null;
+        }
     });
     
     zoomResetBtn.addEventListener('click', () => {

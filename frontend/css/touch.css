@@ -1,0 +1,414 @@
+/* =================================================================
+   TOUCH INTERACTION OPTIMIZATIONS
+   ================================================================= 
+   
+   Systematic touch-action declarations and touch-friendly enhancements
+   for mouse, touch, and pen input across all devices.
+   
+   Based on W3C Pointer Events specification and iOS/Android best practices.
+*/
+
+/* =================================================================
+   1. PREVENT DOUBLE-TAP ZOOM ON INTERACTIVE ELEMENTS
+   ================================================================= */
+
+/* All buttons and clickable elements should respond immediately */
+button,
+[role="button"],
+.btn,
+a:not([href="#"]),
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+    touch-action: manipulation;
+    /* Prevents 300ms delay on mobile browsers */
+    /* Allows single-tap only, no double-tap zoom */
+}
+
+/* =================================================================
+   2. DRAG ZONES - PREVENT ALL DEFAULT TOUCH BEHAVIORS
+   ================================================================= */
+
+/* Scene cards that can be dragged */
+.scene-card {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    /* Prevent text selection during drag */
+}
+
+/* Timeline container - horizontal drag-scroll */
+#sceneContainer {
+    touch-action: pan-y pinch-zoom;
+    /* Allow vertical scroll and pinch zoom, but handle horizontal ourselves */
+}
+
+/* Minimap viewport - custom drag behavior */
+#minimapViewport,
+.minimap-viewport {
+    touch-action: none;
+    cursor: pointer;
+    /* We handle all touch/pointer events */
+}
+
+/* Minimap resize handles */
+[data-resize] {
+    touch-action: none;
+    cursor: ew-resize;
+    /* Prevent any default behaviors during resize */
+}
+
+/* =================================================================
+   3. SCROLL CONTAINERS
+   ================================================================= */
+
+/* Vertical scroll containers */
+.unscheduled-scenes-list,
+.scene-list-container,
+.dropdown-content,
+.scene-selector-dropdown,
+.modal-content {
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    /* iOS momentum scrolling */
+    overscroll-behavior: contain;
+    /* Prevent scroll chaining */
+}
+
+/* Horizontal scroll containers */
+.timeline-container,
+.minimap-container,
+.horizontal-scroll {
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+}
+
+/* Bi-directional scroll (e.g., calendar grid) */
+.calendar-grid,
+.toastui-calendar-week-view-day-names,
+.toastui-calendar-panel {
+    touch-action: pan-x pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* =================================================================
+   4. SVG INTERACTIVE ELEMENTS
+   ================================================================= */
+
+/* Actor silhouette - we handle all interactions */
+.actor-silhouette,
+.layer-bodyshots rect,
+.layer-accesories circle,
+.layer-outfit path {
+    touch-action: none;
+    cursor: pointer;
+    /* Prevent default touch gestures like zoom/pan */
+}
+
+/* Make SVG zones large enough for touch */
+.layer-bodyshots rect,
+.layer-accesories circle {
+    /* Minimum 44x44px hit area handled via padding in SVG */
+    stroke-width: 3;
+    /* Larger stroke for better touch targeting */
+}
+
+/* =================================================================
+   5. FORM INPUTS - ALLOW DEFAULT BEHAVIORS
+   ================================================================= */
+
+/* Let form inputs handle their own touch behaviors */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select,
+.input,
+.textarea,
+.select {
+    touch-action: manipulation;
+    /* Allow native keyboard and selection behaviors */
+}
+
+/* Range sliders need pan-x for dragging */
+input[type="range"] {
+    touch-action: pan-x;
+}
+
+/* Checkboxes and radios */
+input[type="checkbox"],
+input[type="radio"] {
+    touch-action: manipulation;
+    /* Minimum touch target size */
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* =================================================================
+   6. NAVIGATION & DROPDOWNS
+   ================================================================= */
+
+/* Top navigation */
+#topNavigation,
+.navbar,
+nav {
+    touch-action: manipulation;
+    /* Prevent accidental scrolling */
+}
+
+/* Dropdown triggers */
+.dropdown-toggle,
+[data-dropdown],
+.custom-dropdown__trigger {
+    touch-action: manipulation;
+    /* Immediate response, no delays */
+    min-height: 44px;
+    /* WCAG minimum */
+}
+
+/* Close buttons and small actions */
+.btn-close,
+.close-button,
+[aria-label="Close"] {
+    touch-action: manipulation;
+    min-width: 44px;
+    min-height: 44px;
+    /* Ensure touchable size */
+}
+
+/* =================================================================
+   7. CARDS & CLICKABLE CONTAINERS
+   ================================================================= */
+
+/* Project cards, actor cards, etc. */
+.card,
+.project-card,
+.actor-card {
+    touch-action: manipulation;
+    /* Single tap to select/open */
+}
+
+/* Scene selector mobile button */
+.scene-selector-button {
+    touch-action: manipulation;
+    min-height: 48px;
+    /* Slightly larger for important action */
+}
+
+/* =================================================================
+   8. MODALS & OVERLAYS
+   ================================================================= */
+
+/* Modal backdrops - allow tap to close */
+.modal-backdrop,
+.backdrop,
+[data-backdrop] {
+    touch-action: auto;
+    /* Allow default tap behavior */
+}
+
+/* Edit screens and slide-out panels */
+.edit-screen,
+.slide-panel,
+.subdock {
+    touch-action: pan-y;
+    /* Allow vertical scroll inside */
+    overscroll-behavior: contain;
+}
+
+/* =================================================================
+   9. CALENDAR-SPECIFIC
+   ================================================================= */
+
+/* Unscheduled scene cards (draggable to calendar) */
+.unscheduled-scene-card {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.unscheduled-scene-card:active,
+.unscheduled-scene-card.dragging {
+    cursor: grabbing;
+}
+
+/* Calendar day cells - allow our custom drop logic */
+.toastui-calendar-weekday-grid,
+.toastui-calendar-panel-grid {
+    touch-action: pan-y;
+    /* Allow vertical scroll, handle drops ourselves */
+}
+
+/* Calendar events (already placed scenes) */
+.toastui-calendar-event {
+    touch-action: none;
+    /* We handle dragging for rescheduling */
+}
+
+/* =================================================================
+   10. ICON PICKERS & SELECTION GRIDS
+   ================================================================= */
+
+/* Icon grid items */
+.icon-grid button,
+.icon-picker-grid button {
+    touch-action: manipulation;
+    min-width: 44px;
+    min-height: 44px;
+    /* WCAG compliant touch targets */
+}
+
+/* Property selection buttons (time, conditions, etc.) */
+.time-buttons button,
+.condition-buttons button,
+.property-selector button {
+    touch-action: manipulation;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* =================================================================
+   11. WEBKIT-SPECIFIC OPTIMIZATIONS
+   ================================================================= */
+
+/* Disable callout menu on long-press (iOS) */
+.scene-card,
+.draggable,
+[draggable="true"] {
+    -webkit-touch-callout: none;
+}
+
+/* Prevent tap highlight on interactive elements we style ourselves */
+.scene-card,
+.actor-silhouette rect,
+.actor-silhouette circle,
+.minimap-viewport {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth scrolling for containers */
+.scroll-container,
+.timeline-container,
+.scene-list-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* =================================================================
+   12. TOUCH DEVICE SPECIFIC ADJUSTMENTS
+   ================================================================= */
+
+/* Apply larger touch targets on touch-capable devices */
+@media (hover: none) and (pointer: coarse) {
+    /* This matches touch devices (no hover, coarse pointer) */
+    
+    /* Increase minimum button sizes */
+    .btn-sm {
+        min-height: 2.75rem; /* 44px */
+        min-width: 2.75rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .btn-xs {
+        /* Upgrade xs to sm on touch */
+        min-height: 2.75rem;
+        min-width: 2.75rem;
+        padding: 0.375rem 0.875rem;
+    }
+    
+    /* Larger gaps between interactive elements */
+    .btn-group > .btn {
+        margin: 0.25rem;
+    }
+    
+    /* Increase scene card padding for easier grabbing */
+    .scene-card {
+        padding: 1.25rem;
+    }
+    
+    /* Larger icon buttons */
+    .btn-square {
+        min-width: 3rem;
+        min-height: 3rem;
+    }
+    
+    /* More generous dropdown item spacing */
+    .dropdown-content li,
+    .menu li {
+        min-height: 44px;
+    }
+}
+
+/* =================================================================
+   13. PERFORMANCE OPTIMIZATIONS
+   ================================================================= */
+
+/* Use GPU acceleration for draggable elements */
+.scene-card,
+.dragging,
+.minimap-viewport {
+    will-change: transform;
+}
+
+/* Remove will-change after interaction */
+.scene-card:not(.dragging),
+.minimap-viewport:not(:active) {
+    will-change: auto;
+}
+
+/* =================================================================
+   14. ACCESSIBILITY & VISUAL FEEDBACK
+   ================================================================= */
+
+/* Visible focus for keyboard navigation */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+.btn:focus-visible {
+    outline: 2px solid oklch(var(--p));
+    outline-offset: 2px;
+}
+
+/* Active states for touch feedback */
+button:active,
+.btn:active,
+[role="button"]:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+/* Disable active transform for drag elements */
+.scene-card:active,
+.draggable:active {
+    transform: none;
+}
+
+/* =================================================================
+   15. CUSTOM PROPERTIES FOR DYNAMIC ADJUSTMENTS
+   ================================================================= */
+
+:root {
+    /* Touch target minimum size */
+    --touch-target-min: 44px;
+    
+    /* Spacing between touch targets */
+    --touch-gap: 8px;
+    
+    /* Drag threshold (set in JS, used for visual feedback) */
+    --drag-threshold: 3px;
+}
+
+/* Touch-device class applied via JS */
+.touch-device {
+    /* Can add device-specific overrides here */
+}
+
+/* =================================================================
+   END OF TOUCH OPTIMIZATIONS
+   ================================================================= */
