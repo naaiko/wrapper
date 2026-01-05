@@ -12,6 +12,7 @@ class ReleaseBrowser {
         this.currentReleaseIndex = 0;
         this.viewMode = 'list'; // 'list' or 'calendar'
         this.calendarDate = new Date();
+        this.calendar = null; // Toast UI Calendar instance
     }
     
     /**
@@ -372,6 +373,7 @@ class ReleaseBrowser {
         const navigation = modal.querySelector('#prevRelease').closest('.flex');
         const releaseDetails = modal.querySelector('#releaseDetails');
         const calendarContainer = modal.querySelector('#calendarView');
+        const releaseList = modal.querySelector('#releaseList');
         
         if (this.viewMode === 'calendar') {
             // Calendar mode
@@ -380,6 +382,7 @@ class ReleaseBrowser {
             searchBar.classList.add('hidden');
             navigation.classList.add('hidden');
             releaseDetails.classList.add('hidden');
+            releaseList.classList.add('hidden');
             calendarContainer.classList.remove('hidden');
             this.renderCalendar(modal);
         } else {
@@ -388,143 +391,100 @@ class ReleaseBrowser {
             calendarView.classList.remove('btn-active');
             searchBar.classList.remove('hidden');
             calendarContainer.classList.add('hidden');
+            
+            // Clean up calendar if it exists
+            if (this.calendar) {
+                this.calendar.destroy();
+                this.calendar = null;
+            }
+            
+            // Show navigation only if not searching
+            if (!this.searchTerm) {
+                navigation.classList.remove('hidden');
+                releaseDetails.classList.remove('hidden');
+                releaseList.classList.add('hidden');
+            }
+            
             this.handleSearch(modal);
         }
     }
     
     renderCalendar(modal) {
         const container = modal.querySelector('#calendarView');
-        const year = this.calendarDate.getFullYear();
-        const month = this.calendarDate.getMonth();
         
-        // Get first and last day of month
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const startDay = firstDay.getDay(); // 0 = Sunday
-        const daysInMonth = lastDay.getDate();
-        
-        // Get releases for this month
-        const monthReleases = this.releases.filter(r => {
-            const releaseDate = new Date(r.date);
-            return releaseDate.getMonth() === month && releaseDate.getFullYear() === year;
-        });
-        
-        // Group releases by day
-        const releasesByDay = {};
-        monthReleases.forEach(release => {
-            const day = new Date(release.date).getDate();
-            if (!releasesByDay[day]) releasesByDay[day] = [];
-            releasesByDay[day].push(release);
-        });
-        
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        
-        let html = `
-            <div class="release-calendar">
-                <div class="calendar-header">
-                    <button id="prevMonth" class="btn btn-sm btn-ghost calendar-nav-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-                    <div class="calendar-month">${monthNames[month]} ${year}</div>
-                    <button id="nextMonth" class="btn btn-sm btn-ghost calendar-nav-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
-                
-                <div class="calendar-grid">
-        `;
-        
-        // Day headers
-        dayNames.forEach(day => {
-            html += `<div class="calendar-day-header">${day}</div>`;
-        });
-        
-        // Empty cells before first day
-        for (let i = 0; i < startDay; i++) {
-            const prevMonthDay = new Date(year, month, -startDay + i + 1).getDate();
-            html += `<div class="calendar-day other-month"><div class="day-number">${prevMonthDay}</div></div>`;
+        // Clean up existing calendar
+        if (this.calendar) {
+            this.calendar.destroy();
         }
         
-        // Days of month
-        const today = new Date();
-        for (let day = 1; day <= daysInMonth; day++) {
-            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-            const hasReleases = releasesByDay[day];
-            const todayClass = isToday ? 'today' : '';
-            const releaseClass = hasReleases ? 'has-release' : '';
-            
-            html += `
-                <div class="calendar-day ${todayClass} ${releaseClass}" data-day="${day}">
-                    <div class="day-number">${day}</div>
-                    <div class="day-releases">
-            `;
-            
-            if (hasReleases) {
-                hasReleases.forEach(release => {
-                    html += `
-                        <div class="release-dot ${release.type}" title="${release.name}">
-                            v${release.version}
+        // Create calendar container
+        container.innerHTML = '<div id="releaseCalendar" class="release-calendar-toastui"></div>';
+        const calendarEl = container.querySelector('#releaseCalendar');
+        
+        // Initialize Toast UI Calendar
+        this.calendar = new tui.Calendar(calendarEl, {
+            defaultView: 'month',
+            useFormPopup: false,
+            useDetailPopup: false,
+            isReadOnly: true,
+            week: {
+                startDayOfWeek: 1, // Monday start
+            },
+            month: {
+                startDayOfWeek: 1,
+                visibleEventCount: 3,
+            },
+            template: {
+                monthGridHeaderExceed(hiddenEvents) {
+                    return `<span class="text-xs">+${hiddenEvents}</span>`;
+                },
+                monthDayName(model) {
+                    return `<span class="text-sm font-semibold">${model.label}</span>`;
+                },
+                allday(event) {
+                    const release = event.raw;
+                    const typeColors = {
+                        'major': 'badge-error',
+                        'minor': 'badge-info', 
+                        'patch': 'badge-success'
+                    };
+                    const badgeClass = typeColors[release.type] || 'badge-neutral';
+                    
+                    return `
+                        <div class="flex items-center gap-1 px-1">
+                            <span class="badge ${badgeClass} badge-xs">v${release.version}</span>
+                            <span class="text-xs truncate">${release.name}</span>
                         </div>
                     `;
-                });
-            }
-            
-            html += `
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Empty cells after last day
-        const totalCells = startDay + daysInMonth;
-        const remainingCells = 7 - (totalCells % 7);
-        if (remainingCells < 7) {
-            for (let i = 1; i <= remainingCells; i++) {
-                html += `<div class="calendar-day other-month"><div class="day-number">${i}</div></div>`;
-            }
-        }
-        
-        html += `
-                </div>
-            </div>
-        `;
-        
-        container.innerHTML = html;
-        
-        // Add event listeners for calendar navigation
-        container.querySelector('#prevMonth').addEventListener('click', () => {
-            this.calendarDate.setMonth(this.calendarDate.getMonth() - 1);
-            this.renderCalendar(modal);
-        });
-        
-        container.querySelector('#nextMonth').addEventListener('click', () => {
-            this.calendarDate.setMonth(this.calendarDate.getMonth() + 1);
-            this.renderCalendar(modal);
-        });
-        
-        // Add click handlers for days with releases
-        container.querySelectorAll('.calendar-day.has-release').forEach(dayEl => {
-            dayEl.addEventListener('click', () => {
-                const day = parseInt(dayEl.dataset.day);
-                const releases = releasesByDay[day];
-                
-                if (releases.length === 1) {
-                    // Single release - show it directly
-                    const index = this.releases.findIndex(r => r.version === releases[0].version);
-                    this.currentReleaseIndex = index;
-                    this.viewMode = 'list';
-                    this.updateView(modal);
-                } else {
-                    // Multiple releases - show list
-                    this.showReleasesForDay(modal, releases);
                 }
-            });
+            }
+        });
+        
+        // Convert releases to calendar events
+        const events = this.releases.map(release => ({
+            id: release.version,
+            calendarId: '1',
+            title: `v${release.version} - ${release.name}`,
+            start: release.date,
+            end: release.date,
+            isAllday: true,
+            backgroundColor: this.getReleaseColor(release.type),
+            borderColor: this.getReleaseColor(release.type),
+            raw: release
+        }));
+        
+        this.calendar.createEvents(events);
+        
+        // Set to current date
+        this.calendar.setDate(this.calendarDate);
+        
+        // Add click handler for events
+        this.calendar.on('clickEvent', ({ event }) => {
+            const release = event.raw;
+            const index = this.releases.findIndex(r => r.version === release.version);
+            this.currentReleaseIndex = index;
+            this.viewMode = 'list';
+            this.updateView(modal);
         });
     }
     
@@ -545,6 +505,15 @@ class ReleaseBrowser {
             `${count} release${count !== 1 ? 's' : ''} on ${releases[0].date}`;
         
         this.renderSearchResults(modal);
+    }
+    
+    getReleaseColor(type) {
+        const colors = {
+            'major': '#f87171',  // red-400
+            'minor': '#60a5fa',  // blue-400
+            'patch': '#4ade80'   // green-400
+        };
+        return colors[type] || '#a3a3a3'; // neutral-400
     }
 }
 

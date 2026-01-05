@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cupcake">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release Browser Test</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- DaisyUI CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Toast UI Calendar CSS -->
+    <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
+    
+    <!-- Calendar CSS -->
+    <link rel="stylesheet" href="css/release-calendar.css">
+    
+    <!-- Toast UI Calendar JS -->
+    <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+</head>
+<body class="bg-base-200 min-h-screen flex items-center justify-center">
+    <div class="card bg-base-100 shadow-xl max-w-4xl w-full mx-4">
+        <div class="card-body">
+            <h1 class="card-title text-3xl mb-4">Release Browser Test</h1>
+            
+            <div class="space-y-4">
+                <div class="alert alert-info">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h3 class="font-bold">Testing v0.2.1 Features</h3>
+                        <div class="text-xs">Release Browser with Calendar View & Search</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="showReleaseNotes()" class="btn btn-primary btn-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Show Current Release (v0.2.1)
+                    </button>
+                    
+                    <button onclick="browseReleases()" class="btn btn-secondary btn-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Browse All Releases (Calendar View)
+                    </button>
+                </div>
+                
+                <div class="divider">Features</div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="stat bg-base-200 rounded-box">
+                        <div class="stat-figure text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <div class="stat-title">Search</div>
+                        <div class="stat-value text-2xl">Real-time</div>
+                        <div class="stat-desc">Filter releases instantly</div>
+                    </div>
+                    
+                    <div class="stat bg-base-200 rounded-box">
+                        <div class="stat-figure text-secondary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="stat-title">Calendar</div>
+                        <div class="stat-value text-2xl">Visual</div>
+                        <div class="stat-desc">See releases by day</div>
+                    </div>
+                    
+                    <div class="stat bg-base-200 rounded-box">
+                        <div class="stat-figure text-accent">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="stat-title">Commits</div>
+                        <div class="stat-value text-2xl">Full</div>
+                        <div class="stat-desc">Git messages preserved</div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h3 class="font-bold">Ready for Testing!</h3>
+                        <div class="text-xs">All features integrated and validated</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Release Notes Scripts -->
+    <script type="module">
+        import ReleaseNotes from './js/utils/releaseNotes.js';
+        import ReleaseBrowser from './js/utils/releaseBrowser.js';
+        
+        // Make available globally
+        window.showReleaseNotes = async () => {
+            const releaseNotes = new ReleaseNotes();
+            await releaseNotes.showModal();
+        };
+        
+        window.browseReleases = async () => {
+            const releaseBrowser = new ReleaseBrowser();
+            await releaseBrowser.show();
+        };
+        
+        console.log('✅ Release Browser loaded successfully');
+        console.log('📅 Click "Browse All Releases" to see the calendar view');
+    </script>
+</body>
+</html>
