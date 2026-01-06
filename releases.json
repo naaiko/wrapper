@@ -1,6 +1,27 @@
 {
   "releases": [
     {
+      "version": "0.2.3.03",
+      "date": "2026-01-06",
+      "name": "Hotfix: release notes & demo import",
+      "type": "hotfix",
+      "branch": "main",
+      "commits": ["79e40a4", "74360ba"],
+      "commitMessage": "fix: release notes path + demo import",
+      "features": [],
+      "bugfixes": [
+        "Demo script import works on production (absolute docs/resources path, correct file size)",
+        "Release notes modal works under /frontend hosting",
+        "Improved logging and error toasts for release notes"
+      ],
+      "technical": [
+        "Hotfix version bumps 0.2.3.01 → .03"
+      ],
+      "breaking": [],
+      "deprecated": [],
+      "documentation": []
+    },
+    {
       "version": "0.2.3",
       "date": "2026-01-06",
       "name": "Characters & Script Import",
