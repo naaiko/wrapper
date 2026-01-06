@@ -16,8 +16,24 @@
  */
 
 class ReleaseNotes {
-    static RELEASES_URL = '/releases.json';
-    static CHANGELOG_URL = '/CHANGELOG.md';
+    static getBaseUrl() {
+        // If the site is served from /frontend/ or any subfolder, walk up to the repo root
+        const { origin, pathname } = window.location;
+        const idx = pathname.indexOf('/frontend/');
+        if (idx !== -1) {
+            return origin + pathname.substring(0, idx + 1); // include trailing slash
+        }
+        // Fallback to origin root
+        return origin + '/';
+    }
+
+    static get RELEASES_URL() {
+        return `${this.getBaseUrl()}releases.json`;
+    }
+
+    static get CHANGELOG_URL() {
+        return `${this.getBaseUrl()}CHANGELOG.md`;
+    }
     
     /**
      * Fetch all releases
