@@ -17,13 +17,15 @@
 
 class ReleaseNotes {
     static getBaseUrl() {
-        // If the site is served from /frontend/ or any subfolder, walk up to the repo root
         const { origin, pathname } = window.location;
-        const idx = pathname.indexOf('/frontend/');
-        if (idx !== -1) {
-            return origin + pathname.substring(0, idx + 1); // include trailing slash
+        const parts = pathname.split('/').filter(Boolean); // remove empties
+        const frontendIdx = parts.indexOf('frontend');
+        if (frontendIdx !== -1) {
+            // path before 'frontend'
+            const baseParts = parts.slice(0, frontendIdx);
+            const basePath = '/' + (baseParts.length ? baseParts.join('/') + '/' : '');
+            return origin + basePath;
         }
-        // Fallback to origin root
         return origin + '/';
     }
 
