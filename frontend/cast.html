@@ -171,6 +171,40 @@
         </form>
     </dialog>
 
+    <!-- Settings Modal -->
+    <dialog id="castSettingsModal" class="modal">
+        <div class="modal-box w-11/12 max-w-3xl">
+            <h3 class="font-bold text-lg mb-4">Cast Settings</h3>
+            
+            <div role="tablist" class="tabs tabs-boxed mb-4">
+                <button role="tab" class="tab tab-active" data-settings-tab="assignment-types">Assignment Types</button>
+            </div>
+            
+            <div id="settingsTabContent">
+                <!-- Assignment Types Tab -->
+                <div id="assignmentTypesTab" class="settings-tab-content">
+                    <p class="text-sm text-gray-500 mb-4">Configure the assignment types available for cast members. These will appear in the filter dropdown.</p>
+                    
+                    <div id="assignmentTypesList" class="space-y-2 mb-4">
+                        <!-- Dynamic list of assignment types -->
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="newAssignmentType" placeholder="New assignment type" class="input input-bordered input-sm flex-1" />
+                        <button id="addAssignmentTypeBtn" class="btn btn-primary btn-sm">Add Type</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-action">
+                <button class="btn btn-sm" onclick="document.getElementById('castSettingsModal').close()">Close</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
     <!-- Dock (Bottom Center) -->
     <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
         <div class="bg-base-100 shadow-2xl rounded-2xl px-4 py-3 flex items-center gap-2">
@@ -196,9 +230,10 @@
                 </label>
                 <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 mb-2">
                     <li><a data-filter="all" class="filter-option active">All Actors</a></li>
-                    <li><a data-filter="hoofdrol" class="filter-option">Hoofdrol</a></li>
-                    <li><a data-filter="bijrol" class="filter-option">Bijrol</a></li>
-                    <li><a data-filter="figurant" class="filter-option">Figurant</a></li>
+                    <li><a data-filter="actor" class="filter-option">Actor</a></li>
+                    <li><a data-filter="stunt" class="filter-option">Stunt</a></li>
+                    <li><a data-filter="voice-over" class="filter-option">Voice-over</a></li>
+                    <li><a data-filter="stand-in" class="filter-option">Stand-in</a></li>
                 </ul>
             </div>
             
@@ -223,6 +258,16 @@
             <button id="clearFiltersBtn" class="btn btn-sm btn-circle bg-base-300/50 hover:bg-base-300 border-none" title="Clear filters">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <div class="divider divider-horizontal mx-0 my-0"></div>
+            
+            <!-- Settings Button -->
+            <button id="castSettingsBtn" class="btn btn-square btn-sm" title="Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
             </button>
             

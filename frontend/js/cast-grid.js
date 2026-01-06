@@ -6,6 +6,7 @@ import { CastMemberService } from './services/castMemberService.js';
 import { CharacterService } from './services/characterService.js';
 import { ActorCard } from './components/castMemberCard.js';
 import { CustomDropdown } from './components/customDropdown.js';
+import settingsService from './services/settingsService.js';
 import Toast from './utils/toast.js';
 import { version } from './version.js';
 
@@ -19,6 +20,7 @@ class CastGridApp {
         this.currentSort = 'name';
         this.searchTerm = '';
         this.characterDropdown = null;
+        this.assignmentTypes = [];
         
         // DOM elements
         this.gridContainer = document.getElementById('castGrid');
@@ -33,6 +35,8 @@ class CastGridApp {
         this.quickAddModal = document.getElementById('quickAddModal');
         this.quickAddForm = document.getElementById('quickAddForm');
         this.clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        this.castSettingsBtn = document.getElementById('castSettingsBtn');
+        this.castSettingsModal = document.getElementById('castSettingsModal');
         
         this.init();
     }
@@ -47,8 +51,15 @@ class CastGridApp {
             return;
         }
         
+        // Load settings
+        await settingsService.loadSettings(this.projectId);
+        this.assignmentTypes = settingsService.getAssignmentTypes();
+        
         // Setup event listeners
         this.setupEventListeners();
+        
+        // Update filter dropdown with assignment types
+        this.updateFilterDropdown();
         
         // Load characters for dropdown
         await this.loadCharacters();
@@ -169,6 +180,11 @@ class CastGridApp {
             this.sortOptions[0].classList.add('active');
             
             this.filterAndRender();
+        });
+        
+        // Settings button
+        this.castSettingsBtn.addEventListener('click', () => {
+            this.openSettingsModal();
         });
         
         // Handle actor detail navigation
@@ -470,15 +486,147 @@ class CastGridApp {
             // Re-filter and render
             this.filterAndRender();
             
-            // Show success toast
-            Toast.success(`Actor "${fullName}" created successfully!`);
-            
+            Toast.success(`${fullName} added to cast`);
         } catch (error) {
-            console.error('[CAST GRID] Error Creating cast member:', error);
-            Toast.error('Failed to create actor. Please try again.');
+            console.error('[CAST GRID] Error adding cast member:', error);
+            Toast.error('Failed to add cast member');
         }
     }
+    
+    updateFilterDropdown() {
+        const filterDropdown = document.querySelector('.dropdown-content.menu');
+        if (!filterDropdown) return;
+        
+        // Keep the "All Actors" option, replace the rest with assignment types
+        const allOption = filterDropdown.querySelector('[data-filter="all"]');
+        filterDropdown.innerHTML = '';
+        
+        // Add "All Actors" option back
+        const allLi = document.createElement('li');
+        allLi.innerHTML = `<a data-filter="all" class="filter-option active">All Actors</a>`;
+        filterDropdown.appendChild(allLi);
+        
+        // Add assignment types
+        this.assignmentTypes.forEach(type => {
+            const li = document.createElement('li');
+            li.innerHTML = `<a data-filter="${type.id}" class="filter-option">${type.label}</a>`;
+            filterDropdown.appendChild(li);
+        });
+        
+        // Re-attach event listeners
+        this.filterOptions = document.querySelectorAll('.filter-option');
+        this.filterOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.currentFilter = option.dataset.filter;
+                this.filterLabel.textContent = option.textContent;
+                
+                // Update active state
+                this.filterOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Close dropdown (remove focus)
+                option.blur();
+                document.activeElement?.blur();
+                
+                this.filterAndRender();
+            });
+        });
+    }
+    
+    openSettingsModal() {
+        this.renderAssignmentTypesList();
+        this.castSettingsModal.showModal();
+        
+        // Setup add button
+        const addBtn = document.getElementById('addAssignmentTypeBtn');
+        const input = document.getElementById('newAssignmentType');
+        
+        addBtn.onclick = async () => {
+            const label = input.value.trim();
+            if (!label) return;
+            
+            // Create ID from label (lowercase, replace spaces with hyphens)
+            const id = label.toLowerCase().replace(/\s+/g, '-');
+            
+            // Check if already exists
+            if (this.assignmentTypes.find(t => t.id === id)) {
+                Toast.warning('This assignment type already exists');
+                return;
+            }
+            
+            // Add to list
+            this.assignmentTypes.push({ id, label });
+            
+            // Save to database
+            try {
+                await settingsService.updateAssignmentTypes(this.projectId, this.assignmentTypes);
+                this.renderAssignmentTypesList();
+                this.updateFilterDropdown();
+                input.value = '';
+                Toast.success('Assignment type added');
+            } catch (error) {
+                console.error('Error saving assignment types:', error);
+                Toast.error('Failed to save assignment type');
+                // Remove from list
+                this.assignmentTypes.pop();
+            }
+        };
+        
+        // Allow Enter key to add
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addBtn.click();
+            }
+        };
+    }
+    
+    renderAssignmentTypesList() {
+        const list = document.getElementById('assignmentTypesList');
+        if (!list) return;
+        
+        list.innerHTML = '';
+        
+        this.assignmentTypes.forEach(type => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-2 bg-base-200 rounded';
+            div.innerHTML = `
+                <span>${type.label}</span>
+                <button class="btn btn-ghost btn-sm btn-circle" data-type-id="${type.id}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            `;
+            
+            // Delete button
+            const deleteBtn = div.querySelector('button');
+            deleteBtn.onclick = async () => {
+                // Remove from list
+                this.assignmentTypes = this.assignmentTypes.filter(t => t.id !== type.id);
+                
+                // Save to database
+                try {
+                    await settingsService.updateAssignmentTypes(this.projectId, this.assignmentTypes);
+                    this.renderAssignmentTypesList();
+                    this.updateFilterDropdown();
+                    Toast.success('Assignment type removed');
+                } catch (error) {
+                    console.error('Error saving assignment types:', error);
+                    Toast.error('Failed to remove assignment type');
+                    // Add back to list
+                    this.assignmentTypes.push(type);
+                }
+            };
+            
+            list.appendChild(div);
+        });
+    }
 }
+
+// Initialize the app
+const app = new CastGridApp();
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {

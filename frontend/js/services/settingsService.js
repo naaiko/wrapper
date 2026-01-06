@@ -78,6 +78,16 @@ class SettingsService {
     }
 
     /**
+     * Update assignment types for a project
+     * @param {string} projectId - UUID of the project
+     * @param {Array} types - Array of assignment type objects
+     * @returns {Promise<Object>} Updated settings
+     */
+    async updateAssignmentTypes(projectId, types) {
+        return this.updateSettings(projectId, { assignment_types: types });
+    }
+
+    /**
      * Toggle a feature flag
      * @param {string} projectId - UUID of the project
      * @param {string} featureName - Name of the feature (e.g., 'show_int_ext')
@@ -111,6 +121,17 @@ class SettingsService {
     }
 
     /**
+     * Get assignment types for current project
+     * @returns {Array} Array of assignment type objects
+     */
+    getAssignmentTypes() {
+        if (!this.currentSettings || !this.currentSettings.assignment_types) {
+            return this.getDefaultAssignmentTypes();
+        }
+        return this.currentSettings.assignment_types;
+    }
+
+    /**
      * Get default settings
      * @returns {Object} Default settings object
      */
@@ -121,7 +142,8 @@ class SettingsService {
             show_time: true,
             show_conditions: true,
             show_continuity: true,
-            continuity_options: this.getDefaultContinuityOptions()
+            continuity_options: this.getDefaultContinuityOptions(),
+            assignment_types: this.getDefaultAssignmentTypes()
         };
     }
 
@@ -139,6 +161,19 @@ class SettingsService {
             { id: 'flash-forward', label: 'FLASH FORWARD', description: 'Scene from the future' },
             { id: 'dream-sequence', label: 'DREAM SEQUENCE', description: 'Dream or fantasy' },
             { id: 'montage', label: 'MONTAGE', description: 'Series of shots' }
+        ];
+    }
+
+    /**
+     * Get default assignment types
+     * @returns {Array} Default assignment types
+     */
+    getDefaultAssignmentTypes() {
+        return [
+            { id: 'actor', label: 'Actor' },
+            { id: 'stunt', label: 'Stunt' },
+            { id: 'voice-over', label: 'Voice-over' },
+            { id: 'stand-in', label: 'Stand-in' }
         ];
     }
 

@@ -1,6 +1,35 @@
 {
   "releases": [
     {
+      "version": "0.2.5.02",
+      "date": "2026-01-08",
+      "name": "Hotfix: Configurable Assignment Types",
+      "type": "hotfix",
+      "branch": "main",
+      "commits": [],
+      "commitMessage": "feat: Make cast grid assignment types configurable with settings modal",
+      "features": [
+        "Added settings modal to cast grid with gear icon (similar to calendar settings)",
+        "Assignment types are now fully configurable per project (add/remove types)",
+        "Filter dropdown dynamically updates based on configured assignment types",
+        "Default assignment types: Actor, Stunt, Voice-over, Stand-in"
+      ],
+      "bugfixes": [
+        "Fixed cast grid filter showing Dutch role types (hoofdrol/bijrol/figurant) instead of actual database values",
+        "Filter dropdown now shows correct assignment type options matching the database"
+      ],
+      "technical": [
+        "Added assignment_types JSONB column to project_settings table",
+        "Extended settingsService with getAssignmentTypes() and updateAssignmentTypes()",
+        "Cast grid loads assignment types from settings on init",
+        "Dynamic filter dropdown generation based on project configuration",
+        "Migration: 20250108000001_add_assignment_types.sql"
+      ],
+      "breaking": [],
+      "deprecated": [],
+      "documentation": []
+    },
+    {
       "version": "0.2.5.01",
       "date": "2026-01-06",
       "name": "Hotfix: Cast Grid Filter & Badge Colors",
