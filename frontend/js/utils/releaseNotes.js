@@ -40,9 +40,11 @@ class ReleaseNotes {
      */
     static async getReleases() {
         try {
+            console.log('[RELEASE NOTES] Fetching releases from', this.RELEASES_URL);
             const response = await fetch(this.RELEASES_URL);
             if (!response.ok) throw new Error('Failed to fetch releases');
             const data = await response.json();
+            console.log('[RELEASE NOTES] Loaded releases count:', (data.releases || []).length);
             return data.releases || [];
         } catch (error) {
             console.error('[RELEASE NOTES] Error fetching releases:', error);
@@ -86,6 +88,7 @@ class ReleaseNotes {
      */
     static async getChangelog() {
         try {
+            console.log('[RELEASE NOTES] Fetching changelog from', this.CHANGELOG_URL);
             const response = await fetch(this.CHANGELOG_URL);
             if (!response.ok) throw new Error('Failed to fetch changelog');
             return await response.text();
@@ -187,10 +190,12 @@ class ReleaseNotes {
      * Show release notes in a modal
      */
     static async showModal(version = null) {
+        console.log('[RELEASE NOTES] Opening modal, version param:', version);
         const release = version ? await this.getByVersion(version) : await this.getLatest();
         
         if (!release) {
             console.warn('[RELEASE NOTES] No release found for version:', version);
+            this.showError('Geen release notes gevonden');
             return;
         }
         
@@ -232,6 +237,21 @@ class ReleaseNotes {
     static async hasReleaseNotes(version) {
         const release = await this.getByVersion(version);
         return release !== null;
+    }
+
+    static showError(message) {
+        const existing = document.getElementById('releaseNotesErrorToast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.id = 'releaseNotesErrorToast';
+        toast.className = 'toast toast-end z-[200]';
+        toast.innerHTML = `
+            <div class="alert alert-error shadow-lg">
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
     }
 }
 
