@@ -216,6 +216,7 @@ export class ScriptImportService {
                 dbObject.location_id = locationMap[scene.location];
             }
             
+            console.log('[ScriptImportService] Scene data for DB:', scene.scene_number, 'has raw_text:', !!dbObject.raw_text, 'length:', dbObject.raw_text?.length || 0);
             return dbObject;
         });
         
