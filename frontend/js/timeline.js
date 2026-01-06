@@ -513,6 +513,7 @@ function renderStoryOrder(container) {
                             <h3 class="card-title text-lg">
                                 Scene ${scene.scene_number}
                             </h3>
+                            ${scene.script_day ? `<div class="badge badge-ghost badge-sm">SD ${scene.script_day}</div>` : ''}
                         </div>
                         <p class="text-sm text-base-content/70">${scene.description}</p>
                         ${charactersHtml}
