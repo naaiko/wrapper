@@ -654,6 +654,9 @@ export class ScriptImportScreen {
      * Get count of enabled scenes
      */
     getEnabledCount() {
+        if (!this.importResult || !Array.isArray(this.importResult.scenes)) {
+            return 0;
+        }
         return this.importResult.scenes.filter(s => s.isEnabled).length;
     }
     
@@ -669,6 +672,11 @@ export class ScriptImportScreen {
      * Handle final import
      */
     async handleImport() {
+        if (!this.importResult || !Array.isArray(this.importResult.scenes)) {
+            this.showError('Parse eerst een script voordat je importeert');
+            return;
+        }
+
         const enabledScenes = this.importResult.scenes.filter(s => s.isEnabled);
         
         if (enabledScenes.length === 0) {
@@ -826,6 +834,10 @@ export class ScriptImportScreen {
         this.importResult = null;
         this.selectedSceneIds = new Set();
         this.editingSceneIndex = null;
+
+        // Reset action buttons to the initial state
+        this.editScreen.clearActions();
+        this.addPrimaryAction();
         
         // Reset form content to upload form by updating formZone directly
         const formZone = this.editScreen.formZone;
@@ -834,19 +846,7 @@ export class ScriptImportScreen {
             this.initializeUpload();
         }
         
-        // Reset primary action button to "Parse Script"
-        const btn = document.getElementById('btnParseScript');
-        if (btn) {
-            btn.textContent = '';
-            btn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-                Parse Script
-            `;
-            btn.disabled = true;
-            btn.onclick = () => this.handleParse();
-        }
+        // Parse button is created via addPrimaryAction(); disabling is handled there.
     }
     
     /**

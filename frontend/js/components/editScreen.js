@@ -270,12 +270,33 @@ export class EditScreen {
     /**
      * Add a secondary action button (e.g., delete, unschedule)
      */
-    addSecondaryAction(label, icon, variant, handler) {
+    clearActions() {
+        const secondaryZone = this.container?.querySelector('.edit-screen__actions-secondary');
+        const primaryZone = this.container?.querySelector('.edit-screen__actions-primary');
+        if (secondaryZone) secondaryZone.innerHTML = '';
+        if (primaryZone) primaryZone.innerHTML = '';
+    }
+
+    /**
+     * Add a secondary action button (e.g., delete, unschedule)
+     * Supports both signatures:
+     * - (label, icon, variant, handler, buttonId?)
+     * - (label, icon, handler, buttonId?)
+     */
+    addSecondaryAction(label, icon, variant, handler, buttonId = null) {
         const secondaryZone = this.container.querySelector('.edit-screen__actions-secondary');
+
+        // Overload: (label, icon, handler, buttonId?)
+        if (typeof variant === 'function') {
+            buttonId = handler || null;
+            handler = variant;
+            variant = 'ghost';
+        }
         
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `btn btn-${variant} btn-sm`;
+        if (buttonId) button.id = buttonId;
         button.innerHTML = `
             ${icon}
             ${label}
@@ -290,12 +311,20 @@ export class EditScreen {
     /**
      * Add a primary action button (e.g., Save, Add)
      */
-    addPrimaryAction(label, icon = '', variant = 'primary', handler) {
+    addPrimaryAction(label, icon = '', variant = 'primary', handler, buttonId = null) {
         const primaryZone = this.container.querySelector('.edit-screen__actions-primary');
+
+        // Overload: (label, icon, handler, buttonId?)
+        if (typeof variant === 'function') {
+            buttonId = handler || null;
+            handler = variant;
+            variant = 'primary';
+        }
         
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `btn btn-${variant} btn-sm flex-1`;
+        if (buttonId) button.id = buttonId;
         button.innerHTML = `
             ${icon}
             ${label}
