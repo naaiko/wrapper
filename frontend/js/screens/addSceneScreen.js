@@ -79,8 +79,9 @@ export class AddSceneScreen {
         const features = settingsService.getAllFeatures();
         const hasContinuity = features.show_continuity;
         
-        // Dynamic column widths
-        const sceneNumCols = 2;
+        // Dynamic column widths (total 12 cols: Scene=1, SD=1, INT/EXT=2, Location=5, Continuity=3)
+        const sceneNumCols = 1;
+        const scriptDayCols = 1;
         const intExtCols = 2;
         const locationCols = 5;
         const continuityCols = 3;
@@ -105,7 +106,7 @@ export class AddSceneScreen {
                     </div>
                     
                     <!-- Script Day (SD) -->
-                    <div class="form-control edit-screen__col-span-${sceneNumCols}">
+                    <div class="form-control edit-screen__col-span-${scriptDayCols}">
                         <label class="label">
                             <span class="label-text font-semibold">SD</span>
                         </label>
