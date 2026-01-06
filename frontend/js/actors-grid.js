@@ -4,7 +4,7 @@
 
 import { CastMemberService } from './services/castMemberService.js';
 import { CharacterService } from './services/characterService.js';
-import { ActorCard } from './components/actorCard.js';
+import { ActorCard } from './components/castMemberCard.js';
 import { CustomDropdown } from './components/customDropdown.js';
 import Toast from './utils/toast.js';
 import { version } from './version.js';
