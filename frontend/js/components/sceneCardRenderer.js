@@ -129,6 +129,7 @@ export function renderSceneCard(scene, options = {}) {
         <div class="card-body p-1.5">
             <div class="flex items-center gap-2">
                 <div class="badge badge-primary badge-xs flex-shrink-0" style="padding: 2px 6px; font-size: 10px;">${scene.scene_number}</div>
+                ${scene.script_day ? `<div class="badge badge-ghost badge-xs flex-shrink-0" style="padding: 2px 6px; font-size: 10px;">SD ${scene.script_day}</div>` : ''}
                 ${splitIndicator}
                 ${daysIndicator}
                 <p class="text-xs flex-1 line-clamp-2 text-base-content/80" id="scene-heading-${scene.id}">${heading}</p>

@@ -44,8 +44,7 @@ export class AddSceneScreen {
     
     getEmptyFormData() {
         return {
-            scene_number: '',
-            int_ext: '',
+            scene_number: '',            script_day: '',            int_ext: '',
             location_id: '',
             description: '',
             time: null,
@@ -80,20 +79,21 @@ export class AddSceneScreen {
         const features = settingsService.getAllFeatures();
         const hasContinuity = features.show_continuity;
         
-        // Dynamic column widths
-        const sceneNumCols = 2;
+        // Dynamic column widths (total 12 cols: Scene=1, SD=1, INT/EXT=2, Location=5, Continuity=3)
+        const sceneNumCols = 1;
+        const scriptDayCols = 1;
         const intExtCols = 2;
         const locationCols = 5;
         const continuityCols = 3;
         
         return `
             <div class="px-8 space-y-4">
-                <!-- Scene Number, INT/EXT, Location, Continuity -->
+                <!-- Scene Number, Script Day, INT/EXT, Location, Continuity -->
                 <div class="edit-screen__form-row edit-screen__form-row--grid">
                     <!-- Scene Number -->
                     <div class="form-control edit-screen__col-span-${sceneNumCols}">
                         <label class="label">
-                            <span class="label-text font-semibold">Scene #</span>
+                            <span class="label-text font-semibold">#</span>
                         </label>
                         <input 
                             type="text" 
@@ -102,6 +102,20 @@ export class AddSceneScreen {
                             class="input input-bordered" 
                             placeholder="e.g., 1, 2A"
                             required 
+                        />
+                    </div>
+                    
+                    <!-- Script Day (SD) -->
+                    <div class="form-control edit-screen__col-span-${scriptDayCols}">
+                        <label class="label">
+                            <span class="label-text font-semibold">SD</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            name="script_day"
+                            value="${this.formData.script_day || ''}"
+                            class="input input-bordered" 
+                            placeholder="e.g., 1, 2"
                         />
                     </div>
                     
@@ -781,6 +795,7 @@ export class AddSceneScreen {
             // Prepare scene data - create UNSCHEDULED first
             const sceneData = {
                 scene_number: this.formData.scene_number.trim(),
+                script_day: this.formData.script_day?.trim() || null,
                 int_ext: this.formData.int_ext || null,
                 location_id: this.formData.location_id || null,
                 description: this.formData.description?.trim() || '', // Empty string instead of null

@@ -58,8 +58,9 @@ export class SceneEditScreen {
         const features = settingsService.getAllFeatures();
         const hasContinuity = features.show_continuity;
         
-        // Dynamic column widths based on continuity visibility
-        const sceneNumCols = 2;
+        // Dynamic column widths (total 12 cols: Scene=1, SD=1, INT/EXT=2, Location=5, Continuity=3)
+        const sceneNumCols = 1;
+        const scriptDayCols = 1;
         const intExtCols = 2;
         const locationCols = 5;
         const continuityCols = 3;
@@ -79,12 +80,12 @@ export class SceneEditScreen {
                 <div id="sceneInfoTab" class="tab-panel">
                     ${this.renderShootingDatesSection(scene)}
                     
-                    <!-- First Row: Scene Number, INT/EXT, Location, Continuity -->
+                    <!-- First Row: Scene Number, Script Day, INT/EXT, Location, Continuity -->
                     <div class="edit-screen__form-row edit-screen__form-row--grid">
                         <!-- Scene Number -->
                         <div class="form-control edit-screen__col-span-${sceneNumCols}">
                             <label class="label">
-                                <span class="label-text font-semibold">Scene #</span>
+                                <span class="label-text font-semibold">#</span>
                             </label>
                             <input 
                                 type="text" 
@@ -93,6 +94,20 @@ export class SceneEditScreen {
                                 class="input input-bordered" 
                                 placeholder="e.g., 1, 2A"
                                 required 
+                            />
+                        </div>
+                        
+                        <!-- Script Day (SD) -->
+                        <div class="form-control edit-screen__col-span-${scriptDayCols}">
+                            <label class="label">
+                                <span class="label-text font-semibold">SD</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="script_day"
+                                value="${scene?.script_day || ''}"
+                                class="input input-bordered" 
+                                placeholder="e.g., 1, 2"
                             />
                         </div>
                         
@@ -714,6 +729,14 @@ export class SceneEditScreen {
         if (sceneNumberInput) {
             sceneNumberInput.addEventListener('change', (e) => {
                 this.handleChange('scene_number', e.target.value, scene);
+            });
+        }
+        
+        // Script day input
+        const scriptDayInput = document.querySelector('input[name="script_day"]');
+        if (scriptDayInput) {
+            scriptDayInput.addEventListener('change', (e) => {
+                this.handleChange('script_day', e.target.value || null, scene);
             });
         }
         
