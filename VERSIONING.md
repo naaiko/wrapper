@@ -1,5 +1,62 @@
 # Versioning System
 
+## ⚠️ CRITICAL WORKFLOW RULES
+
+### Feature Development (Minor/Major releases)
+1. **Create feature branch**: `git checkout -b feature/vX.Y.Z-feature-name`
+2. Develop and commit on feature branch
+3. Merge to main with `--no-ff`: `git merge feature/vX.Y.Z-feature-name --no-ff`
+4. Tag release: `git tag vX.Y.Z -m "Release vX.Y.Z: Description"`
+5. Update VERSION and NEXT_VERSION files
+6. Update releases.json
+7. Create release folder in docs/releases/vX.Y.Z/
+8. Commit version updates
+9. **ALWAYS upload to Supabase storage**: `.\scripts\upload-assets.ps1`
+10. Push with tags: `git push origin main --tags`
+
+### Hotfixes (Direct commits to main)
+**⚠️ IMPORTANT: Any commit directly to main MUST be a hotfix version!**
+
+When you commit directly to main (outside of a feature branch merge):
+
+1. **Increment hotfix number**: 
+   - Example: 0.2.5 → 0.2.5.01 → 0.2.5.02
+   - Format: MAJOR.MINOR.PATCH.HOTFIX (hotfix is 2 digits, zero-padded)
+
+2. **Update version.js**:
+   ```javascript
+   export const version = {
+       major: 0,
+       minor: 2,
+       patch: 5,
+       hotfix: 1,  // Increment this!
+   ```
+
+3. **Update VERSION file**: Write full version (e.g., "0.2.5.01")
+
+4. **Update releases.json**: Add hotfix entry at the top
+
+5. **Commit version updates**
+
+6. **ALWAYS upload to Supabase storage**: `.\scripts\upload-assets.ps1`
+
+7. **Push everything**: `git push origin main --tags`
+
+## Storage Synchronization
+
+**CRITICAL: After EVERY release or hotfix, run:**
+
+```powershell
+.\scripts\upload-assets.ps1
+```
+
+This uploads:
+- releases.json (with latest version entry)
+- docs/releases/ (all release notes)
+- CHANGELOG.md
+
+The app fetches these from Supabase storage to show version info and release notes.
+
 ## Overview
 
 This project uses **Semantic Versioning** with automated changelog generation and release bundling.

@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.2.5.01",
+      "date": "2026-01-06",
+      "name": "Hotfix: Cast Grid Filter & Badge Colors",
+      "type": "hotfix",
+      "branch": "main",
+      "commits": ["a9f163f", "5f53203"],
+      "commitMessage": "fix: Cast grid filter and timeline badge colors",
+      "features": [],
+      "bugfixes": [
+        "Fixed cast grid filter to check assignment_type on character_assignments instead of non-existent role_type field",
+        "Script day (SD) badge now uses secondary color (badge-secondary) for better visual distinction",
+        "Cast member badges now consistently use primary color (badge-primary) on timeline cards"
+      ],
+      "technical": [
+        "Added .env file support for Supabase credentials",
+        "Updated upload-assets.ps1 to automatically load from .env",
+        "Filter now checks character_assignments array for assignment_type"
+      ],
+      "breaking": [],
+      "deprecated": [],
+      "documentation": []
+    },
+    {
       "version": "0.2.5",
       "date": "2026-01-06",
       "name": "Script Day + Empty Project Start",
