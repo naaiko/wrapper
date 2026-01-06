@@ -1,6 +1,36 @@
 {
   "releases": [
     {
+      "version": "0.2.4",
+      "date": "2026-01-06",
+      "name": "Script Preview",
+      "type": "minor",
+      "branch": "main",
+      "commits": ["d1c26c8", "e536726", "7173081"],
+      "commitMessage": "feat: Add Final Draft-style script preview to timeline scene cards",
+      "features": [
+        "Script preview on timeline scene cards showing first 10-15 lines",
+        "Final Draft-style typewriter font (Courier Prime) with print preview appearance",
+        "Automatic HTML rendering for fountain-formatted scripts",
+        "Fade gradient for long script excerpts"
+      ],
+      "bugfixes": [
+        "Fixed raw_text not persisting to database (SceneService.createBulk filtering issue)",
+        "Removed scroll event logging cluttering console"
+      ],
+      "technical": [
+        "Added raw_text TEXT column to scenes table",
+        "FountainAdapter extracts raw text by position and converts to HTML",
+        "Scene cards use flexbox layout with fixed dimensions (32rem × 66vh)",
+        "Script preview styled with Courier font, white background, subtle shadow"
+      ],
+      "breaking": [],
+      "deprecated": [],
+      "documentation": [
+        "Database migration required: ALTER TABLE scenes ADD COLUMN IF NOT EXISTS raw_text TEXT;"
+      ]
+    },
+    {
       "version": "0.2.3.05",
       "date": "2026-01-07",
       "name": "Hotfix: release notes fallback",
