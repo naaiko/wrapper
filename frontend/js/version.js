@@ -22,9 +22,12 @@ export const version = {
     major: 0,
     minor: 2,
     patch: 3,
+    hotfix: 1,
     
     get full() {
-        return `${this.major}.${this.minor}.${this.patch}`;
+        return this.hotfix > 0 
+            ? `${this.major}.${this.minor}.${this.patch}.${String(this.hotfix).padStart(2, '0')}`
+            : `${this.major}.${this.minor}.${this.patch}`;
     },
     
     get short() {
@@ -38,10 +41,13 @@ export const version = {
      */
     badge(customTitle = null) {
         const title = customTitle || `Version ${this.full} - Click for release notes`;
+        const badgeClass = this.hotfix > 0 
+            ? 'fixed bottom-2 left-2 badge badge-sm badge-error opacity-70 hover:opacity-100 transition-all cursor-pointer'
+            : 'fixed bottom-2 left-2 badge badge-sm badge-neutral opacity-50 hover:opacity-100 transition-all cursor-pointer hover:badge-primary';
         return `
             <button 
                 id="versionBadge" 
-                class="fixed bottom-2 left-2 badge badge-sm badge-neutral opacity-50 hover:opacity-100 transition-all cursor-pointer hover:badge-primary" 
+                class="${badgeClass}" 
                 title="${title}"
                 onclick="window.showReleaseNotes && window.showReleaseNotes()"
             >
