@@ -306,9 +306,12 @@ class CastGridApp {
         
         // Apply filter
         if (this.currentFilter !== 'all') {
-            filtered = filtered.filter(actor => 
-                actor.role_type?.toLowerCase() === this.currentFilter.toLowerCase()
-            );
+            filtered = filtered.filter(actor => {
+                // Check if any character assignment matches the filter
+                return actor.character_assignments?.some(assignment => 
+                    assignment.assignment_type?.toLowerCase() === this.currentFilter.toLowerCase()
+                );
+            });
         }
         
         // Apply search

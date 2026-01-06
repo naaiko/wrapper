@@ -489,9 +489,7 @@ function renderStoryOrder(container) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 ${displayChars.map(sc => {
-                    const hasActor = sc.character?.actor_assignments?.length > 0;
-                    const badgeClass = hasActor ? 'badge-primary' : 'badge-ghost';
-                    return `<div class="badge badge-xs ${badgeClass}">${sc.character?.name || 'Unknown'}</div>`;
+                    return `<div class="badge badge-xs badge-primary">${sc.character?.name || 'Unknown'}</div>`;
                 }).join('')}
                 ${remaining > 0 ? `<div class="badge badge-xs badge-ghost">+${remaining}</div>` : ''}
             </div>
@@ -513,7 +511,7 @@ function renderStoryOrder(container) {
                             <h3 class="card-title text-lg">
                                 Scene ${scene.scene_number}
                             </h3>
-                            ${scene.script_day ? `<div class="badge badge-ghost badge-sm">SD ${scene.script_day}</div>` : ''}
+                            ${scene.script_day ? `<div class="badge badge-secondary badge-sm">SD ${scene.script_day}</div>` : ''}
                         </div>
                         <p class="text-sm text-base-content/70">${scene.description}</p>
                         ${charactersHtml}
