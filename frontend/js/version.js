@@ -22,7 +22,7 @@ export const version = {
     major: 0,
     minor: 2,
     patch: 3,
-    hotfix: 4,
+    hotfix: 5,
     
     get full() {
         return this.hotfix > 0 
@@ -49,7 +49,7 @@ export const version = {
                 id="versionBadge" 
                 class="${badgeClass}" 
                 title="${title}"
-                onclick="window.showReleaseNotes && window.showReleaseNotes()"
+                onclick="window.showReleaseNotes && window.showReleaseNotes('${this.full}')"
             >
                 ${this.short}
             </button>
@@ -61,29 +61,28 @@ export const version = {
      * Call this after importing ReleaseNotes utility
      */
     async setupReleaseNotes() {
+        // Always register click handlers immediately (lazy-load modules on demand).
+        // This avoids “nothing happens” if preloading fails for any reason.
+        window.showReleaseNotes = async (requestedVersion = null) => {
+            const { default: ReleaseNotes } = await import('./utils/releaseNotes.js');
+            await ReleaseNotes.showModal(requestedVersion);
+        };
+
+        window.browseReleases = async () => {
+            const { default: ReleaseBrowser } = await import('./utils/releaseBrowser.js');
+            const browser = new ReleaseBrowser();
+            await browser.show();
+        };
+
+        // Best-effort preflight check (non-fatal)
         try {
             const { default: ReleaseNotes } = await import('./utils/releaseNotes.js');
-            const { default: ReleaseBrowser } = await import('./utils/releaseBrowser.js');
-            
-            // Make showReleaseNotes globally available (current version)
-            window.showReleaseNotes = async () => {
-                await ReleaseNotes.showModal();
-            };
-            
-            // Make browsReleases globally available (all versions)
-            window.browseReleases = async () => {
-                const browser = new ReleaseBrowser();
-                await browser.show();
-            };
-            
-            // Check if current version has release notes
             const hasNotes = await ReleaseNotes.hasReleaseNotes(this.full);
             if (!hasNotes) {
                 console.warn(`[VERSION] No release notes found for v${this.full}`);
             }
-            
         } catch (error) {
-            console.warn('[VERSION] Release notes not available:', error.message);
+            console.warn('[VERSION] Release notes preflight failed:', error);
         }
     }
 };

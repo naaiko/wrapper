@@ -1,6 +1,27 @@
 {
   "releases": [
     {
+      "version": "0.2.3.05",
+      "date": "2026-01-07",
+      "name": "Hotfix: release notes fallback",
+      "type": "hotfix",
+      "branch": "main",
+      "commits": [],
+      "commitMessage": "fix: release notes base fallback and asset base override",
+      "features": [],
+      "bugfixes": [
+        "Release notes fetch detects HTML responses and tries multiple base URLs (with optional overrides)",
+        "Changelog and releases.json lookups work when hosted under /frontend or with custom base paths",
+        "Demo script import uses configurable asset base for production hosting"
+      ],
+      "technical": [
+        "Hotfix version bumps 0.2.3.03 → .05"
+      ],
+      "breaking": [],
+      "deprecated": [],
+      "documentation": []
+    },
+    {
       "version": "0.2.3.03",
       "date": "2026-01-06",
       "name": "Hotfix: release notes & demo import",

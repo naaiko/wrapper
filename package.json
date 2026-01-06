@@ -1,11 +1,14 @@
 {
   "name": "continuity-manager",
-  "version": "0.2.3-hotfix.4",
+  "version": "0.2.3-hotfix.5",
   "description": "Film continuity management system",
   "scripts": {
-    "validate-release": "node validate-release.js"
+    "validate-release": "node validate-release.js",
+    "upload-assets": "node scripts/upload-assets.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "mime": "^4.0.4",
     "sortablejs": "^1.15.6"
   }
 }

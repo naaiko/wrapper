@@ -19,6 +19,9 @@
     
     <!-- Toast UI Calendar JS -->
     <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+
+    <!-- Supabase (for consistent asset base) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-base-200 min-h-screen flex items-center justify-center">
     <div class="card bg-base-100 shadow-xl max-w-4xl w-full mx-4">
@@ -101,6 +104,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Ensures ReleaseNotes fetches from Supabase Storage (app-assets) -->
+    <script src="js/supabase-config.js"></script>
     
     <!-- Release Notes Scripts -->
     <script type="module">

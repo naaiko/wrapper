@@ -230,13 +230,21 @@ export class ScriptImportScreen {
 
             const baseWithSlash = assetBase.endsWith('/') ? assetBase : `${assetBase}/`;
             const scriptPath = `${baseWithSlash}docs/resources/scripts/${folder}/${scriptName}`;
+
+            console.log('[SCRIPT IMPORT] Loading demo script', { scriptName, scriptPath });
             
-            const response = await fetch(scriptPath);
+            const response = await fetch(scriptPath, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`Failed to load demo script: ${response.statusText}`);
             }
             
             const content = await response.text();
+
+            // Guard: if we fetched an HTML page, the base/path is wrong.
+            const trimmed = content.trim();
+            if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
+                throw new Error('Got HTML instead of a script file (check assets base URL)');
+            }
             
             // Create File object from content with correct size
             const blob = new Blob([content], { type: 'text/plain' });
@@ -250,6 +258,7 @@ export class ScriptImportScreen {
             
         } catch (error) {
             console.error('Error loading demo script:', error);
+            this.showError(`Demo script kon niet geladen worden: ${scriptName}`);
         }
     }
     

@@ -42,6 +42,37 @@ class ReleaseNotes {
         return origin + '/';
     }
 
+    static getCandidateBases() {
+        const bases = [this.getBaseUrl()];
+        // Fallback: if base doesn't already end with 'frontend/', try adding it
+        if (!bases[0].endsWith('frontend/')) {
+            bases.push(`${bases[0]}frontend/`);
+        }
+        return [...new Set(bases)];
+    }
+
+    static async fetchJsonWithFallback(path) {
+        const bases = this.getCandidateBases();
+        let lastError = null;
+        for (const base of bases) {
+            const url = base.endsWith('/') ? `${base}${path}` : `${base}/${path}`;
+            try {
+                console.log('[RELEASE NOTES] Fetching', url);
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const text = await res.text();
+                if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                    throw new Error('Got HTML instead of JSON');
+                }
+                return JSON.parse(text);
+            } catch (err) {
+                console.warn('[RELEASE NOTES] Fetch failed for', url, err);
+                lastError = err;
+            }
+        }
+        throw lastError || new Error('Failed to fetch JSON');
+    }
+
     static get RELEASES_URL() {
         return `${this.getBaseUrl()}releases.json`;
     }
@@ -55,10 +86,7 @@ class ReleaseNotes {
      */
     static async getReleases() {
         try {
-            console.log('[RELEASE NOTES] Fetching releases from', this.RELEASES_URL);
-            const response = await fetch(this.RELEASES_URL);
-            if (!response.ok) throw new Error('Failed to fetch releases');
-            const data = await response.json();
+            const data = await this.fetchJsonWithFallback('releases.json');
             console.log('[RELEASE NOTES] Loaded releases count:', (data.releases || []).length);
             return data.releases || [];
         } catch (error) {
@@ -103,10 +131,25 @@ class ReleaseNotes {
      */
     static async getChangelog() {
         try {
-            console.log('[RELEASE NOTES] Fetching changelog from', this.CHANGELOG_URL);
-            const response = await fetch(this.CHANGELOG_URL);
-            if (!response.ok) throw new Error('Failed to fetch changelog');
-            return await response.text();
+            const bases = this.getCandidateBases();
+            let lastError = null;
+            for (const base of bases) {
+                const url = base.endsWith('/') ? `${base}CHANGELOG.md` : `${base}/CHANGELOG.md`;
+                try {
+                    console.log('[RELEASE NOTES] Fetching changelog from', url);
+                    const response = await fetch(url, { cache: 'no-store' });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const text = await response.text();
+                    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                        throw new Error('Got HTML instead of markdown');
+                    }
+                    return text;
+                } catch (err) {
+                    console.warn('[RELEASE NOTES] Changelog fetch failed for', url, err);
+                    lastError = err;
+                }
+            }
+            throw lastError || new Error('Failed to fetch changelog');
         } catch (error) {
             console.error('[RELEASE NOTES] Error fetching changelog:', error);
             return '';
