@@ -93,7 +93,7 @@ export class AddSceneScreen {
                     <!-- Scene Number -->
                     <div class="form-control edit-screen__col-span-${sceneNumCols}">
                         <label class="label">
-                            <span class="label-text font-semibold">Scene #</span>
+                            <span class="label-text font-semibold">#</span>
                         </label>
                         <input 
                             type="text" 
