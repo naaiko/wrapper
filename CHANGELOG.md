@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.2.2] - 2026-01-06
+
+### Added
+- square cards, compact dock, placeholder card
+- Replace calendar with metro line timeline visualization
+- Switch calendar to week view and improve styling
+
+### Fixed
+- Import navigation as ES6 module
+- Add missing Supabase config script to actors.html
+- Add required database migration for Cast Grid v0.2.0
+- Calendar container height and tui availability check
+
+---
+
+## 0.2.1 - Release Browser
+
 ### 🚧 v0.2.2 - In Progress (feature/v0.2.2-design-system)
 
 #### Added
