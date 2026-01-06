@@ -1,6 +1,6 @@
 {
   "name": "continuity-manager",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "Film continuity management system",
   "scripts": {
     "validate-release": "node validate-release.js"

@@ -1,6 +1,42 @@
 {
   "releases": [
     {
+      "version": "0.2.3",
+      "date": "2026-01-06",
+      "name": "Characters & Script Import",
+      "type": "patch",
+      "branch": "main",
+      "commits": ["c9f67aa", "4a2029d"],
+      "commitMessage": "feat: Character architecture, script import, cast member refactor",
+      "features": [
+        "Character-Cast Member architecture separation (characters, assignments, scene characters)",
+        "Characters Settings modal with Cast Member assignment workflow",
+        "Script Import (Fountain + plain text) with scene extraction and preview",
+        "Timeline character badges and character-aware scene loading",
+        "Terminology update: Actor → Cast Member across UI and database"
+      ],
+      "bugfixes": [
+        "Fix dropdown option lists being clipped inside modals"
+      ],
+      "technical": [
+        "Add Fountain.js library via CDN for Fountain format parsing",
+        "Migrations: 20260106000001_add_characters_architecture.sql",
+        "Migrations: 20260106000002_update_actors_schema.sql",
+        "Migrations: 20260106000003_rename_actors_to_cast_members.sql",
+        "Modal dropdown menus use portal/popover behavior to avoid clipping"
+      ],
+      "breaking": [
+        "Database schema changes for characters architecture and cast member rename"
+      ],
+      "deprecated": [],
+      "documentation": [
+        "docs/releases/v0.2.3/README.md",
+        "docs/releases/v0.2.3/CHANGELOG.md",
+        "docs/releases/v0.2.3/MIGRATIONS.md",
+        "docs/releases/v0.2.3/RUN_MIGRATIONS.md"
+      ]
+    },
+    {
       "version": "0.2.2",
       "date": "2026-01-06",
       "name": "Cast Grid UI Refinements",
