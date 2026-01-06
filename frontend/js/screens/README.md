@@ -55,20 +55,20 @@ export class ScreenName {
 **❌ WRONG - Don't do this:**
 ```html
 <script type="module" src="js/components/editScreen.js"></script>
-<script type="module" src="js/screens/actorEditScreen.js"></script>
-<script type="module" src="js/actors.js"></script>
+<script type="module" src="js/screens/castMemberEditScreen.js"></script>
+<script type="module" src="js/cast-detail.js"></script>
 ```
 
 **✅ CORRECT - Follow this pattern:**
 ```html
 <!-- Only import main app file -->
 <script src="js/supabase-config.js"></script>
-<script type="module" src="js/actors.js"></script>
+<script type="module" src="js/cast-detail.js"></script>
 ```
 
-Then in `actors.js`:
+Then in `cast-detail.js`:
 ```javascript
-import { ActorEditScreen } from './screens/actorEditScreen.js';
+import { ActorEditScreen } from './screens/castMemberEditScreen.js';
 ```
 
 This is the same pattern used in `calendar.html` - keeps imports clean and prevents load order issues.
@@ -77,7 +77,7 @@ This is the same pattern used in `calendar.html` - keeps imports clean and preve
 
 1. **sceneEditScreen.js** - Edit existing scenes (used in calendar, timeline)
 2. **addSceneScreen.js** - Add new scenes with scheduling
-3. **actorEditScreen.js** - Edit actor details
+3. **castMemberEditScreen.js** - Edit cast member details
 
 ## Benefits
 

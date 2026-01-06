@@ -617,8 +617,8 @@ class ActorsApp {
         });
         
         // Calendar navigation
-        const btnCalendarPrev = document.getElementById('actorCalendarPrevMonth');
-        const btnCalendarNext = document.getElementById('actorCalendarNextMonth');
+        const btnCalendarPrev = document.getElementById('castMemberCalendarPrevMonth') || document.getElementById('actorCalendarPrevMonth');
+        const btnCalendarNext = document.getElementById('castMemberCalendarNextMonth') || document.getElementById('actorCalendarNextMonth');
         
         if (btnCalendarPrev) btnCalendarPrev.addEventListener('click', () => {
             if (this.castMemberCalendar) {
@@ -717,11 +717,11 @@ class ActorsApp {
             this.castMemberDropdown.updateOptions(options);
         } else {
             this.castMemberDropdown = new CustomDropdown({
-                containerId: 'actorDropdownContainer',
+                containerId: 'castMemberDropdownContainer',
                 name: 'cast_member_id',
                 options: options,
                 value: this.currentCastMember?.id || '',
-                placeholder: 'Select actor...',
+                placeholder: 'Select cast member...',
                 searchable: true,
                 allowCreate: true,
                 createLabel: '+ Create new actor',
@@ -904,7 +904,7 @@ class ActorsApp {
      * Render Cast Member Details in left panel
      */
     renderActorDetails(actor) {
-        const panel = document.getElementById('actorDetailsPanel');
+        const panel = document.getElementById('castMemberDetailsPanel') || document.getElementById('actorDetailsPanel');
         if (!panel) return;
         
         // Build distinguishing features list
@@ -1129,7 +1129,7 @@ class ActorsApp {
     updateCalendarMonthLabel() {
         if (!this.castMemberCalendar) return;
         
-        const monthLabel = document.getElementById('actorCalendarMonth');
+        const monthLabel = document.getElementById('castMemberCalendarMonth') || document.getElementById('actorCalendarMonth');
         if (!monthLabel) return;
         
         const date = this.castMemberCalendar.getDate();
