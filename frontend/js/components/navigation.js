@@ -1,12 +1,12 @@
-// =================================================================
+﻿// =================================================================
 // SHARED NAVIGATION COMPONENT
 // =================================================================
 
 /**
  * Creates consistent navigation across all pages
- * Now uses a three-toggle for Actors/Timeline/Calendar and a separate Projects button
+ * Now uses a three-toggle for Cast/Timeline/Calendar and a separate Projects button
  * @param {string} projectId - The current project ID
- * @param {string} activePage - Which page is currently active ('timeline', 'calendar', 'actors')
+ * @param {string} activePage - Which page is currently active ('timeline', 'calendar', 'cast')
  */
 export function createNavigation(projectId, activePage = '') {
     const navContainer = document.getElementById('topNavigation');
@@ -15,11 +15,11 @@ export function createNavigation(projectId, activePage = '') {
     // Three-toggle for main navigation
     const threeToggleHTML = `
         <div role="tablist" class="tabs tabs-boxed bg-base-100 shadow-lg">
-            <a id="navActors" 
-               href="actors.html?project=${projectId}" 
+            <a id="navCast" 
+               href="cast.html?project=${projectId}" 
                role="tab" 
-               class="tab ${activePage === 'actors' ? 'tab-active' : ''}">
-                Actors
+               class="tab ${activePage === 'cast' ? 'tab-active' : ''}">
+                Cast
             </a>
             <a id="navTimeline" 
                href="timeline.html?project=${projectId}" 

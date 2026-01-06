@@ -1,4 +1,4 @@
-import { supabaseClient } from '../api/supabaseClient.js';
+﻿import { supabaseClient } from '../api/supabaseClient.js';
 
 /**
  * Load intro.js onboarding steps from database

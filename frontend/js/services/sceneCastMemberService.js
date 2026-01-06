@@ -1,23 +1,23 @@
-// =================================================================
-// SCENE ACTOR SERVICE - Business Logic Layer
+﻿// =================================================================
+// SCENE Cast Member Service - Business Logic Layer
 // =================================================================
 // Manages the many-to-many relationship between scenes and actors
 // Handles continuity data (costume, makeup, hair, props photos)
 
-export class SceneActorService {
+export class SceneCastMemberService {
     
     /**
-     * Get all scene_actors for a scene (with actor data)
+     * Get all scene_cast_members for a scene (with actor data)
      * @param {string} sceneId - Scene UUID
      * @returns {Promise<Array>} Array of scene_actor records with nested actor data
      */
     static async getByScene(sceneId) {
         try {
             const { data, error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .select(`
                     *,
-                    actor:actors (*)
+                    cast_member:cast_members (*)
                 `)
                 .eq('scene_id', sceneId)
                 .order('created_at');
@@ -31,25 +31,25 @@ export class SceneActorService {
     }
     
     /**
-     * Get all scene_actors for an actor (with scene data)
-     * @param {string} actorId - Actor UUID
+     * Get all scene_cast_members for an actor (with scene data)
+     * @param {string} castMemberId - Actor UUID
      * @returns {Promise<Array>} Array of scene_actor records with nested scene data
      */
-    static async getByActor(actorId) {
+    static async getByActor(castMemberId) {
         try {
             const { data, error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .select(`
                     *,
                     scene:scenes (*)
                 `)
-                .eq('actor_id', actorId)
+                .eq('cast_member_id', castMemberId)
                 .order('created_at');
 
             if (error) throw error;
             return data || [];
         } catch (error) {
-            console.error('Error fetching actor scenes:', error);
+            console.error('Error fetching cast member scenes:', error);
             throw error;
         }
     }
@@ -62,10 +62,10 @@ export class SceneActorService {
     static async getById(sceneActorId) {
         try {
             const { data, error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .select(`
                     *,
-                    actor:actors (*),
+                    cast_member:cast_members (*),
                     scene:scenes (*)
                 `)
                 .eq('id', sceneActorId)
@@ -83,7 +83,7 @@ export class SceneActorService {
      * Create a scene_actor link
      * @param {Object} sceneActorData - Scene actor data
      * @param {string} sceneActorData.scene_id - Scene UUID (required)
-     * @param {string} sceneActorData.actor_id - Actor UUID (required)
+     * @param {string} sceneActorData.cast_member_id - Actor UUID (required)
      * @param {string} sceneActorData.costume_notes - Optional costume notes
      * @param {Array} sceneActorData.costume_images - Optional array of costume image URLs
      * @param {string} sceneActorData.makeup_notes - Optional makeup notes
@@ -99,7 +99,7 @@ export class SceneActorService {
         try {
             const sceneActor = {
                 scene_id: sceneActorData.scene_id,
-                actor_id: sceneActorData.actor_id,
+                cast_member_id: sceneActorData.cast_member_id,
                 costume_notes: sceneActorData.costume_notes || null,
                 costume_images: sceneActorData.costume_images || [],
                 makeup_notes: sceneActorData.makeup_notes || null,
@@ -112,11 +112,11 @@ export class SceneActorService {
             };
 
             const { data, error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .insert([sceneActor])
                 .select(`
                     *,
-                    actor:actors (*),
+                    cast_member:cast_members (*),
                     scene:scenes (*)
                 `)
                 .single();
@@ -132,22 +132,22 @@ export class SceneActorService {
     /**
      * Create multiple scene_actor links at once (bulk add)
      * @param {string} sceneId - Scene UUID
-     * @param {Array<string>} actorIds - Array of actor UUIDs
+     * @param {Array<string>} castMemberIds - Array of actor UUIDs
      * @returns {Promise<Array>} Array of created scene_actor records
      */
-    static async createBulk(sceneId, actorIds) {
+    static async createBulk(sceneId, castMemberIds) {
         try {
-            const sceneActors = actorIds.map(actorId => ({
+            const sceneCastMembers = castMemberIds.map(castMemberId => ({
                 scene_id: sceneId,
-                actor_id: actorId
+                cast_member_id: castMemberId
             }));
             
             const { data, error } = await window.supabase
-                .from('scene_actors')
-                .insert(sceneActors)
+                .from('scene_cast_members')
+                .insert(sceneCastMembers)
                 .select(`
                     *,
-                    actor:actors (*)
+                    cast_member:cast_members (*)
                 `);
             
             if (error) throw error;
@@ -167,12 +167,12 @@ export class SceneActorService {
     static async update(sceneActorId, updates) {
         try {
             const { data, error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .update(updates)
                 .eq('id', sceneActorId)
                 .select(`
                     *,
-                    actor:actors (*),
+                    cast_member:cast_members (*),
                     scene:scenes (*)
                 `)
                 .single();
@@ -193,7 +193,7 @@ export class SceneActorService {
     static async delete(sceneActorId) {
         try {
             const { error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .delete()
                 .eq('id', sceneActorId);
 
@@ -222,7 +222,7 @@ export class SceneActorService {
             // Fetch current images
             const imageField = `${category}_images`;
             const { data: current, error: fetchError } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .select(imageField)
                 .eq('id', sceneActorId)
                 .single();
@@ -261,7 +261,7 @@ export class SceneActorService {
             // Fetch current images
             const imageField = `${category}_images`;
             const { data: current, error: fetchError } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .select(imageField)
                 .eq('id', sceneActorId)
                 .single();
@@ -285,16 +285,16 @@ export class SceneActorService {
     /**
      * Check if an actor is already in a scene
      * @param {string} sceneId - Scene UUID
-     * @param {string} actorId - Actor UUID
+     * @param {string} castMemberId - Actor UUID
      * @returns {Promise<boolean>} True if actor is in scene
      */
-    static async exists(sceneId, actorId) {
+    static async exists(sceneId, castMemberId) {
         try {
             const { data, error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .select('id')
                 .eq('scene_id', sceneId)
-                .eq('actor_id', actorId)
+                .eq('cast_member_id', castMemberId)
                 .maybeSingle();
             
             if (error) throw error;
@@ -307,15 +307,15 @@ export class SceneActorService {
     
     /**
      * Get count of scenes for an actor
-     * @param {string} actorId - Actor UUID
+     * @param {string} castMemberId - Actor UUID
      * @returns {Promise<number>} Number of scenes
      */
-    static async getSceneCount(actorId) {
+    static async getSceneCount(castMemberId) {
         try {
             const { count, error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .select('*', { count: 'exact', head: true })
-                .eq('actor_id', actorId);
+                .eq('cast_member_id', castMemberId);
             
             if (error) throw error;
             return count || 0;
@@ -333,7 +333,7 @@ export class SceneActorService {
     static async getActorCount(sceneId) {
         try {
             const { count, error } = await window.supabase
-                .from('scene_actors')
+                .from('scene_cast_members')
                 .select('*', { count: 'exact', head: true })
                 .eq('scene_id', sceneId);
             

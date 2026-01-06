@@ -1,4 +1,4 @@
-# Database Migrations - v0.2.0
+﻿# Database Migrations - v0.2.0
 
 ## Overview
 
@@ -10,7 +10,7 @@ Located in `docs/releases/v0.2.0/migrations/`:
 
 ### 1. `20251226000001_add_actor_first_last_name.sql`
 
-**Purpose**: Add first_name and last_name columns to actors table
+**Purpose**: Add first_name and last_name columns to Cast table
 
 **Changes**:
 - Adds `first_name TEXT` column
@@ -32,14 +32,14 @@ SELECT
     first_name,
     last_name,
     created_at
-FROM actors
+FROM Cast
 ORDER BY created_at DESC
 LIMIT 10;
 ```
 
 ### 2. `20251226000002_add_actor_role.sql`
 
-**Purpose**: Add role classification column to actors table
+**Purpose**: Add role classification column to Cast table
 
 **Changes**:
 - Adds `role TEXT` column
@@ -57,7 +57,7 @@ SELECT
     'Migration complete' as status,
     COUNT(*) as total_actors,
     COUNT(role) as actors_with_role
-FROM actors;
+FROM Cast;
 ```
 
 ## Execution Order
@@ -89,19 +89,19 @@ If needed, rollback in reverse order:
 ```sql
 -- Rollback migration 2
 DROP INDEX IF EXISTS idx_actors_role;
-ALTER TABLE actors DROP COLUMN IF EXISTS role;
+ALTER TABLE Cast DROP COLUMN IF EXISTS role;
 
 -- Rollback migration 1
-ALTER TABLE actors DROP COLUMN IF EXISTS last_name;
-ALTER TABLE actors DROP COLUMN IF EXISTS first_name;
+ALTER TABLE Cast DROP COLUMN IF EXISTS last_name;
+ALTER TABLE Cast DROP COLUMN IF EXISTS first_name;
 ```
 
 ## Dependencies
 
 **Required for features**:
 - Cast Grid filter by role
-- Actor name display (first + last)
-- Actor search by name parts
+- Cast Member name display (first + last)
+- Cast Member search by name parts
 
 **Breaking changes**: None
 
@@ -112,7 +112,7 @@ ALTER TABLE actors DROP COLUMN IF EXISTS first_name;
 ## Schema After Migrations
 
 ```sql
-CREATE TABLE actors (
+CREATE TABLE Cast (
     id UUID PRIMARY KEY,
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     
@@ -147,18 +147,18 @@ CREATE TABLE actors (
 );
 
 -- Indexes
-CREATE INDEX idx_actors_project_id ON actors(project_id);
-CREATE INDEX idx_actors_role ON actors(role); -- NEW in v0.2.0
+CREATE INDEX idx_actors_project_id ON Cast(project_id);
+CREATE INDEX idx_actors_role ON Cast(role); -- NEW in v0.2.0
 ```
 
 ## Testing
 
 After running migrations, test:
 
-1. ✅ Create new actor with first_name, last_name, role
-2. ✅ Filter actors by role in Cast Grid
-3. ✅ Search actors by name
-4. ✅ Existing actors still display correctly
+1. ✅ Create new Cast Member with first_name, last_name, role
+2. ✅ Filter Cast by role in Cast Grid
+3. ✅ Search Cast by name
+4. ✅ Existing Cast still display correctly
 5. ✅ No errors in browser console
 
 ## Migration History

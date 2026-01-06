@@ -1,4 +1,4 @@
-# User and Project Management Branch
+﻿# User and Project Management Branch
 
 ## Overview
 
@@ -55,7 +55,7 @@ This branch (`user-and-project`) implements a comprehensive user authentication,
 ### 3. **Project Navigation Enhancement**
 
 #### New UI Component
-- **Three-toggle navigation** (Actors | Timeline | Calendar)
+- **Three-toggle navigation** (Cast | Timeline | Calendar)
 - **Circular Projects button** next to the three-toggle
   - Same visual style (base-100 background, shadow)
   - Returns user to Projects overview
@@ -63,7 +63,7 @@ This branch (`user-and-project`) implements a comprehensive user authentication,
 
 #### Updated Files
 - `navigation.js`: New createNavigation() function
-- `timeline.html`, `actors.html`, `calendar.html`: All use new navigation component
+- `timeline.html`, `Cast.html`, `calendar.html`: All use new navigation component
 - Top-right corner placement with flex layout
 
 ---
@@ -78,7 +78,7 @@ This branch (`user-and-project`) implements a comprehensive user authentication,
 #### Backend Safety
 - **delete_project_cascade()**: Database function that:
   - Deletes project and ALL related data
-  - Returns deletion summary (scene count, actor count, etc.)
+  - Returns deletion summary (scene count, Cast Member count, etc.)
   - Ensures no orphaned records
 - **can_delete_project()**: Permission verification function
   - Checks user role
@@ -243,7 +243,7 @@ frontend/
   ├── index.html                    # Redirect to projects/login
   ├── projects.html                 # Enhanced with auth & delete
   ├── timeline.html                 # Updated navigation
-  ├── actors.html                   # Updated navigation
+  ├── Cast.html                   # Updated navigation
   ├── calendar.html                 # Updated navigation
   └── js/
       ├── projects.js               # Enhanced with role filtering
@@ -325,7 +325,7 @@ supabase/
 ### Breaking Changes
 - Projects now require authentication to access
 - Projects without manager_id are only visible to superadmin
-- Direct URL access to timeline/actors/calendar requires login
+- Direct URL access to timeline/Cast/calendar requires login
 
 ### Migration Steps
 1. Run database migrations in order (001 → 002 → 003)

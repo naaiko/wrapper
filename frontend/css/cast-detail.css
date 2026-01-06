@@ -1,34 +1,34 @@
-/* =================================================================
+﻿/* =================================================================
    ACTOR DETAIL SCREEN - Mobile Responsive Styles
    ================================================================= */
 
 /* Silhouette container */
-.actor-silhouette-container {
+.cast-member-silhouette-container {
     position: relative;
     width: 100%;
     max-width: 400px;
     margin: 0 auto;
 }
 
-.actor-silhouette {
+.cast-member-silhouette {
     width: 100%;
     height: auto;
     aspect-ratio: 1 / 2;
 }
 
 /* Layer modes */
-.actor-silhouette.mode-bodyshots .layer-accessories,
-.actor-silhouette.mode-bodyshots .layer-outfit {
+.cast-member-silhouette.mode-bodyshots .layer-accessories,
+.cast-member-silhouette.mode-bodyshots .layer-outfit {
     opacity: 0.15;
 }
 
-.actor-silhouette.mode-accessories .layer-bodyshots,
-.actor-silhouette.mode-accessories .layer-outfit {
+.cast-member-silhouette.mode-accessories .layer-bodyshots,
+.cast-member-silhouette.mode-accessories .layer-outfit {
     opacity: 0.15;
 }
 
-.actor-silhouette.mode-outfit .layer-bodyshots,
-.actor-silhouette.mode-outfit .layer-accessories {
+.cast-member-silhouette.mode-outfit .layer-bodyshots,
+.cast-member-silhouette.mode-outfit .layer-accessories {
     opacity: 0.15;
 }
 
@@ -42,7 +42,7 @@
 }
 
 /* Calendar section */
-#actorCalendar {
+#castMemberCalendar {
     min-height: 600px;
 }
 
@@ -58,23 +58,23 @@
     }
     
     /* Full width silhouette */
-    .actor-silhouette-container {
+    .cast-member-silhouette-container {
         max-width: 100%;
     }
     
     /* Reduce calendar height on mobile */
-    #actorCalendar {
+    #castMemberCalendar {
         min-height: 400px;
     }
     
     /* Navbar buttons smaller */
-    #btnPrevActor,
-    #btnNextActor {
+    #btnPrevCastMember,
+    #btnNextCastMember {
         padding: 0.5rem;
     }
     
-    #btnPrevActor span,
-    #btnNextActor span {
+    #btnPrevCastMember span,
+    #btnNextCastMember span {
         display: none;
     }
     
@@ -134,7 +134,7 @@
 }
 
 /* Actor details panel */
-#actorDetailsPanel {
+#castMemberDetailsPanel {
     animation: fade-in 0.3s ease;
 }
 

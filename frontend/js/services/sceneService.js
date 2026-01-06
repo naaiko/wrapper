@@ -1,4 +1,4 @@
-// =================================================================
+﻿// =================================================================
 // SCENE SERVICE - Business Logic Layer
 // =================================================================
 // Handles all scene-related business logic
@@ -29,10 +29,9 @@ export class SceneService {
             story_order: maxOrder + 1,
             shooting_days: sceneData.shooting_days || [],
             shooting_dates: sceneData.shooting_dates || [],
-            // Include all optional fields
+            // Include all optional fields (only if they exist in DB schema)
             ...(sceneData.time && { time: sceneData.time }),
             ...(sceneData.conditions && { conditions: sceneData.conditions }),
-            ...(sceneData.location && { location: sceneData.location }),
             ...(sceneData.location_id && { location_id: sceneData.location_id }),
             ...(sceneData.int_ext && { int_ext: sceneData.int_ext }),
             ...(sceneData.continuity && { continuity: sceneData.continuity }),
@@ -77,6 +76,49 @@ export class SceneService {
         return await supabaseClient.createScenes(demoScenes);
     }
 
+    /**
+     * Bulk create scenes (optimized for script import)
+     * Maintains story_order sequence
+     * @param {string} projectId - Project UUID
+     * @param {Array} scenesData - Array of scene data objects
+     * @returns {Promise<Array>} Created scenes
+     */
+    static async createBulk(projectId, scenesData) {
+        if (!scenesData || scenesData.length === 0) {
+            return [];
+        }
+
+        // Get existing scenes to calculate starting story_order
+        const existingScenes = await this.getAll(projectId);
+        let maxOrder = existingScenes.length > 0 
+            ? Math.max(...existingScenes.map(s => s.story_order))
+            : 0;
+        
+        // Prepare scenes with story_order
+        const scenesWithOrder = scenesData.map((sceneData, index) => ({
+            project_id: projectId,
+            scene_number: sceneData.scene_number,
+            description: sceneData.description,
+            story_order: maxOrder + index + 1,
+            shooting_days: sceneData.shooting_days || [],
+            shooting_dates: sceneData.shooting_dates || [],
+            // Include all optional fields (only if they exist in DB schema)
+            ...(sceneData.time && { time: sceneData.time }),
+            ...(sceneData.conditions && { conditions: sceneData.conditions }),
+            ...(sceneData.location_id && { location_id: sceneData.location_id }),
+            ...(sceneData.int_ext && { int_ext: sceneData.int_ext }),
+            ...(sceneData.continuity && { continuity: sceneData.continuity }),
+            ...(sceneData.day_night && { day_night: sceneData.day_night }),
+            ...(sceneData.script_day && { script_day: sceneData.script_day }),
+            ...(sceneData.pages && { pages: sceneData.pages }),
+            ...(sceneData.split_group_id && { split_group_id: sceneData.split_group_id }),
+            ...(sceneData.shooting_days_count != null && { shooting_days_count: sceneData.shooting_days_count })
+        }));
+        
+        // Single database transaction for all scenes
+        return await supabaseClient.createScenes(scenesWithOrder);
+    }
+
     static async update(sceneId, updates) {
         return await supabaseClient.updateScene(sceneId, updates);
     }
@@ -88,6 +130,37 @@ export class SceneService {
     static async reorder(scenes) {
         const updates = scenes.map(s => ({ id: s.id, story_order: s.story_order }));
         return await supabaseClient.updateScenes(updates);
+    }
+
+    /**
+     * Check if scenes are demo scenes (created at project initialization)
+     * @param {Array} scenes - Array of scenes to check
+     * @returns {boolean} True if all scenes match demo pattern
+     */
+    static areDemoScenes(scenes) {
+        if (!scenes || scenes.length === 0) return false;
+        if (scenes.length !== 3) return false;
+        
+        const demoPatterns = [
+            "EXT. CITY STREET - DAY",
+            "INT. COFFEE SHOP - DAY",
+            "EXT. PARK - DAY"
+        ];
+        
+        return scenes.every((scene, index) => 
+            scene.description === demoPatterns[index] &&
+            scene.scene_number === String(index + 1)
+        );
+    }
+
+    /**
+     * Delete all scenes for a project
+     * @param {string} projectId - Project UUID
+     */
+    static async deleteAll(projectId) {
+        const scenes = await this.getAll(projectId);
+        const deletePromises = scenes.map(scene => this.delete(scene.id));
+        return await Promise.all(deletePromises);
     }
 
     // =================================================================

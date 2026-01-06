@@ -1,8 +1,8 @@
-# Run v0.2.0 Migrations
+﻿# Run v0.2.0 Migrations
 
 ## Error
 ```
-Could not find the 'role' column of 'actors' in the schema cache
+Could not find the 'role' column of 'Cast' in the schema cache
 ```
 
 ## Solution
@@ -23,12 +23,12 @@ Copy and paste this SQL from `20260106000001_add_actor_first_last_name.sql`:
 
 ```sql
 -- Add first_name and last_name columns
-ALTER TABLE actors
+ALTER TABLE Cast
 ADD COLUMN IF NOT EXISTS first_name TEXT,
 ADD COLUMN IF NOT EXISTS last_name TEXT;
 
 -- Migrate existing data: split actor_name into first_name and last_name
-UPDATE actors
+UPDATE Cast
 SET 
     first_name = SPLIT_PART(actor_name, ' ', 1),
     last_name = CASE 
@@ -44,7 +44,7 @@ SELECT
     first_name,
     last_name,
     created_at
-FROM actors
+FROM Cast
 ORDER BY created_at DESC
 LIMIT 10;
 ```
@@ -56,26 +56,26 @@ Click "Run" ▶️
 Create a new query and paste from `20260106000002_add_actor_role.sql`:
 
 ```sql
--- Add role column to actors table
-ALTER TABLE actors 
+-- Add role column to Cast table
+ALTER TABLE Cast 
 ADD COLUMN IF NOT EXISTS role TEXT 
 CHECK (role IS NULL OR role IN ('hoofdrol', 'bijrol', 'figurant', 'extra'));
 
 -- Add index for filtering by role
-CREATE INDEX IF NOT EXISTS idx_actors_role ON actors(role);
+CREATE INDEX IF NOT EXISTS idx_actors_role ON Cast(role);
 
 -- Verification query
 SELECT 
     'Migration complete' as status,
     COUNT(*) as total_actors,
     COUNT(role) as actors_with_role
-FROM actors;
+FROM Cast;
 ```
 
 Click "Run" ▶️
 
 ### Step 4: Verify
-Refresh your application and try adding an actor again. The error should be gone.
+Refresh your application and try adding an Cast Member again. The error should be gone.
 
 ---
 

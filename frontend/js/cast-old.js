@@ -1,11 +1,11 @@
-// =================================================================
+﻿// =================================================================
 // ACTORS MANAGEMENT - Main Application Logic
 // =================================================================
 
-import { ActorService } from './services/actorService.js';
+import { CastMemberService } from './services/castMemberService.js';
 import { CustomDropdown } from './components/customDropdown.js';
 import { SVGProcessor } from './utils/svgProcessor.js';
-import { ActorEditScreen } from './screens/actorEditScreen.js';
+import { ActorEditScreen } from './screens/castMemberEditScreen.js';
 import { LocationService } from './services/locationService.js';
 import settingsService from './services/settingsService.js';
 import { version } from './version.js';
@@ -82,13 +82,13 @@ class ActorsApp {
     constructor() {
         this.projectId = null;
         this.actors = [];
-        this.currentActor = null;
+        this.currentCastMember = null;
         this.currentActorIndex = 0;
         this.currentFilter = 'all';
         this.searchTerm = '';
-        this.actorDropdown = null;
+        this.castMemberDropdown = null;
         this.actorEditScreen = null;
-        this.actorCalendar = null; // Toast UI Calendar instance
+        this.castMemberCalendar = null; // Toast UI Calendar instance
         this.locations = [];
         this.times = [];
         this.conditions = [];
@@ -144,34 +144,34 @@ class ActorsApp {
                 locations: this.locations,
                 times: this.times,
                 conditions: this.conditions,
-                onActorUpdated: async (actorId) => {
+                onActorUpdated: async (castMemberId) => {
                     // Don't reload all actors during editing - just update local data
                     // This prevents race conditions when quickly changing multiple fields
-                    const actor = this.actors.find(a => a.id === actorId);
+                    const actor = this.actors.find(a => a.id === castMemberId);
                     if (actor) {
                         // The actor data is already updated in the EditScreen's currentData
                         // Just sync it to our local array
                         const updatedActor = this.actorEditScreen.editScreen.currentData;
                         if (updatedActor) {
                             Object.assign(actor, updatedActor);
-                            this.currentActor = actor;
+                            this.currentCastMember = actor;
                             // Update detail view (left panel) with new data
                             this.renderActorDetails(actor);
                         }
                     }
                 },
-                onActorDeleted: async (actorId) => {
+                onActorDeleted: async (castMemberId) => {
                     // Remove from local array
-                    this.actors = this.actors.filter(a => a.id !== actorId);
+                    this.actors = this.actors.filter(a => a.id !== castMemberId);
                     
-                    // Select next/previous actor or show empty state
+                    // Select next/Previous cast member or show empty state
                     if (this.actors.length > 0) {
                         this.currentActorIndex = Math.min(this.currentActorIndex, this.actors.length - 1);
-                        this.currentActor = this.actors[this.currentActorIndex];
+                        this.currentCastMember = this.actors[this.currentActorIndex];
                         this.renderActorDropdown();
-                        await this.showActorDetail(this.currentActor);
+                        await this.showActorDetail(this.currentCastMember);
                     } else {
-                        this.currentActor = null;
+                        this.currentCastMember = null;
                         this.currentActorIndex = 0;
                         this.showEmptyState();
                     }
@@ -581,7 +581,7 @@ class ActorsApp {
             const navActors = document.getElementById('navActors');
             const navTimeline = document.getElementById('navTimeline');
             const navCalendar = document.getElementById('navCalendar');
-            if (navActors) navActors.href = `actors.html?project=${this.projectId}`;
+            if (navActors) navActors.href = `cast.html?project=${this.projectId}`;
             if (navTimeline) navTimeline.href = `timeline.html?project=${this.projectId}`;
             if (navCalendar) navCalendar.href = `calendar.html?project=${this.projectId}`;
         } catch (error) {
@@ -621,14 +621,14 @@ class ActorsApp {
         const btnCalendarNext = document.getElementById('actorCalendarNextMonth');
         
         if (btnCalendarPrev) btnCalendarPrev.addEventListener('click', () => {
-            if (this.actorCalendar) {
-                this.actorCalendar.prev();
+            if (this.castMemberCalendar) {
+                this.castMemberCalendar.prev();
                 this.updateCalendarMonthLabel();
             }
         });
         if (btnCalendarNext) btnCalendarNext.addEventListener('click', () => {
-            if (this.actorCalendar) {
-                this.actorCalendar.next();
+            if (this.castMemberCalendar) {
+                this.castMemberCalendar.next();
                 this.updateCalendarMonthLabel();
             }
         });
@@ -639,7 +639,7 @@ class ActorsApp {
 
     async loadActors() {
         try {
-            this.actors = await ActorService.getAll(this.projectId);
+            this.actors = await CastMemberService.getAll(this.projectId);
             this.renderActors();
         } catch (error) {
             console.error('Error loading actors:', error);
@@ -668,7 +668,7 @@ class ActorsApp {
 
         // Filter actors by search term
         if (this.searchTerm) {
-            ActorService.search(this.projectId, this.searchTerm).then(actors => {
+            CastMemberService.search(this.projectId, this.searchTerm).then(actors => {
                 this.displayActors(actors);
             });
         } else {
@@ -680,9 +680,9 @@ class ActorsApp {
         const emptyState = document.getElementById('emptyState');
 
         // Apply sorting
-        const sortedActors = ActorService.sortActors(actors, this.currentFilter);
+        const sortedActors = CastMemberService.sortActors(actors, this.currentFilter);
 
-        // Only show onboarding if there are truly no actors in the project
+        // Only show onboarding if there are truly No cast members in the project
         if (this.actors.length === 0) {
             // Show onboarding state
             emptyState.classList.remove('hidden');
@@ -693,13 +693,13 @@ class ActorsApp {
         emptyState.classList.add('hidden');
         
         // Show first actor in detail view if available
-        if (sortedActors.length > 0 && !this.currentActor) {
+        if (sortedActors.length > 0 && !this.currentCastMember) {
             this.currentActorIndex = 0;
-            this.currentActor = sortedActors[0];
+            this.currentCastMember = sortedActors[0];
             this.showActorDetail(sortedActors[0]);
         }
         
-        // Render actor dropdown (after setting currentActor)
+        // Render actor dropdown (after setting currentCastMember)
         this.renderActorDropdown();
     }
 
@@ -711,16 +711,16 @@ class ActorsApp {
         }));
 
         // Initialize or update dropdown
-        if (this.actorDropdown) {
+        if (this.castMemberDropdown) {
             // Set value first, then update options so the checkmark appears on the correct item
-            this.actorDropdown.setValue(this.currentActor?.id || '');
-            this.actorDropdown.updateOptions(options);
+            this.castMemberDropdown.setValue(this.currentCastMember?.id || '');
+            this.castMemberDropdown.updateOptions(options);
         } else {
-            this.actorDropdown = new CustomDropdown({
+            this.castMemberDropdown = new CustomDropdown({
                 containerId: 'actorDropdownContainer',
-                name: 'actor_id',
+                name: 'cast_member_id',
                 options: options,
-                value: this.currentActor?.id || '',
+                value: this.currentCastMember?.id || '',
                 placeholder: 'Select actor...',
                 searchable: true,
                 allowCreate: true,
@@ -732,7 +732,7 @@ class ActorsApp {
                 onCreate: (searchTerm) => this.openAddActorDialog(searchTerm),
                 onDelete: (value) => this.handleDeleteActorFromDropdown(value)
             });
-            this.actorDropdown.render();
+            this.castMemberDropdown.render();
         }
     }
 
@@ -751,9 +751,9 @@ class ActorsApp {
         const actor = this.actors[this.currentActorIndex];
         
         // Update dropdown value
-        if (this.actorDropdown) {
-            this.actorDropdown.value = actor.id;
-            this.actorDropdown.render();
+        if (this.castMemberDropdown) {
+            this.castMemberDropdown.value = actor.id;
+            this.castMemberDropdown.render();
         }
         
         this.showActorDetail(actor);
@@ -766,9 +766,9 @@ class ActorsApp {
         const actor = this.actors[this.currentActorIndex];
         
         // Update dropdown value
-        if (this.actorDropdown) {
-            this.actorDropdown.value = actor.id;
-            this.actorDropdown.render();
+        if (this.castMemberDropdown) {
+            this.castMemberDropdown.value = actor.id;
+            this.castMemberDropdown.render();
         }
         
         this.showActorDetail(actor);
@@ -776,8 +776,8 @@ class ActorsApp {
 
     createActorCard(actor) {
         const imageHtml = actor.profile_image_url
-            ? `<img src="${actor.profile_image_url}" alt="${actor.actor_name}" class="actor-card-image" />`
-            : `<img src="images/silhouette.svg" alt="Actor Silhouette" class="actor-card-silhouette" />`;
+            ? `<img src="${actor.profile_image_url}" alt="${actor.actor_name}" class="cast-member-card-image" />`
+            : `<img src="images/silhouette.svg" alt="Cast member silhouette" class="cast-member-card-silhouette" />`;
 
         const characteristics = [];
         if (actor.hair_color) characteristics.push(`Hair: ${actor.hair_color}`);
@@ -785,13 +785,13 @@ class ActorsApp {
         if (actor.height) characteristics.push(`Height: ${actor.height}`);
 
         return `
-            <div id="actor-card-${actor.id}" class="actor-card">
-                <div class="actor-card-image-container">
+            <div id="castMember-card-${actor.id}" class="cast-member-card">
+                <div class="cast-member-card-image-container">
                     ${imageHtml}
                 </div>
-                <div class="actor-card-body">
-                    <h3 class="actor-card-title">${this.escapeHtml(actor.actor_name)}</h3>
-                    <p class="actor-card-subtitle">as ${this.escapeHtml(actor.character_name)}</p>
+                <div class="cast-member-card-body">
+                    <h3 class="cast-member-card-title">${this.escapeHtml(actor.actor_name)}</h3>
+                    <p class="cast-member-card-subtitle">as ${this.escapeHtml(actor.character_name)}</p>
                     
                     ${characteristics.length > 0 ? `
                         <div class="characteristic-badges">
@@ -802,8 +802,8 @@ class ActorsApp {
                     ` : ''}
 
                     ${actor.notes ? `
-                        <div class="actor-card-details">
-                            <div class="actor-card-detail">
+                        <div class="cast-member-card-details">
+                            <div class="cast-member-card-detail">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                                 </svg>
@@ -812,7 +812,7 @@ class ActorsApp {
                         </div>
                     ` : ''}
 
-                    <div class="actor-card-actions">
+                    <div class="cast-member-card-actions">
                         <button class="btn btn-sm btn-ghost flex-1" onclick="actorsApp.openEditActorModal('${actor.id}'); event.stopPropagation();">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -854,7 +854,7 @@ class ActorsApp {
         const firstName = capitalizeName(document.getElementById('firstName').value.trim());
         const lastName = capitalizeName(document.getElementById('lastName').value.trim());
         
-        const actorData = {
+        const castMemberData = {
             actor_name: `${firstName} ${lastName}`,
             character_name: '',
             first_name: firstName,
@@ -862,27 +862,27 @@ class ActorsApp {
         };
 
         try {
-            const newActor = await ActorService.create(this.projectId, actorData);
+            const newCastMember = await CastMemberService.create(this.projectId, castMemberData);
             
-            // Add new actor to the local array immediately
-            this.actors.push(newActor);
+            // Add New Cast Member to the local array immediately
+            this.actors.push(newCastMember);
             
             // Find and select the newly created actor
-            this.currentActorIndex = this.actors.findIndex(a => a.id === newActor.id);
-            this.currentActor = newActor;
+            this.currentActorIndex = this.actors.findIndex(a => a.id === newCastMember.id);
+            this.currentCastMember = newCastMember;
             
             // Update dropdown to show new actor and select it
             this.renderActorDropdown();
-            if (this.actorDropdown) {
-                this.actorDropdown.setValue(newActor.id);
+            if (this.castMemberDropdown) {
+                this.castMemberDropdown.setValue(newCastMember.id);
             }
             
             // Show actor in 3-column layout
-            this.showActorDetail(newActor);
+            this.showActorDetail(newCastMember);
             
             document.getElementById('addActorDialog').close();
         } catch (error) {
-            console.error('Error creating actor:', error);
+            console.error('Error Creating cast member:', error);
             this.showError('Kon acteur niet opslaan');
         }
     }
@@ -891,7 +891,7 @@ class ActorsApp {
         // Hide empty state
         document.getElementById('emptyState').classList.add('hidden');
         
-        // Render actor details in left panel
+        // Render Cast Member Details in left panel
         this.renderActorDetails(actor);
         
         // Silhouette is now static - no update needed
@@ -901,7 +901,7 @@ class ActorsApp {
     }
     
     /**
-     * Render actor details in left panel
+     * Render Cast Member Details in left panel
      */
     renderActorDetails(actor) {
         const panel = document.getElementById('actorDetailsPanel');
@@ -1027,7 +1027,7 @@ class ActorsApp {
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    Edit Actor
+                    Edit Cast Member
                 </button>
             </div>
         `;
@@ -1047,12 +1047,12 @@ class ActorsApp {
      * Initialize Toast UI Calendar for actor scenes (read-only)
      */
     initializeActorCalendar() {
-        const container = document.getElementById('actorCalendar');
+        const container = document.getElementById('castMemberCalendar');
         if (!container) return;
         
         try {
             // Initialize Toast UI Calendar in read-only mode
-            this.actorCalendar = new tui.Calendar(container, {
+            this.castMemberCalendar = new tui.Calendar(container, {
                 defaultView: 'month',
                 useFormPopup: false,
                 useDetailPopup: false,
@@ -1127,12 +1127,12 @@ class ActorsApp {
      * Update calendar month label
      */
     updateCalendarMonthLabel() {
-        if (!this.actorCalendar) return;
+        if (!this.castMemberCalendar) return;
         
         const monthLabel = document.getElementById('actorCalendarMonth');
         if (!monthLabel) return;
         
-        const date = this.actorCalendar.getDate();
+        const date = this.castMemberCalendar.getDate();
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                             'July', 'August', 'September', 'October', 'November', 'December'];
         monthLabel.textContent = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
@@ -1142,24 +1142,24 @@ class ActorsApp {
      * Render actor's scenes on the calendar
      */
     async renderActorCalendar(actor) {
-        console.log('🎬 renderActorCalendar called with actor:', actor?.actor_name, 'calendar exists:', !!this.actorCalendar);
+        console.log('🎬 renderActorCalendar called with actor:', actor?.actor_name, 'calendar exists:', !!this.castMemberCalendar);
         
-        if (!this.actorCalendar || !actor) return;
+        if (!this.castMemberCalendar || !actor) return;
         
         try {
             // Clear existing events
-            this.actorCalendar.clear();
+            this.castMemberCalendar.clear();
             
             // Dynamic import to avoid loading scene modules until needed
-            const { SceneActorService } = await import('./services/sceneActorService.js');
+            const { SceneCastMemberService } = await import('./services/sceneCastMemberService.js');
             const { buildSceneHeading } = await import('./components/sceneCardRenderer.js');
             const settingsService = await import('./services/settingsService.js');
             
-            // Get scene_actors for this actor
-            const sceneActors = await SceneActorService.getByActor(actor.id);
-            console.log('📋 Scene actors loaded:', sceneActors.length, 'scenes');
+            // Get scene_cast_members for this actor
+            const sceneCastMembers = await SceneCastMemberService.getByActor(actor.id);
+            console.log('📋 Scene actors loaded:', sceneCastMembers.length, 'scenes');
             
-            if (sceneActors.length === 0) {
+            if (sceneCastMembers.length === 0) {
                 console.log('No scenes found for actor');
                 return;
             }
@@ -1171,7 +1171,7 @@ class ActorsApp {
             // Prepare calendar events
             const events = [];
             
-            sceneActors.forEach(sa => {
+            sceneCastMembers.forEach(sa => {
                 const scene = sa.scene;
                 console.log('🔍 Processing scene:', scene?.scene_number, 'shooting_dates:', scene?.shooting_dates);
                 
@@ -1243,7 +1243,7 @@ class ActorsApp {
             console.log('Events:', events);
             
             // Add events to calendar
-            this.actorCalendar.createEvents(events);
+            this.castMemberCalendar.createEvents(events);
             console.log(`✅ Rendered ${events.length} scenes on actor calendar`);
             
         } catch (error) {
@@ -1260,7 +1260,7 @@ class ActorsApp {
         
         try {
             // Dynamic import to avoid loading scene modules until needed
-            const { SceneActorService } = await import('./services/sceneActorService.js');
+            const { SceneCastMemberService } = await import('./services/sceneCastMemberService.js');
             const { renderSceneCard } = await import('./components/sceneCardRenderer.js');
             const { LocationService } = await import('./services/locationService.js');
             const settingsService = await import('./services/settingsService.js');
@@ -1272,10 +1272,10 @@ class ActorsApp {
                 </div>
             `;
             
-            // Get scene_actors for this actor
-            const sceneActors = await SceneActorService.getByActor(actor.id);
+            // Get scene_cast_members for this actor
+            const sceneCastMembers = await SceneCastMemberService.getByActor(actor.id);
             
-            if (sceneActors.length === 0) {
+            if (sceneCastMembers.length === 0) {
                 scenesList.innerHTML = `
                     <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
                         This actor is not assigned to any scenes yet.
@@ -1290,7 +1290,7 @@ class ActorsApp {
             
             // Render scene cards
             scenesList.innerHTML = '';
-            sceneActors.forEach(sa => {
+            sceneCastMembers.forEach(sa => {
                 const scene = sa.scene;
                 if (!scene) return;
                 
@@ -1361,11 +1361,11 @@ class ActorsApp {
     }
     
     /**
-     * Edit actor using new EditScreen component
+     * Edit Cast Member using new EditScreen component
      */
-    async editActor(actorId) {
+    async editActor(castMemberId) {
         if (this.actorEditScreen) {
-            await this.actorEditScreen.open(actorId);
+            await this.actorEditScreen.open(castMemberId);
         } else {
             console.warn('ActorEditScreen not initialized');
             alert('Edit screen is not available. Please refresh the page.');
@@ -1393,39 +1393,39 @@ class ActorsApp {
         svg.classList.add(`mode-${mode}`);
     }
 
-    async openEditActorModal(actorId) {
+    async openEditActorModal(castMemberId) {
         try {
-            this.currentActor = await ActorService.getById(actorId);
-            document.getElementById('modalTitle').textContent = 'Edit Actor';
+            this.currentCastMember = await CastMemberService.getById(castMemberId);
+            document.getElementById('modalTitle').textContent = 'Edit Cast Member';
 
             // Populate form
-            document.getElementById('actorName').value = this.currentActor.actor_name || '';
-            document.getElementById('characterName').value = this.currentActor.character_name || '';
-            document.getElementById('email').value = this.currentActor.email || '';
-            document.getElementById('phone').value = this.currentActor.phone || '';
-            document.getElementById('height').value = this.currentActor.height || '';
-            document.getElementById('hairColor').value = this.currentActor.hair_color || '';
-            document.getElementById('hairStyle').value = this.currentActor.hair_style || '';
-            document.getElementById('eyeColor').value = this.currentActor.eye_color || '';
-            document.getElementById('skinTone').value = this.currentActor.skin_tone || '';
-            document.getElementById('bodyType').value = this.currentActor.body_type || '';
-            document.getElementById('profileImageUrl').value = this.currentActor.profile_image_url || '';
-            document.getElementById('notes').value = this.currentActor.notes || '';
+            document.getElementById('castMemberName').value = this.currentCastMember.actor_name || '';
+            document.getElementById('characterName').value = this.currentCastMember.character_name || '';
+            document.getElementById('email').value = this.currentCastMember.email || '';
+            document.getElementById('phone').value = this.currentCastMember.phone || '';
+            document.getElementById('height').value = this.currentCastMember.height || '';
+            document.getElementById('hairColor').value = this.currentCastMember.hair_color || '';
+            document.getElementById('hairStyle').value = this.currentCastMember.hair_style || '';
+            document.getElementById('eyeColor').value = this.currentCastMember.eye_color || '';
+            document.getElementById('skinTone').value = this.currentCastMember.skin_tone || '';
+            document.getElementById('bodyType').value = this.currentCastMember.body_type || '';
+            document.getElementById('profileImageUrl').value = this.currentCastMember.profile_image_url || '';
+            document.getElementById('notes').value = this.currentCastMember.notes || '';
 
             // Handle distinguishing features array
-            if (this.currentActor.distinguishing_features && this.currentActor.distinguishing_features.length > 0) {
-                document.getElementById('distinguishingFeatures').value = this.currentActor.distinguishing_features.join(', ');
+            if (this.currentCastMember.distinguishing_features && this.currentCastMember.distinguishing_features.length > 0) {
+                document.getElementById('distinguishingFeatures').value = this.currentCastMember.distinguishing_features.join(', ');
             } else {
                 document.getElementById('distinguishingFeatures').value = '';
             }
 
             // Update preview
-            this.updateProfilePreview(this.currentActor.profile_image_url);
+            this.updateProfilePreview(this.currentCastMember.profile_image_url);
 
             actorModal.showModal();
         } catch (error) {
             console.error('Error loading actor:', error);
-            this.showError('Failed to load actor details');
+            this.showError('Failed to load Cast Member Details');
         }
     }
 
@@ -1453,8 +1453,8 @@ class ActorsApp {
             ? distinguishingFeaturesStr.split(',').map(f => f.trim()).filter(f => f)
             : [];
 
-        const actorData = {
-            actor_name: formData.get('actorName'),
+        const castMemberData = {
+            actor_name: formData.get('castMemberName'),
             character_name: formData.get('characterName'),
             email: formData.get('email'),
             phone: formData.get('phone'),
@@ -1470,14 +1470,14 @@ class ActorsApp {
         };
 
         try {
-            if (this.currentActor) {
+            if (this.currentCastMember) {
                 // Update existing actor
-                await ActorService.update(this.currentActor.id, actorData);
-                this.showSuccess('Actor updated successfully');
+                await CastMemberService.update(this.currentCastMember.id, castMemberData);
+                this.showSuccess('Cast member updated successfully');
             } else {
                 // Create new actor
-                await ActorService.create(this.projectId, actorData);
-                this.showSuccess('Actor created successfully');
+                await CastMemberService.create(this.projectId, castMemberData);
+                this.showSuccess('Cast member created successfully');
             }
 
             actorModal.close();
@@ -1488,7 +1488,7 @@ class ActorsApp {
         }
     }
 
-    async handleDeleteActorFromDropdown(actorId) {
+    async handleDeleteActorFromDropdown(castMemberId) {
         const confirmed = await confirmDialog(
             'Weet je zeker dat je deze acteur wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
             'Acteur verwijderen'
@@ -1499,32 +1499,32 @@ class ActorsApp {
         }
 
         try {
-            await ActorService.delete(actorId);
+            await CastMemberService.delete(castMemberId);
             
             // Remove from local array
-            this.actors = this.actors.filter(a => a.id !== actorId);
+            this.actors = this.actors.filter(a => a.id !== castMemberId);
             
             // Select another actor or show empty state
             if (this.actors.length > 0) {
                 this.currentActorIndex = 0;
-                this.currentActor = this.actors[0];
+                this.currentCastMember = this.actors[0];
                 this.renderActorDropdown();
-                if (this.actorDropdown) {
-                    this.actorDropdown.setValue(this.actors[0].id);
+                if (this.castMemberDropdown) {
+                    this.castMemberDropdown.setValue(this.actors[0].id);
                 }
                 this.showActorDetail(this.actors[0]);
             } else {
-                this.currentActor = null;
+                this.currentCastMember = null;
                 this.currentActorIndex = 0;
                 document.getElementById('emptyState').classList.remove('hidden');
             }
         } catch (error) {
-            console.error('Error deleting actor:', error);
+            console.error('Error Deleting cast member:', error);
             this.showError('Kon acteur niet verwijderen');
         }
     }
 
-    async deleteActor(actorId) {
+    async deleteActor(castMemberId) {
         const confirmed = await confirmDialog(
             'Weet je zeker dat je deze acteur wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
             'Acteur verwijderen'
@@ -1535,12 +1535,12 @@ class ActorsApp {
         }
 
         try {
-            await ActorService.delete(actorId);
-            this.showSuccess('Actor deleted successfully');
+            await CastMemberService.delete(castMemberId);
+            this.showSuccess('Cast member deleted successfully');
             await this.loadActors();
         } catch (error) {
-            console.error('Error deleting actor:', error);
-            this.showError('Failed to delete actor');
+            console.error('Error Deleting cast member:', error);
+            this.showError('Failed to Delete Cast Member');
         }
     }
 
@@ -1551,25 +1551,25 @@ class ActorsApp {
         // Get continuity data
         let continuityEntries = [];
         try {
-            continuityEntries = await ActorService.getContinuity(actor.id);
+            continuityEntries = await CastMemberService.getContinuity(actor.id);
         } catch (error) {
             console.error('Error loading continuity:', error);
         }
 
         const imageHtml = actor.profile_image_url
             ? `<img src="${actor.profile_image_url}" alt="${actor.actor_name}" />`
-            : `<img src="images/silhouette.svg" alt="Actor Silhouette" style="width: 200px; height: 400px; opacity: 0.4;" />`;
+            : `<img src="images/silhouette.svg" alt="Cast member silhouette" style="width: 200px; height: 400px; opacity: 0.4;" />`;
 
         content.innerHTML = `
-            <div class="actor-detail-header">
-                <div class="actor-detail-image">
-                    <div class="actor-detail-image-container">
+            <div class="cast-member-detail-header">
+                <div class="cast-member-detail-image">
+                    <div class="cast-member-detail-image-container">
                         ${imageHtml}
                     </div>
                 </div>
-                <div class="actor-detail-info">
-                    <h2 class="actor-detail-title">${this.escapeHtml(actor.actor_name)}</h2>
-                    <h3 class="actor-detail-character">${this.escapeHtml(actor.character_name)}</h3>
+                <div class="cast-member-detail-info">
+                    <h2 class="cast-member-detail-title">${this.escapeHtml(actor.actor_name)}</h2>
+                    <h3 class="cast-member-detail-character">${this.escapeHtml(actor.character_name)}</h3>
                     
                     ${actor.email || actor.phone ? `
                         <div class="space-y-2">
@@ -1592,57 +1592,57 @@ class ActorsApp {
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                            Edit Actor
+                            Edit Cast Member
                         </button>
                         <button class="btn" onclick="actorDetailModal.close();">Close</button>
                     </div>
                 </div>
             </div>
 
-            <div class="actor-detail-section">
-                <h4 class="actor-detail-section-title">Physical Characteristics</h4>
-                <div class="actor-detail-grid">
+            <div class="cast-member-detail-section">
+                <h4 class="cast-member-detail-section-title">Physical Characteristics</h4>
+                <div class="cast-member-detail-grid">
                     ${actor.height ? `
-                        <div class="actor-detail-field">
-                            <div class="actor-detail-field-label">Height</div>
-                            <div class="actor-detail-field-value">${this.escapeHtml(actor.height)}</div>
+                        <div class="cast-member-detail-field">
+                            <div class="cast-member-detail-field-label">Height</div>
+                            <div class="cast-member-detail-field-value">${this.escapeHtml(actor.height)}</div>
                         </div>
                     ` : ''}
                     ${actor.hair_color ? `
-                        <div class="actor-detail-field">
-                            <div class="actor-detail-field-label">Hair Color</div>
-                            <div class="actor-detail-field-value">${this.escapeHtml(actor.hair_color)}</div>
+                        <div class="cast-member-detail-field">
+                            <div class="cast-member-detail-field-label">Hair Color</div>
+                            <div class="cast-member-detail-field-value">${this.escapeHtml(actor.hair_color)}</div>
                         </div>
                     ` : ''}
                     ${actor.hair_style ? `
-                        <div class="actor-detail-field">
-                            <div class="actor-detail-field-label">Hair Style</div>
-                            <div class="actor-detail-field-value">${this.escapeHtml(actor.hair_style)}</div>
+                        <div class="cast-member-detail-field">
+                            <div class="cast-member-detail-field-label">Hair Style</div>
+                            <div class="cast-member-detail-field-value">${this.escapeHtml(actor.hair_style)}</div>
                         </div>
                     ` : ''}
                     ${actor.eye_color ? `
-                        <div class="actor-detail-field">
-                            <div class="actor-detail-field-label">Eye Color</div>
-                            <div class="actor-detail-field-value">${this.escapeHtml(actor.eye_color)}</div>
+                        <div class="cast-member-detail-field">
+                            <div class="cast-member-detail-field-label">Eye Color</div>
+                            <div class="cast-member-detail-field-value">${this.escapeHtml(actor.eye_color)}</div>
                         </div>
                     ` : ''}
                     ${actor.skin_tone ? `
-                        <div class="actor-detail-field">
-                            <div class="actor-detail-field-label">Skin Tone</div>
-                            <div class="actor-detail-field-value">${this.escapeHtml(actor.skin_tone)}</div>
+                        <div class="cast-member-detail-field">
+                            <div class="cast-member-detail-field-label">Skin Tone</div>
+                            <div class="cast-member-detail-field-value">${this.escapeHtml(actor.skin_tone)}</div>
                         </div>
                     ` : ''}
                     ${actor.body_type ? `
-                        <div class="actor-detail-field">
-                            <div class="actor-detail-field-label">Body Type</div>
-                            <div class="actor-detail-field-value">${this.escapeHtml(actor.body_type)}</div>
+                        <div class="cast-member-detail-field">
+                            <div class="cast-member-detail-field-label">Body Type</div>
+                            <div class="cast-member-detail-field-value">${this.escapeHtml(actor.body_type)}</div>
                         </div>
                     ` : ''}
                 </div>
 
                 ${actor.distinguishing_features && actor.distinguishing_features.length > 0 ? `
                     <div class="mt-4">
-                        <div class="actor-detail-field-label mb-2">Distinguishing Features</div>
+                        <div class="cast-member-detail-field-label mb-2">Distinguishing Features</div>
                         <div class="characteristic-badges">
                             ${actor.distinguishing_features.map(feature => `
                                 <span class="badge badge-lg">${this.escapeHtml(feature)}</span>
@@ -1653,8 +1653,8 @@ class ActorsApp {
             </div>
 
             ${continuityEntries.length > 0 ? `
-                <div class="actor-detail-section">
-                    <h4 class="actor-detail-section-title">Continuity Timeline</h4>
+                <div class="cast-member-detail-section">
+                    <h4 class="cast-member-detail-section-title">Continuity Timeline</h4>
                     <div class="continuity-timeline">
                         ${continuityEntries.map(entry => `
                             <div class="continuity-entry">

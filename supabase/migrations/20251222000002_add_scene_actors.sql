@@ -1,14 +1,14 @@
--- Migration: Add scene_actors junction table for many-to-many relationship
+﻿-- Migration: Add scene_cast_members junction table for many-to-many relationship
 -- Created: 2025-12-22
 -- Purpose: Link actors to scenes with continuity data (costume, makeup, hair, props photos)
 
 -- Junction table for many-to-many relationship between scenes and actors
-CREATE TABLE scene_actors (
+CREATE TABLE scene_cast_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
     -- Foreign keys (many-to-many relationship)
     scene_id UUID NOT NULL REFERENCES scenes(id) ON DELETE CASCADE,
-    actor_id UUID NOT NULL REFERENCES actors(id) ON DELETE CASCADE,
+    cast_member_id UUID NOT NULL REFERENCES actors(id) ON DELETE CASCADE,
     
     -- Costume/wardrobe continuity
     costume_notes TEXT,
@@ -39,25 +39,25 @@ CREATE TABLE scene_actors (
     last_modified TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
     -- UNIQUE constraint: one actor can only appear once in the same scene
-    CONSTRAINT unique_scene_actor UNIQUE (scene_id, actor_id)
+    CONSTRAINT unique_scene_actor UNIQUE (scene_id, cast_member_id)
 );
 
 -- Indexes for performance (queries from both directions)
-CREATE INDEX idx_scene_actors_scene_id ON scene_actors(scene_id);
-CREATE INDEX idx_scene_actors_actor_id ON scene_actors(actor_id);
-CREATE INDEX idx_scene_actors_approval_status ON scene_actors(approval_status);
+CREATE INDEX idx_scene_cast_members_scene_id ON scene_cast_members(scene_id);
+CREATE INDEX idx_scene_cast_members_cast_member_id ON scene_cast_members(cast_member_id);
+CREATE INDEX idx_scene_cast_members_approval_status ON scene_cast_members(approval_status);
 
 -- Enable Row Level Security
-ALTER TABLE scene_actors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scene_cast_members ENABLE ROW LEVEL SECURITY;
 
 -- Public access policy (for MVP - allows anyone to read/write)
 -- WARNING: This is for testing only. Add authentication later!
-CREATE POLICY "Allow public access to scene_actors" ON scene_actors
+CREATE POLICY "Allow public access to scene_cast_members" ON scene_cast_members
     FOR ALL USING (true) WITH CHECK (true);
 
 -- Trigger to auto-update last_modified
-CREATE TRIGGER update_scene_actors_last_modified
-    BEFORE UPDATE ON scene_actors
+CREATE TRIGGER update_scene_cast_members_last_modified
+    BEFORE UPDATE ON scene_cast_members
     FOR EACH ROW
     EXECUTE FUNCTION update_modified_column();
 

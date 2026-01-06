@@ -1,4 +1,4 @@
-// =================================================================
+﻿// =================================================================
 // SCENE CARD RENDERER - Reusable component for rendering scene cards
 // =================================================================
 
@@ -13,6 +13,7 @@
  * @param {Array} options.conditions - Available conditions
  * @param {Object} options.settings - Project settings (show_int_ext, etc.)
  * @param {Array} options.continuityOptions - Continuity options
+ * @param {Array} options.characters - Characters in this scene (with actor info)
  * @param {Object} options.highlightClasses - Optional classes to add for highlighting
  * @returns {HTMLElement} The rendered scene card element
  */
@@ -23,6 +24,7 @@ export function renderSceneCard(scene, options = {}) {
         conditions = [],
         settings = {},
         continuityOptions = [],
+        characters = [],
         highlightClasses = {},
         hideSplitIndicator = false
     } = options;
@@ -101,6 +103,27 @@ export function renderSceneCard(scene, options = {}) {
             ${daysCount}d
         </div>
     ` : '';
+    
+    // Characters display
+    let charactersHtml = '';
+    if (characters && characters.length > 0) {
+        const displayCharacters = characters.slice(0, 3);
+        const remaining = characters.length - displayCharacters.length;
+        
+        charactersHtml = `
+            <div class="flex items-center gap-1 flex-wrap" style="margin-top: 4px;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-base-content/40 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                ${displayCharacters.map(char => {
+                    const hasActor = char.character?.actor_assignments?.length > 0;
+                    const badgeClass = hasActor ? 'badge-primary' : 'badge-ghost';
+                    return `<div class="badge badge-xs ${badgeClass}" style="padding: 2px 4px; font-size: 9px;">${char.character?.name || 'Unknown'}</div>`;
+                }).join('')}
+                ${remaining > 0 ? `<div class="badge badge-xs badge-ghost" style="padding: 2px 4px; font-size: 9px;">+${remaining}</div>` : ''}
+            </div>
+        `;
+    }
 
     card.innerHTML = `
         <div class="card-body p-1.5">
@@ -112,6 +135,7 @@ export function renderSceneCard(scene, options = {}) {
                 ${timeIconHtml}
                 ${conditionIconsHtml}
             </div>
+            ${charactersHtml}
         </div>
     `;
     

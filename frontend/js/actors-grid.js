@@ -1,9 +1,11 @@
-// =================================================================
+﻿// =================================================================
 // CAST GRID - Main Application Logic
 // =================================================================
 
-import { ActorService } from './services/actorService.js';
+import { CastMemberService } from './services/castMemberService.js';
+import { CharacterService } from './services/characterService.js';
 import { ActorCard } from './components/actorCard.js';
+import { CustomDropdown } from './components/customDropdown.js';
 import Toast from './utils/toast.js';
 import { version } from './version.js';
 
@@ -11,10 +13,12 @@ class CastGridApp {
     constructor() {
         this.projectId = null;
         this.actors = [];
+        this.characters = [];
         this.filteredActors = [];
         this.currentFilter = 'all';
         this.currentSort = 'name';
         this.searchTerm = '';
+        this.characterDropdown = null;
         
         // DOM elements
         this.gridContainer = document.getElementById('castGrid');
@@ -25,7 +29,7 @@ class CastGridApp {
         this.sortLabel = document.getElementById('sortLabel');
         this.emptyState = document.getElementById('emptyState');
         this.noResultsState = document.getElementById('noResultsState');
-        this.addActorBtn = document.getElementById('addActorBtn');
+        this.addActorBtn = document.getElementById('fabAddActor');
         this.quickAddModal = document.getElementById('quickAddModal');
         this.quickAddForm = document.getElementById('quickAddForm');
         this.clearFiltersBtn = document.getElementById('clearFiltersBtn');
@@ -46,11 +50,14 @@ class CastGridApp {
         // Setup event listeners
         this.setupEventListeners();
         
+        // Load characters for dropdown
+        await this.loadCharacters();
+        
         // Load actors
         await this.loadActors();
         
-        // Render grid
-        this.renderGrid();
+        // Apply filters and render
+        this.filterAndRender();
     }
     
     setupEventListeners() {
@@ -105,6 +112,7 @@ class CastGridApp {
             console.log('[CAST GRID] Add actor button found, adding click listener');
             this.addActorBtn.addEventListener('click', () => {
                 console.log('[CAST GRID] Add actor button clicked');
+                this.initializeCharacterDropdown();
                 this.quickAddModal.showModal();
             });
         }
@@ -167,7 +175,7 @@ class CastGridApp {
         const actorIdParam = new URLSearchParams(window.location.search).get('actor');
         if (actorIdParam) {
             // Redirect to detail screen
-            window.location.href = `actors-detail.html?project=${this.projectId}&actor=${actorIdParam}`;
+            window.location.href = `cast-detail.html?project=${this.projectId}&actor=${actorIdParam}`;
         }
     }
     
@@ -176,47 +184,118 @@ class CastGridApp {
             // Show skeletons while loading
             this.renderSkeletons();
             
-            // Load actors with scene count
-            const actors = await ActorService.getAll(this.projectId);
+            // Load actors with character assignments
+            const { data: actors, error } = await window.supabase
+                .from('cast_members')
+                .select(`
+                    *,
+                    character_assignments:character_cast_assignments(
+                        assignment_type,
+                        character:characters(name)
+                    )
+                `)
+                .eq('project_id', this.projectId)
+                .order('name');
+            
+            if (error) throw error;
             
             // Load scene counts for each actor and normalize data structure
             const actorsWithCounts = await Promise.all(
-                actors.map(async (actor) => {
+                (actors || []).map(async (actor) => {
                     const sceneCount = await this.getActorSceneCount(actor.id);
+                    
+                    // Get primary character (first 'actor' type assignment)
+                    const primaryAssignment = actor.character_assignments?.find(a => a.assignment_type === 'actor');
+                    const characterName = primaryAssignment?.character?.name || null;
                     
                     // Normalize data structure for ActorCard component
                     return {
                         ...actor,
                         scene_count: sceneCount,
+                        character_name: characterName,
                         // Map database fields to expected component fields
-                        name: actor.first_name && actor.last_name 
-                            ? `${actor.first_name} ${actor.last_name}`
-                            : actor.actor_name || 'Unnamed Actor',
+                        // name is auto-generated in database
                         photo_url: actor.profile_image_url,
-                        role: actor.role || null // Will be null until migration adds role column
+                        role: actor.role_type
                     };
                 })
             );
             
             this.actors = actorsWithCounts;
-            this.filteredActors = [...this.actors];
-            
+            console.log('[CAST GRID] Loaded actors:', this.actors.length);
         } catch (error) {
             console.error('[CAST GRID] Error loading actors:', error);
-            this.actors = [];
-            this.filteredActors = [];
+            Toast.error('Failed to load actors');
         }
     }
     
-    async getActorSceneCount(actorId) {
+    async loadCharacters() {
         try {
-            const { count } = await window.supabase
-                .from('scene_actors')
-                .select('*', { count: 'exact', head: true })
-                .eq('actor_id', actorId);
-            return count || 0;
+            this.characters = await CharacterService.getAll(this.projectId);
+            console.log('[CAST GRID] Loaded characters:', this.characters.length);
         } catch (error) {
-            console.error(`[CAST GRID] Error getting scene count for actor ${actorId}:`, error);
+            console.error('[CAST GRID] Error loading characters:', error);
+            this.characters = [];
+        }
+    }
+    
+    initializeCharacterDropdown() {
+        if (this.characterDropdown) {
+            // Update options if dropdown already exists
+            const characterOptions = this.characters.map(char => ({
+                value: char.id,
+                label: char.name
+            }));
+            this.characterDropdown.updateOptions(characterOptions);
+            return;
+        }
+        
+        // Create new dropdown
+        const characterOptions = this.characters.map(char => ({
+            value: char.id,
+            label: char.name
+        }));
+        
+        this.characterDropdown = new CustomDropdown({
+            containerId: 'characterDropdownContainer',
+            name: 'character_id',
+            options: characterOptions,
+            value: '',
+            placeholder: 'Select character (optional)...',
+            searchable: true,
+            size: 'sm',
+            onChange: (value) => console.log('Character selected:', value)
+        });
+        
+        this.characterDropdown.render();
+    }
+    
+    async getActorSceneCount(castMemberId) {
+        try {
+            // Count scenes through character assignments
+            // Actor -> character_cast_assignments -> character -> scene_characters -> scenes
+            const { data, error } = await window.supabase
+                .from('character_cast_assignments')
+                .select(`
+                    character:characters(
+                        scene_characters(scene_id)
+                    )
+                `)
+                .eq('cast_member_id', castMemberId);
+            
+            if (error) throw error;
+            
+            // Get unique scene IDs
+            const sceneIds = new Set();
+            (data || []).forEach(assignment => {
+                assignment.character?.scene_characters?.forEach(sc => {
+                    if (sc.scene_id) sceneIds.add(sc.scene_id);
+                });
+            });
+            
+            return sceneIds.size;
+        } catch (error) {
+            console.error(`[CAST GRID] Error getting scene count for actor ${castMemberId}:`, error);
             return 0;
         }
     }
@@ -228,14 +307,14 @@ class CastGridApp {
         // Apply filter
         if (this.currentFilter !== 'all') {
             filtered = filtered.filter(actor => 
-                actor.role?.toLowerCase() === this.currentFilter.toLowerCase()
+                actor.role_type?.toLowerCase() === this.currentFilter.toLowerCase()
             );
         }
         
         // Apply search
         if (this.searchTerm) {
             filtered = filtered.filter(actor =>
-                actor.name.toLowerCase().includes(this.searchTerm)
+                actor.name?.toLowerCase().includes(this.searchTerm)
             );
         }
         
@@ -263,7 +342,7 @@ class CastGridApp {
         
         // Show appropriate state
         if (this.actors.length === 0) {
-            // No actors at all - show empty state
+            // No cast members at all - show empty state
             this.emptyState.classList.remove('hidden');
             this.noResultsState.classList.add('hidden');
             return;
@@ -320,54 +399,59 @@ class CastGridApp {
         });
     }
     
-    openActorDetail(actorId) {
+    openActorDetail(castMemberId) {
         // Navigate to detail screen with current filter/sort in URL for back navigation
         const params = new URLSearchParams({
             project: this.projectId,
-            actor: actorId,
+            actor: castMemberId,
             filter: this.currentFilter,
             sort: this.currentSort,
             search: this.searchTerm
         });
         
-        window.location.href = `actors-detail.html?${params.toString()}`;
+        window.location.href = `cast-detail.html?${params.toString()}`;
     }
     
     async handleQuickAdd() {
-        const name = document.getElementById('actorNameInput').value.trim();
-        const role = document.getElementById('actorRoleSelect').value;
+        const firstName = document.getElementById('actorFirstNameInput').value.trim();
+        const lastName = document.getElementById('actorLastNameInput').value.trim();
+        const characterId = this.characterDropdown?.value || null;
+        const roleType = document.getElementById('actorRoleTypeSelect').value;
         const photoUrl = document.getElementById('actorPhotoInput').value.trim();
         
-        if (!name) {
-            alert('Please enter an actor name');
+        if (!firstName || !lastName) {
+            Toast.error('Please enter first and last name');
             return;
         }
         
         try {
-            // Split name into first and last name (simple split on space)
-            const nameParts = name.split(' ');
-            const firstName = nameParts[0];
-            const lastName = nameParts.slice(1).join(' ') || '';
+            const fullName = `${firstName} ${lastName}`;
             
-            // Create actor with proper field names
-            const newActor = await ActorService.create(this.projectId, {
-                actor_name: name,
-                character_name: name, // Default to same as actor name
+            // Create actor
+            const newCastMember = await CastMemberService.create(this.projectId, {
                 first_name: firstName,
-                last_name: lastName || null,
-                role: role || null,
+                last_name: lastName,
+                role_type: roleType || null,
                 profile_image_url: photoUrl || null
             });
             
+            // If character selected, create assignment
+            if (characterId) {
+                try {
+                    await CharacterService.assignActor(characterId, newCastMember.id, 'actor');
+                } catch (assignError) {
+                    console.error('[CAST GRID] Error assigning character:', assignError);
+                    Toast.warning(`Cast member created but character assignment failed`);
+                }
+            }
+            
             // Normalize data structure for display
             const actorWithCount = {
-                ...newActor,
+                ...newCastMember,
                 scene_count: 0,
-                name: newActor.first_name && newActor.last_name 
-                    ? `${newActor.first_name} ${newActor.last_name}`
-                    : newActor.actor_name,
-                photo_url: newActor.profile_image_url,
-                role: newActor.role
+                name: fullName,
+                photo_url: newCastMember.profile_image_url,
+                role: newCastMember.role_type
             };
             
             this.actors.push(actorWithCount);
@@ -376,15 +460,18 @@ class CastGridApp {
             this.quickAddModal.close();
             this.quickAddForm.reset();
             document.getElementById('photoPreview').classList.add('hidden');
+            if (this.characterDropdown) {
+                this.characterDropdown.setValue('');
+            }
             
             // Re-filter and render
             this.filterAndRender();
             
             // Show success toast
-            Toast.success(`Actor "${actorWithCount.name}" created successfully!`);
+            Toast.success(`Actor "${fullName}" created successfully!`);
             
         } catch (error) {
-            console.error('[CAST GRID] Error creating actor:', error);
+            console.error('[CAST GRID] Error Creating cast member:', error);
             Toast.error('Failed to create actor. Please try again.');
         }
     }

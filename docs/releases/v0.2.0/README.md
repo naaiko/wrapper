@@ -1,4 +1,4 @@
-# Release v0.2.0 Documentation
+﻿# Release v0.2.0 Documentation
 
 **Release Date**: 2026-01-06  
 **Type**: Minor  
@@ -6,7 +6,7 @@
 
 ## Overview
 
-Cast Grid Feature - Complete redesign of actors screen with modern polaroid-style grid interface.
+Cast Grid Feature - Complete redesign of Cast screen with modern polaroid-style grid interface.
 
 ## Features
 
@@ -15,7 +15,7 @@ Cast Grid Feature - Complete redesign of actors screen with modern polaroid-styl
 - ✅ Sort by name, scene count, recently added
 - ✅ Real-time search
 - ✅ Quick add with photo upload
-- ✅ Actor detail screen with prev/next navigation
+- ✅ Cast Member detail screen with prev/next navigation
 - ✅ Keyboard shortcuts (← → ESC)
 - ✅ Touch swipe navigation
 - ✅ Toast notifications
@@ -47,7 +47,7 @@ Cast Grid Feature - Complete redesign of actors screen with modern polaroid-styl
 
 **Run migrations in order**: 20251226000001 → 20251226000002
 
-Without these migrations, the Cast Grid will show empty data and fail to create new actors.
+Without these migrations, the Cast Grid will show empty data and fail to create new Cast.
 
 ## Technical Details
 

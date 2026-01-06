@@ -1,0 +1,70 @@
+MESSY SCRIPT
+
+a script with inconsistent formatting
+
+
+CAFE - DAY
+(no INT/EXT)
+
+Two people sit at a table. One is ALICE. The other is BOB.
+
+ALICE
+ So what did you think?
+
+BOB
+About what?
+
+ALICE
+The proposal. Did you read it?
+
+BOB
+  I skimmed it.
+
+ALICE sighs.
+
+ALICE
+Bob, this is important.
+
+BOB
+    I know, I know. I'll read it tonight.
+
+STREET
+(still no INT/EXT, no time)
+
+ALICE walks alone. She's thinking about the conversation.
+
+Her phone rings.
+
+ALICE
+(answering)
+Hello?
+
+BOB (on phone)
+I read it.
+
+ALICE
+And?
+
+BOB
+   It's good. Really good.
+
+ALICE
+(smiling)
+Thanks.
+
+PARK - LATER
+
+They meet on a bench.
+
+BOB
+So when do we start?
+
+ALICE
+   Tomorrow?
+
+BOB
+Tomorrow.
+
+They shake hands.
+
+END

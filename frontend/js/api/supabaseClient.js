@@ -1,4 +1,4 @@
-// =================================================================
+﻿// =================================================================
 // SUPABASE CLIENT - Database API Layer
 // =================================================================
 // All database operations go through this layer
@@ -86,9 +86,9 @@ export class SupabaseClient {
             .from('scenes')
             .select(`
                 *,
-                scene_actors (
+                scene_cast_members (
                     *,
-                    actor:actors (*)
+                    cast_member:cast_members (*)
                 )
             `)
             .eq('id', sceneId)
@@ -176,6 +176,76 @@ export class SupabaseClient {
         
         if (error) throw error;
         return data || [];
+    }
+
+    // =================================================================
+    // LOCATIONS
+    // =================================================================
+
+    async getLocations(projectId) {
+        const { data, error } = await this.db
+            .from('locations')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('display_order', { ascending: true });
+        
+        if (error) throw error;
+        return data || [];
+    }
+
+    async createLocation(location) {
+        const { data, error } = await this.db
+            .from('locations')
+            .insert([location])
+            .select()
+            .single();
+        
+        if (error) throw error;
+        return data;
+    }
+
+    async createLocations(locations) {
+        const { data, error } = await this.db
+            .from('locations')
+            .insert(locations)
+            .select();
+        
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getOrCreateLocation(projectId, locationName) {
+        // Check if location exists
+        const { data: existing, error: searchError } = await this.db
+            .from('locations')
+            .select('*')
+            .eq('project_id', projectId)
+            .eq('name', locationName)
+            .maybeSingle();
+        
+        if (searchError) throw searchError;
+        if (existing) return existing;
+        
+        // Create new location
+        const maxOrder = await this.getMaxLocationOrder(projectId);
+        return await this.createLocation({
+            project_id: projectId,
+            name: locationName,
+            display_order: maxOrder + 1
+        });
+    }
+
+    async getMaxLocationOrder(projectId) {
+        const { data, error } = await this.db
+            .from('locations')
+            .select('display_order')
+            .eq('project_id', projectId)
+            .order('display_order', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        
+        if (error) throw error;
+        return data ? data.display_order : 0;
     }
 }
 

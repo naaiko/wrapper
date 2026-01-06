@@ -1,6 +1,29 @@
-// =================================================================
+﻿// =================================================================
 // ACTOR CARD RENDERER - Reusable component for rendering actor cards
 // =================================================================
+
+/**
+ * Get display name for actor (backwards compatible)
+ */
+function getActorDisplayName(actor) {
+    if (!actor) return 'Unknown';
+    // Legacy support
+    if (actor.actor_name) return actor.actor_name;
+    // New format
+    if (actor.name) return actor.name;
+    // Fallback: construct from first/last
+    const firstName = actor.first_name || '';
+    const lastName = actor.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'Unknown Actor';
+}
+
+/**
+ * Get actor initials for avatar
+ */
+function getActorInitials(actor) {
+    const name = getActorDisplayName(actor);
+    return name[0]?.toUpperCase() || '?';
+}
 
 /**
  * Renders a compact actor card
@@ -10,7 +33,7 @@
  * @param {Object} options - Rendering options
  * @param {boolean} options.showCharacter - Show character name (default: true)
  * @param {boolean} options.showContact - Show contact info (default: false)
- * @param {Array} options.sceneActors - Optional: scene_actors for this actor (for scene count)
+ * @param {Array} options.sceneCastMembers - Optional: scene_cast_members for this actor (for scene count)
  * @param {boolean} options.selectable - Add checkbox for selection (default: false)
  * @param {boolean} options.selected - Initial selected state (default: false)
  * @param {Function} options.onClick - Optional click handler
@@ -20,7 +43,7 @@ export function renderActorCard(actor, options = {}) {
     const {
         showCharacter = true,
         showContact = false,
-        sceneActors = [],
+        sceneCastMembers = [],
         selectable = false,
         selected = false,
         onClick = null
@@ -29,14 +52,16 @@ export function renderActorCard(actor, options = {}) {
     const card = document.createElement('div');
     card.className = `card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow ${selectable ? 'cursor-pointer' : ''}`;
     card.style.borderRadius = '6px';
-    card.dataset.actorId = actor.id;
+    card.dataset.castMemberId = actor.id;
     
-    const sceneCount = sceneActors.length;
+    const sceneCount = sceneCastMembers.length;
     
     // Avatar or first letter
+    const castMemberName = getActorDisplayName(actor);
+    const actorInitials = getActorInitials(actor);
     const avatarContent = actor.profile_image_url 
-        ? `<img src="${actor.profile_image_url}" alt="${actor.actor_name}" class="rounded-full" />`
-        : `<div class="bg-base-300 flex items-center justify-center text-xs font-bold rounded-full w-full h-full">${actor.actor_name[0].toUpperCase()}</div>`;
+        ? `<img src="${actor.profile_image_url}" alt="${castMemberName}" class="rounded-full" />`
+        : `<div class="bg-base-300 flex items-center justify-center text-xs font-bold rounded-full w-full h-full">${actorInitials}</div>`;
     
     card.innerHTML = `
         <div class="card-body p-2">
@@ -59,8 +84,8 @@ export function renderActorCard(actor, options = {}) {
                 
                 <!-- Info -->
                 <div class="flex-1 min-w-0">
-                    <div class="font-semibold text-sm truncate">${actor.actor_name}</div>
-                    ${showCharacter ? `
+                    <div class="font-semibold text-sm truncate">${castMemberName}</div>
+                    ${actor.character_name ? `
                         <div class="text-xs text-base-content/60 truncate">as ${actor.character_name}</div>
                     ` : ''}
                     ${showContact && actor.email ? `
@@ -115,7 +140,7 @@ export function renderActorCard(actor, options = {}) {
 export function renderActorBadge(actor) {
     const badge = document.createElement('div');
     badge.className = 'badge badge-outline gap-1';
-    badge.dataset.actorId = actor.id;
+    badge.dataset.castMemberId = actor.id;
     
     const avatarContent = actor.profile_image_url 
         ? `<img src="${actor.profile_image_url}" alt="${actor.actor_name}" class="w-4 h-4 rounded-full" />`

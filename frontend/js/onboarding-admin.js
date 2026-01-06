@@ -1,4 +1,4 @@
-import { supabaseClient } from './api/supabaseClient.js';
+﻿import { supabaseClient } from './api/supabaseClient.js';
 
 let currentPage = 'timeline';
 let steps = [];

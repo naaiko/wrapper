@@ -1,19 +1,19 @@
-# Scene ↔ Actor Many-to-Many Relationship - Implementation Summary
+﻿# Scene ↔ Cast Member Many-to-Many Relationship - Implementation Summary
 
 ## ✅ Completed Implementation (December 22, 2025)
 
 ### 1. Database Layer
 
 **Migration Files Created:**
-- `supabase/migrations/20251222000002_add_scene_actors.sql`
-- `frontend/docs/migration-add-scene-actors.sql`
+- `supabase/migrations/20251222000002_add_scene_cast_members.sql`
+- `frontend/docs/migration-add-Scene-cast members.sql`
 
 **Database Schema:**
 ```sql
-CREATE TABLE scene_actors (
+CREATE TABLE scene_cast_members (
     id UUID PRIMARY KEY,
     scene_id UUID REFERENCES scenes(id) ON DELETE CASCADE,
-    actor_id UUID REFERENCES actors(id) ON DELETE CASCADE,
+    cast_member_id UUID REFERENCES Cast(id) ON DELETE CASCADE,
     
     -- Continuity data (expandable)
     costume_notes TEXT,
@@ -34,7 +34,7 @@ CREATE TABLE scene_actors (
     created_at TIMESTAMP DEFAULT NOW(),
     last_modified TIMESTAMP DEFAULT NOW(),
     
-    CONSTRAINT unique_scene_actor UNIQUE (scene_id, actor_id)
+    CONSTRAINT unique_scene_actor UNIQUE (scene_id, cast_member_id)
 );
 ```
 
@@ -51,17 +51,17 @@ CREATE TABLE scene_actors (
 
 **New Service: `SceneActorService.js`**
 
-Comprehensive API for managing scene-actor relationships:
+Comprehensive API for managing Scene-cast member relationships:
 
 ```javascript
 // Query methods
-SceneActorService.getByScene(sceneId)      // Get actors in a scene
-SceneActorService.getByActor(actorId)      // Get scenes for an actor
+SceneActorService.getByScene(sceneId)      // Get Cast in a scene
+SceneActorService.getByActor(actorId)      // Get scenes for an Cast Member
 SceneActorService.getById(sceneActorId)    // Get specific relationship
 SceneActorService.exists(sceneId, actorId) // Check if link exists
 
 // CRUD methods
-SceneActorService.create(data)             // Link actor to scene
+SceneActorService.create(data)             // Link Cast Member to scene
 SceneActorService.createBulk(sceneId, actorIds) // Bulk add
 SceneActorService.update(id, updates)      // Update continuity data
 SceneActorService.delete(id)               // Remove link
@@ -71,14 +71,14 @@ SceneActorService.addImage(id, category, url)      // Add photo
 SceneActorService.removeImage(id, category, index) // Remove photo
 
 // Statistics
-SceneActorService.getSceneCount(actorId)   // Count scenes per actor
-SceneActorService.getActorCount(sceneId)   // Count actors per scene
+SceneActorService.getSceneCount(actorId)   // Count scenes per Cast Member
+SceneActorService.getActorCount(sceneId)   // Count Cast per scene
 ```
 
 **Updated Existing Services:**
 
-- **`supabaseClient.js`**: Updated `getScene()` to include scene_actors with nested actor data via JOIN
-- **`actorService.js`**: Updated `getById()` to include scene_actors with nested scene data via JOIN
+- **`supabaseClient.js`**: Updated `getScene()` to include scene_cast_members with nested Cast Member data via JOIN
+- **`actorService.js`**: Updated `getById()` to include scene_cast_members with nested scene data via JOIN
 
 ---
 
@@ -86,12 +86,12 @@ SceneActorService.getActorCount(sceneId)   // Count actors per scene
 
 **New Component: `actorCardRenderer.js`**
 
-Reusable actor card component (parallel to existing scene cards):
+Reusable Cast Member card component (parallel to existing scene cards):
 
 ```javascript
-renderActorCard(actor, options)  // Compact actor card with avatar
-renderActorBadge(actor)          // Minimal inline badge
-buildActorDisplayName(actor)     // Formatted name
+renderActorCard(Cast Member, options)  // Compact Cast Member card with avatar
+renderActorBadge(Cast Member)          // Minimal inline badge
+buildActorDisplayName(Cast Member)     // Formatted name
 ```
 
 Features:
@@ -109,11 +109,11 @@ Features:
 **Cast Tab Implementation** in `sceneEditScreen.js`:
 
 **Features:**
-- List of actors assigned to scene
-- Compact actor cards with avatars
+- List of Cast assigned to scene
+- Compact Cast Member cards with avatars
 - Continuity badges (👔 costume, 💄 makeup, 💇 hair, 🎭 props)
-- Add actor button → modal with searchable actor list
-- Remove actor button → confirmation dialog
+- Add Cast Member button → modal with searchable Cast Member list
+- Remove Cast Member button → confirmation dialog
 - Edit continuity button (placeholder for task #9)
 
 **Visual Design:**
@@ -121,7 +121,7 @@ Features:
 ┌─────────────────────────────────────────┐
 │ [Scene Info] [Cast] ← Tabs              │
 ├─────────────────────────────────────────┤
-│ Cast Members              [+ Add Actor] │
+│ Cast Members              [+ Add Cast Member] │
 │                                          │
 │ ┌────────────────────────────────────┐  │
 │ │ 👤 Emma De Caluwe                   │  │
@@ -140,19 +140,19 @@ Features:
 **Empty State:**
 ```
 ┌─────────────────────────────────────────┐
-│ No actors assigned to this scene yet.   │
-│ Click "Add Actor" to assign cast.       │
+│ No Cast assigned to this scene yet.   │
+│ Click "Add Cast Member" to assign cast.       │
 └─────────────────────────────────────────┘
 ```
 
 ---
 
-### 5. Actor Management Screen Integration
+### 5. Cast Member Management Screen Integration
 
-**Scenes Section** in `actors.html` (right column):
+**Scenes Section** in `Cast.html` (right column):
 
 **Features:**
-- Automatic loading when actor is selected
+- Automatic loading when Cast Member is selected
 - Scene cards rendered with full context (location, time, etc.)
 - Continuity badges per scene
 - Scrollable list (max height with overflow)
@@ -187,21 +187,21 @@ Right Column: Scenes
 
 ### Bidirectional Relationship Management
 
-**From Scene → Actors:**
+**From Scene → Cast:**
 ```javascript
 // In Scene Edit Screen
 const scene = await SceneService.getById(sceneId);
-scene.scene_actors.forEach(sa => {
-    const actor = sa.actor;  // Nested via JOIN
-    // Render actor card
+scene.scene_cast_members.forEach(sa => {
+    const Cast Member = sa.Cast Member;  // Nested via JOIN
+    // Render Cast Member card
 });
 ```
 
-**From Actor → Scenes:**
+**From Cast Member → Scenes:**
 ```javascript
-// In Actor Management Screen
-const actor = await ActorService.getById(actorId);
-actor.scene_actors.forEach(sa => {
+// In Cast Member Management Screen
+const Cast Member = await ActorService.getById(actorId);
+Cast Member.scene_cast_members.forEach(sa => {
     const scene = sa.scene;  // Nested via JOIN
     // Render scene card
 });
@@ -225,16 +225,16 @@ await SceneActorService.addImage(sceneActorId, 'costume', url);
 **Approval Workflow Ready:**
 ```sql
 -- Fields already exist in database
-UPDATE scene_actors 
+UPDATE scene_cast_members 
 SET approval_status = 'approved',
     approved_by = user_id,
     approved_at = NOW()
-WHERE id = scene_actor_id;
+WHERE id = scene_cast_member_id;
 ```
 
 **Bulk Operations Ready:**
 ```javascript
-// Add multiple actors at once
+// Add multiple Cast at once
 await SceneActorService.createBulk(sceneId, [actor1Id, actor2Id, actor3Id]);
 ```
 
@@ -242,7 +242,7 @@ await SceneActorService.createBulk(sceneId, [actor1Id, actor2Id, actor3Id]);
 
 ## 📋 Not Yet Implemented (Future Work)
 
-### Task #9: Edit Scene Actor Continuity Modal
+### Task #9: Edit Scene Cast Member Continuity Modal
 
 **Placeholder:** Currently shows "Edit continuity feature coming in next implementation step"
 
@@ -285,26 +285,26 @@ await SceneActorService.createBulk(sceneId, [actor1Id, actor2Id, actor3Id]);
 ### Database
 - [ ] Run migration in Supabase
 - [ ] Verify UNIQUE constraint works (try adding duplicate)
-- [ ] Test CASCADE delete (delete scene/actor, verify links removed)
+- [ ] Test CASCADE delete (delete scene/Cast Member, verify links removed)
 
 ### Service Layer
 - [ ] Create scene_actor link
 - [ ] Query by scene
-- [ ] Query by actor
+- [ ] Query by Cast Member
 - [ ] Update continuity notes
 - [ ] Delete link
 - [ ] Test image array operations
 
 ### Scene Edit Screen
-- [ ] Open scene with no actors → see empty state
-- [ ] Click "Add Actor" → see modal with actors
-- [ ] Add actor → see it appear in list
-- [ ] Remove actor → confirm dialog → see it disappear
-- [ ] Reload scene → verify actors persist
+- [ ] Open scene with no Cast → see empty state
+- [ ] Click "Add Cast Member" → see modal with Cast
+- [ ] Add Cast Member → see it appear in list
+- [ ] Remove Cast Member → confirm dialog → see it disappear
+- [ ] Reload scene → verify Cast persist
 
-### Actor Management Screen
-- [ ] Select actor with no scenes → see empty state
-- [ ] Select actor with scenes → see scene cards
+### Cast Member Management Screen
+- [ ] Select Cast Member with no scenes → see empty state
+- [ ] Select Cast Member with scenes → see scene cards
 - [ ] Verify continuity badges appear
 - [ ] Test scrolling with many scenes
 
@@ -313,17 +313,17 @@ await SceneActorService.createBulk(sceneId, [actor1Id, actor2Id, actor3Id]);
 ## 📁 Files Created/Modified
 
 ### Created
-1. `supabase/migrations/20251222000002_add_scene_actors.sql`
-2. `frontend/docs/migration-add-scene-actors.sql`
+1. `supabase/migrations/20251222000002_add_scene_cast_members.sql`
+2. `frontend/docs/migration-add-Scene-cast members.sql`
 3. `frontend/js/services/sceneActorService.js`
 4. `frontend/js/components/actorCardRenderer.js`
 
 ### Modified
-1. `frontend/js/api/supabaseClient.js` - Added scene_actors JOIN to getScene()
-2. `frontend/js/services/actorService.js` - Added scene_actors JOIN to getById()
+1. `frontend/js/api/supabaseClient.js` - Added scene_cast_members JOIN to getScene()
+2. `frontend/js/services/actorService.js` - Added scene_cast_members JOIN to getById()
 3. `frontend/js/sceneEditScreen.js` - Implemented Cast tab with full CRUD
-4. `frontend/actors.html` - Added Scenes section to right column
-5. `frontend/js/actors.js` - Added scene loading and rendering
+4. `frontend/Cast.html` - Added Scenes section to right column
+5. `frontend/js/Cast.js` - Added scene loading and rendering
 
 ---
 
@@ -332,7 +332,7 @@ await SceneActorService.createBulk(sceneId, [actor1Id, actor2Id, actor3Id]);
 1. **Run Database Migration:**
    ```bash
    # Option 1: Supabase Dashboard
-   # Go to SQL Editor and paste migration-add-scene-actors.sql
+   # Go to SQL Editor and paste migration-add-Scene-cast members.sql
    
    # Option 2: Supabase CLI
    supabase db push
@@ -341,8 +341,8 @@ await SceneActorService.createBulk(sceneId, [actor1Id, actor2Id, actor3Id]);
 2. **Test Basic Flow:**
    - Open a scene in calendar/timeline
    - Switch to Cast tab
-   - Add an actor
-   - Verify it appears in actor's Scenes list
+   - Add an Cast Member
+   - Verify it appears in Cast Member's Scenes list
 
 3. **Implement Continuity Modal (Task #9):**
    - Create modal component
@@ -366,7 +366,7 @@ await SceneActorService.createBulk(sceneId, [actor1Id, actor2Id, actor3Id]);
 | UNIQUE constraint | Database-level duplicate prevention | Prevents data inconsistency |
 | Approval fields (inactive) | Future workflow prep | No schema change needed later |
 | Reusable ActorCard component | DRY principle, consistency | Easy to add to other screens |
-| Dynamic imports in actors.js | Avoid loading scene modules upfront | Better performance |
+| Dynamic imports in Cast.js | Avoid loading scene modules upfront | Better performance |
 | Continuity badges | Visual feedback | Quick overview of photos |
 
 ---
@@ -377,7 +377,7 @@ await SceneActorService.createBulk(sceneId, [actor1Id, actor2Id, actor3Id]);
 2. **Loading States**: Spinner with min-height to prevent layout shift
 3. **Confirmation Dialogs**: Always confirm destructive actions
 4. **Inline Actions**: Edit/delete buttons on cards
-5. **Search**: Filter large lists (actors modal)
+5. **Search**: Filter large lists (Cast modal)
 6. **Badges**: Visual indicators for metadata
 7. **Nested Data**: JOINs in database, not N+1 queries
 

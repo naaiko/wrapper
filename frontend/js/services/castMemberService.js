@@ -1,180 +1,191 @@
+﻿// =================================================================
+// CAST MEMBER SERVICE - Business Logic Layer
 // =================================================================
-// ACTOR SERVICE - Business Logic Layer
-// =================================================================
-// Handles all actor-related business logic
+// Handles all cast member-related business logic (actors, background, stunt performers, etc.)
 // Uses window.supabase directly (same pattern as calendar/timeline)
 
-export class ActorService {
+export class CastMemberService {
+    /**
+     * Get display name for a cast member
+     * @param {Object} castMember - Cast member object with name, first_name and last_name
+     * @returns {string} Full name
+     */
+    static getDisplayName(castMember) {
+        if (!castMember) return '';
+        
+        // Prefer database-generated name column
+        if (castMember.name) return castMember.name;
+        
+        // Fallback: construct from first_name/last_name (for backwards compatibility)
+        const firstName = castMember.first_name || '';
+        const lastName = castMember.last_name || '';
+        return `${firstName} ${lastName}`.trim() || 'Unknown Cast Member';
+    }
+    
     static async getAll(projectId) {
         try {
             const { data, error } = await window.supabase
-                .from('actors')
+                .from('cast_members')
                 .select('*')
                 .eq('project_id', projectId)
-                .order('actor_name');
+                .order('name'); // Sort by generated name column
 
             if (error) throw error;
             return data || [];
         } catch (error) {
-            console.error('Error fetching actors:', error);
+            console.error('Error fetching cast members:', error);
             throw error;
         }
     }
 
-    static async getById(actorId) {
+    static async getById(castMemberId) {
         try {
             const { data, error } = await window.supabase
-                .from('actors')
+                .from('cast_members')
                 .select(`
                     *,
-                    scene_actors (
+                    character_cast_assignments (
                         *,
-                        scene:scenes (*)
+                        character:characters (*)
                     )
                 `)
-                .eq('id', actorId)
+                .eq('id', castMemberId)
                 .single();
 
             if (error) throw error;
             return data;
         } catch (error) {
-            console.error('Error fetching actor:', error);
+            console.error('Error fetching cast member:', error);
             throw error;
         }
     }
 
-    static async create(projectId, actorData) {
+    static async create(projectId, castMemberData) {
         try {
-            const actor = {
+            const castMember = {
                 project_id: projectId,
-                actor_name: actorData.actor_name,
-                character_name: actorData.character_name,
-                first_name: actorData.first_name || null,
-                last_name: actorData.last_name || null,
-                role: actorData.role || null,
-                email: actorData.email || null,
-                phone: actorData.phone || null,
-                height: actorData.height || null,
-                hair_color: actorData.hair_color || null,
-                hair_style: actorData.hair_style || null,
-                eye_color: actorData.eye_color || null,
-                skin_tone: actorData.skin_tone || null,
-                body_type: actorData.body_type || null,
-                distinguishing_features: actorData.distinguishing_features || [],
-                profile_image_url: actorData.profile_image_url || null,
-                reference_images: actorData.reference_images || [],
-                notes: actorData.notes || null
+                first_name: castMemberData.first_name || null,
+                last_name: castMemberData.last_name || null,
+                role_type: castMemberData.role_type || null,
+                email: castMemberData.email || null,
+                phone: castMemberData.phone || null,
+                height: castMemberData.height || null,
+                hair_color: castMemberData.hair_color || null,
+                hair_style: castMemberData.hair_style || null,
+                eye_color: castMemberData.eye_color || null,
+                skin_tone: castMemberData.skin_tone || null,
+                body_type: castMemberData.body_type || null,
+                distinguishing_features: castMemberData.distinguishing_features || [],
+                profile_image_url: castMemberData.profile_image_url || null,
+                reference_images: castMemberData.reference_images || [],
+                notes: castMemberData.notes || null
             };
 
             const { data, error } = await window.supabase
-                .from('actors')
-                .insert([actor])
+                .from('cast_members')
+                .insert([castMember])
                 .select()
                 .single();
 
             if (error) throw error;
             return data;
         } catch (error) {
-            console.error('Error creating actor:', error);
+            console.error('Error creating cast member:', error);
             throw error;
         }
     }
 
-    static async update(actorId, actorData) {
+    static async update(castMemberId, castMemberData) {
         try {
             const updates = {
-                actor_name: actorData.actor_name,
-                character_name: actorData.character_name,
-                email: actorData.email || null,
-                phone: actorData.phone || null,
-                height: actorData.height || null,
-                hair_color: actorData.hair_color || null,
-                hair_style: actorData.hair_style || null,
-                eye_color: actorData.eye_color || null,
-                skin_tone: actorData.skin_tone || null,
-                body_type: actorData.body_type || null,
-                distinguishing_features: actorData.distinguishing_features || [],
-                profile_image_url: actorData.profile_image_url || null,
-                reference_images: actorData.reference_images || [],
-                notes: actorData.notes || null
+                first_name: castMemberData.first_name || null,
+                last_name: castMemberData.last_name || null,
+                role_type: castMemberData.role_type || null,
+                email: castMemberData.email || null,
+                phone: castMemberData.phone || null,
+                height: castMemberData.height || null,
+                hair_color: castMemberData.hair_color || null,
+                hair_style: castMemberData.hair_style || null,
+                eye_color: castMemberData.eye_color || null,
+                skin_tone: castMemberData.skin_tone || null,
+                body_type: castMemberData.body_type || null,
+                distinguishing_features: castMemberData.distinguishing_features || [],
+                profile_image_url: castMemberData.profile_image_url || null,
+                reference_images: castMemberData.reference_images || [],
+                notes: castMemberData.notes || null
             };
 
             const { data, error } = await window.supabase
-                .from('actors')
+                .from('cast_members')
                 .update(updates)
-                .eq('id', actorId)
+                .eq('id', castMemberId)
                 .select()
                 .single();
 
             if (error) throw error;
             return data;
         } catch (error) {
-            console.error('Error updating actor:', error);
+            console.error('Error updating cast member:', error);
             throw error;
         }
     }
 
-    static async delete(actorId) {
+    static async delete(castMemberId) {
         try {
             const { error } = await window.supabase
-                .from('actors')
+                .from('cast_members')
                 .delete()
-                .eq('id', actorId);
+                .eq('id', castMemberId);
 
             if (error) throw error;
             return true;
         } catch (error) {
-            console.error('Error deleting actor:', error);
+            console.error('Error deleting cast member:', error);
             throw error;
         }
     }
 
     static async search(projectId, searchTerm) {
         try {
-            const allActors = await this.getAll(projectId);
+            const allCastMembers = await this.getAll(projectId);
             
             if (!searchTerm || searchTerm.trim() === '') {
-                return allActors;
+                return allCastMembers;
             }
 
             const term = searchTerm.toLowerCase();
-            return allActors.filter(actor => 
-                actor.actor_name.toLowerCase().includes(term) ||
-                actor.character_name.toLowerCase().includes(term) ||
-                (actor.notes && actor.notes.toLowerCase().includes(term))
+            return allCastMembers.filter(castMember => 
+                castMember.name.toLowerCase().includes(term) ||
+                (castMember.notes && castMember.notes.toLowerCase().includes(term))
             );
         } catch (error) {
-            console.error('Error searching actors:', error);
+            console.error('Error searching cast members:', error);
             throw error;
         }
     }
 
-    static sortActors(actors, sortBy) {
-        const sorted = [...actors];
+    static sortCastMembers(castMembers, sortBy) {
+        const sorted = [...castMembers];
         
         switch (sortBy) {
-            case 'actor-az':
+            case 'name-az':
                 return sorted.sort((a, b) => 
-                    a.actor_name.localeCompare(b.actor_name)
-                );
-            case 'character-az':
-                return sorted.sort((a, b) => 
-                    a.character_name.localeCompare(b.character_name)
+                    a.name.localeCompare(b.name)
                 );
             case 'recent':
                 return sorted.sort((a, b) => 
-                    new Date(b.last_modified) - new Date(a.last_modified)
+                    new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at)
                 );
             default:
                 return sorted;
         }
     }
 
-    // Get continuity entries for an actor
-    static async getContinuity(actorId) {
+    // Get continuity entries for a cast member
+    static async getContinuity(castMemberId) {
         try {
             const { data, error } = await window.supabase
-                .from('actor_continuity')
+                .from('cast_member_continuity')
                 .select(`
                     *,
                     scene:scenes(
@@ -183,13 +194,13 @@ export class ActorService {
                         story_order
                     )
                 `)
-                .eq('actor_id', actorId)
+                .eq('cast_member_id', castMemberId)
                 .order('continuity_date');
 
             if (error) throw error;
             return data || [];
         } catch (error) {
-            console.error('Error fetching actor continuity:', error);
+            console.error('Error fetching cast member continuity:', error);
             throw error;
         }
     }
@@ -198,7 +209,7 @@ export class ActorService {
     static async createContinuity(continuityData) {
         try {
             const entry = {
-                actor_id: continuityData.actor_id,
+                cast_member_id: continuityData.cast_member_id,
                 scene_id: continuityData.scene_id || null,
                 continuity_date: continuityData.continuity_date || null,
                 wardrobe_description: continuityData.wardrobe_description || null,
@@ -217,7 +228,7 @@ export class ActorService {
             };
 
             const { data, error } = await window.supabase
-                .from('actor_continuity')
+                .from('cast_member_continuity')
                 .insert([entry])
                 .select()
                 .single();
@@ -230,12 +241,12 @@ export class ActorService {
         }
     }
 
-    // Demo data - Create sample actors
-    static async createDemoActors(projectId) {
-        const demoActors = [
+    // Demo data - Create sample cast members
+    static async createDemoCastMembers(projectId) {
+        const demoCastMembers = [
             {
-                actor_name: 'Emma De Caluwe',
-                character_name: 'Sophie Maes',
+                first_name: 'Emma',
+                last_name: 'De Caluwe',
                 email: 'emma.decaluwe@example.be',
                 phone: '+32 475 12 34 56',
                 height: '168 cm',
@@ -245,11 +256,12 @@ export class ActorService {
                 skin_tone: 'Fair',
                 body_type: 'Slim',
                 distinguishing_features: ['Small scar above right eyebrow'],
+                role_type: 'speaking_actor',
                 notes: 'Lead actress. Requires minimal makeup time.'
             },
             {
-                actor_name: 'Thomas Vandenberghe',
-                character_name: 'Marc Dubois',
+                first_name: 'Thomas',
+                last_name: 'Vandenberghe',
                 email: 'thomas.v@example.be',
                 phone: '+32 476 98 76 54',
                 height: '182 cm',
@@ -262,8 +274,8 @@ export class ActorService {
                 notes: 'Supporting role. Beard continuity critical.'
             },
             {
-                actor_name: 'Marie Dubois',
-                character_name: 'Claire Laurent',
+                first_name: 'Marie',
+                last_name: 'Dubois',
                 email: 'marie.dubois@example.be',
                 phone: '+32 477 55 44 33',
                 height: '162 cm',
@@ -276,8 +288,8 @@ export class ActorService {
                 notes: 'Character ages throughout film - requires aging makeup.'
             },
             {
-                actor_name: 'Lucas Peeters',
-                character_name: 'Jonas Willems',
+                first_name: 'Lucas',
+                last_name: 'Peeters',
                 email: 'lucas.p@example.be',
                 height: '175 cm',
                 hair_color: 'Red',
@@ -290,16 +302,16 @@ export class ActorService {
             }
         ];
 
-        const createdActors = [];
-        for (const actorData of demoActors) {
+        const createdCastMembers = [];
+        for (const castMemberData of demoCastMembers) {
             try {
-                const actor = await this.create(projectId, actorData);
-                createdActors.push(actor);
+                const castMember = await this.create(projectId, castMemberData);
+                createdCastMembers.push(castMember);
             } catch (error) {
-                console.error('Error creating demo actor:', error);
+                console.error('Error creating demo cast member:', error);
             }
         }
 
-        return createdActors;
+        return createdCastMembers;
     }
 }

@@ -1,4 +1,4 @@
-# Implementation Summary: User & Project Management
+﻿# Implementation Summary: User & Project Management
 
 ## ✅ Voltooid
 
@@ -6,7 +6,7 @@
 - **Locatie**: Rechtsbovenaan, rechts van three-toggle
 - **Stijl**: Circulaire knop, consistent met three-toggle design
 - **Functie**: Terug naar projectoverzicht (index.html)
-- **Implementatie**: Nieuw `navigation.js` component gebruikt in timeline, actors, calendar
+- **Implementatie**: Nieuw `navigation.js` component gebruikt in timeline, Cast, calendar
 
 ### 2. Project Verwijderen
 - **Hard Delete**: Volledig verwijderen van project + alle gerelateerde data

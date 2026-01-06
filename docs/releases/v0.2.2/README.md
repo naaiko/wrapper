@@ -1,4 +1,4 @@
-# Release v0.2.2 Documentation
+﻿# Release v0.2.2 Documentation
 
 **Release Date**: TBD  
 **Type**: Patch  
@@ -10,8 +10,8 @@ Cast Grid refinements and universal design system implementation.
 
 ## Features
 
-- [x] Square actor cards (aspect-ratio 1:1) for better density
-- [x] Dashed "add actor" placeholder card with primary color
+- [x] Square Cast Member cards (aspect-ratio 1:1) for better density
+- [x] Dashed "add Cast Member" placeholder card with primary color
 - [x] Universal navigation pattern (top-right nav + bottom dock)
 - [x] Uniform button styling system
 - [x] Design system documentation
@@ -45,10 +45,10 @@ Cast Grid refinements and universal design system implementation.
 - `docs/releases/v0.2.2/` - This release folder
 
 ### Modified Files
-- `frontend/css/actors-grid.css` - Square cards, add placeholder styling with primary color
+- `frontend/css/Cast-grid.css` - Square cards, add placeholder styling with primary color
 - `frontend/js/components/actorCard.js` - Changed to aspect-square (1:1)
-- `frontend/js/actors-grid.js` - Added createAddActorPlaceholder() method
-- `frontend/actors.html` - Navbar removed, dock implemented, uniform button styling
+- `frontend/js/Cast-grid.js` - Added createAddActorPlaceholder() method
+- `frontend/Cast.html` - Navbar removed, dock implemented, uniform button styling
 - `CHANGELOG.md` - Migration file references updated
 - `docs/releases/v0.2.0/README.md` - Migration file references updated
 

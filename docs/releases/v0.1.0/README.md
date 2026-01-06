@@ -1,4 +1,4 @@
-# Release v0.1.0 Documentation
+﻿# Release v0.1.0 Documentation
 
 **Release Date**: 2026-01-05  
 **Type**: Minor  
@@ -14,7 +14,7 @@ Initial Release with Version System - Base continuity management system with sem
 - ✅ Version badge display
 - ✅ Project management
 - ✅ Scene management with drag-and-drop timeline
-- ✅ Actor management (original list view)
+- ✅ Cast Member management (original list view)
 - ✅ Location management
 - ✅ Settings and conditions
 - ✅ Calendar integration
@@ -25,8 +25,8 @@ Initial Release with Version System - Base continuity management system with sem
 ## Documentation
 
 - **[ACTORS_DOCUMENTATION.md](ACTORS_DOCUMENTATION.md)** - Actor system documentation
-- **[ACTORS_FEATURE_README.md](ACTORS_FEATURE_README.md)** - Actor feature overview
-- **[SCENE_ACTOR_IMPLEMENTATION.md](SCENE_ACTOR_IMPLEMENTATION.md)** - Scene-actor relationship implementation
+- **[ACTORS_FEATURE_README.md](ACTORS_FEATURE_README.md)** - Cast Member feature overview
+- **[SCENE_ACTOR_IMPLEMENTATION.md](SCENE_ACTOR_IMPLEMENTATION.md)** - Scene-cast member relationship implementation
 - **[SCENE_PROPERTIES_IMPLEMENTATION.md](SCENE_PROPERTIES_IMPLEMENTATION.md)** - Scene properties system
 
 ## Technical Details

@@ -1,8 +1,8 @@
--- Migration: Add Actors table for continuity tracking
+﻿-- Migration: Add Actors table for continuity tracking
 -- Created: 2025-12-21
 -- Purpose: Track actors/characters with their physical characteristics and continuity details
 
--- Actors table - Main actor/character information
+-- Cast Members table - Main actor/character information
 CREATE TABLE actors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -40,11 +40,11 @@ CREATE TABLE actors (
     last_modified TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Actor Continuity Photos - Links actors to scenes with specific continuity photos
+-- Cast Member Continuity Photos - Links actors to scenes with specific continuity photos
 -- This tracks how an actor should look for specific scenes or time periods
-CREATE TABLE actor_continuity (
+CREATE TABLE cast_member_continuity (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    actor_id UUID NOT NULL REFERENCES actors(id) ON DELETE CASCADE,
+    cast_member_id UUID NOT NULL REFERENCES actors(id) ON DELETE CASCADE,
     scene_id UUID REFERENCES scenes(id) ON DELETE CASCADE,
     
     -- Continuity Details
@@ -81,19 +81,19 @@ CREATE TABLE actor_continuity (
 CREATE INDEX idx_actors_project_id ON actors(project_id);
 CREATE INDEX idx_actors_actor_name ON actors(actor_name);
 CREATE INDEX idx_actors_character_name ON actors(character_name);
-CREATE INDEX idx_actor_continuity_actor_id ON actor_continuity(actor_id);
-CREATE INDEX idx_actor_continuity_scene_id ON actor_continuity(scene_id);
+CREATE INDEX idx_cast_member_continuity_cast_member_id ON cast_member_continuity(cast_member_id);
+CREATE INDEX idx_cast_member_continuity_scene_id ON cast_member_continuity(scene_id);
 
 -- Enable Row Level Security
 ALTER TABLE actors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE actor_continuity ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cast_member_continuity ENABLE ROW LEVEL SECURITY;
 
 -- Public access policies (for MVP - allows anyone to read/write)
 -- WARNING: This is for testing only. Add authentication later!
 CREATE POLICY "Allow public access to actors" ON actors
     FOR ALL USING (true) WITH CHECK (true);
 
-CREATE POLICY "Allow public access to actor_continuity" ON actor_continuity
+CREATE POLICY "Allow public access to cast_member_continuity" ON cast_member_continuity
     FOR ALL USING (true) WITH CHECK (true);
 
 -- Triggers to auto-update last_modified
@@ -102,7 +102,7 @@ CREATE TRIGGER update_actors_last_modified
     FOR EACH ROW
     EXECUTE FUNCTION update_modified_column();
 
-CREATE TRIGGER update_actor_continuity_last_modified
-    BEFORE UPDATE ON actor_continuity
+CREATE TRIGGER update_cast_member_continuity_last_modified
+    BEFORE UPDATE ON cast_member_continuity
     FOR EACH ROW
     EXECUTE FUNCTION update_modified_column();

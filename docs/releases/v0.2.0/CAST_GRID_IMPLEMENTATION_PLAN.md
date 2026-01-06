@@ -1,4 +1,4 @@
-# Cast Grid Implementation Plan
+﻿# Cast Grid Implementation Plan
 **Feature Branch:** `feature-cast-grid`  
 **Version:** v0.2.0 (minor feature addition)
 
@@ -8,15 +8,15 @@
 2. **Filter & Sort** - Intuïtieve filtering en sortering
 3. **Navigatie** - Soepele flow tussen grid ↔ detail
 4. **Mobile Support** - Responsive voor iPad/mobile
-5. **Quick Add** - Nieuwe actors toevoegen zoals scenes in timeline
-6. **Detail Navigation** - Scrollen door actors vanuit detail screen (Odoo-style)
+5. **Quick Add** - Nieuwe Cast toevoegen zoals scenes in timeline
+6. **Detail Navigation** - Scrollen door Cast vanuit detail screen (Odoo-style)
 
 ## 📦 DaisyUI Components te Gebruiken
 
 ### Primaire Components
-- **Card** - Voor actor polaroid cards
+- **Card** - Voor Cast Member polaroid cards
   - `card` + `card-body` voor structuur
-  - `card-title` voor actor naam
+  - `card-title` voor Cast Member naam
   - `badge` voor role/status indicators
   
 - **Filter** - Voor filtering actoren
@@ -28,7 +28,7 @@
   - Menu met sort options
 
 - **Kbd** - Voor keyboard shortcuts
-  - Arrows voor navigatie tussen actors
+  - Arrows voor navigatie tussen Cast
   - ESC voor terug naar grid
 
 ### Ondersteunende Components
@@ -43,14 +43,14 @@
 ### File Structure
 ```
 frontend/
-  actors.html          → RENAMED to actors-old.html (backup)
-  actors-grid.html     → NEW main actors page (grid view)
-  actors-detail.html   → NEW detail view (standalone/embedded)
+  Cast.html          → RENAMED to Cast-old.html (backup)
+  Cast-grid.html     → NEW main Cast page (grid view)
+  Cast-detail.html   → NEW detail view (standalone/embedded)
   
   js/
-    actors.js          → RENAMED to actors-old.js (backup)
-    actors-grid.js     → NEW grid controller
-    actors-detail.js   → NEW detail controller (extracted from actors.js)
+    Cast.js          → RENAMED to Cast-old.js (backup)
+    Cast-grid.js     → NEW grid controller
+    Cast-detail.js   → NEW detail controller (extracted from Cast.js)
     
     screens/
       castGridScreen.js      → NEW grid screen component
@@ -61,14 +61,14 @@ frontend/
       actorFilters.js    → NEW filter/sort component
       
   css/
-    actors-grid.css    → NEW grid-specific styles
+    Cast-grid.css    → NEW grid-specific styles
 ```
 
 ### State Management
 ```javascript
 class CastGridState {
-  actors: Actor[]           // All actors
-  filteredActors: Actor[]   // After filter/sort
+  Cast: Cast Member[]           // All Cast
+  filteredActors: Cast Member[]   // After filter/sort
   currentFilter: string     // 'all' | 'hoofdrol' | 'bijrol' | 'figurant'
   sortBy: string           // 'name' | 'scenes' | 'recent'
   searchTerm: string
@@ -99,9 +99,9 @@ class CastGridState {
 ### Detail View (Desktop)
 ```
 ┌─────────────────────────────────────────────────────┐
-│  [← Back to Grid]    Actor Name    [← Prev | Next →]│
+│  [← Back to Grid]    Cast Member Name    [← Prev | Next →]│
 ├─────────────────────────────────────────────────────┤
-│  [Same 3-column layout as current actors.html]     │
+│  [Same 3-column layout as current Cast.html]     │
 │  - Left: Details panel                             │
 │  - Middle: Silhouette                              │
 │  - Right: Calendar                                 │
@@ -111,17 +111,17 @@ class CastGridState {
 ### Mobile Flow
 - Grid: Vertical scroll van cards (1 kolom)
 - Detail: Full screen drawer (slide in from right)
-- Navigation: Swipe left/right voor prev/next actor
+- Navigation: Swipe left/right voor prev/next Cast Member
 
 ## 📋 Implementation Steps
 
 ### Phase 1: Setup & Backup (30 min)
 - [x] Create feature branch `feature-cast-grid`
-- [ ] Rename current actors.html → actors-old.html
-- [ ] Rename current actors.js → actors-old.js
+- [ ] Rename current Cast.html → Cast-old.html
+- [ ] Rename current Cast.js → Cast-old.js
 - [ ] Create VERSION_CHANGELOG.md entry
 
-### Phase 2: Actor Card Component (1h)
+### Phase 2: Cast Member Card Component (1h)
 - [ ] Create `components/actorCard.js`
   - Polaroid styling met DaisyUI card
   - Hover states (scale + shadow)
@@ -130,15 +130,15 @@ class CastGridState {
   - Skeleton loading state
   
 ### Phase 3: Grid Screen (1.5h)
-- [ ] Create `actors-grid.html`
+- [ ] Create `Cast-grid.html`
   - Top navigation bar
   - Filter/Sort controls
   - Grid container (CSS Grid auto-fill)
-  - FAB voor add actor
+  - FAB voor add Cast Member
   - Empty state (zoals timeline)
   
-- [ ] Create `actors-grid.js`
-  - Load actors from Supabase
+- [ ] Create `Cast-grid.js`
+  - Load Cast from Supabase
   - Render grid
   - Filter logic (all/hoofdrol/bijrol/figurant)
   - Sort logic (name/scenes/recent)
@@ -146,14 +146,14 @@ class CastGridState {
   - Click → navigate to detail
 
 ### Phase 4: Detail Screen Integration (2h)
-- [ ] Extract detail logic from actors-old.js
-  - Create `actors-detail.js`
+- [ ] Extract detail logic from Cast-old.js
+  - Create `Cast-detail.js`
   - Refactor state management
   - Add prev/next navigation
   - Keep all existing functionality
   
 - [ ] Create navigation system
-  - URL params: `actors-grid.html?actor=123`
+  - URL params: `Cast-grid.html?Cast Member=123`
   - Back button → return to grid
   - Keyboard shortcuts (←/→ voor prev/next)
   - Breadcrumb trail
@@ -190,7 +190,7 @@ class CastGridState {
   - Detail slide transitions
   
 - [ ] Empty states
-  - No actors yet
+  - No Cast yet
   - No search results
   - Loading skeletons
   
@@ -230,11 +230,11 @@ class CastGridState {
 }
 ```
 
-### Actor Card HTML (DaisyUI)
+### Cast Member Card HTML (DaisyUI)
 ```html
 <div class="card card-compact bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:scale-105 cursor-pointer">
   <figure class="aspect-[3/4] bg-base-300">
-    <img src="actor-photo.jpg" alt="Actor Name" class="object-cover">
+    <img src="Cast Member-photo.jpg" alt="Cast Member Name" class="object-cover">
   </figure>
   <div class="card-body">
     <h3 class="card-title text-sm">John Doe</h3>
@@ -248,21 +248,21 @@ class CastGridState {
 
 ### Navigation State
 ```javascript
-// URL pattern: actors-grid.html?project=123&actor=456&filter=hoofdrol&sort=name
+// URL pattern: Cast-grid.html?project=123&Cast Member=456&filter=hoofdrol&sort=name
 
 class NavigationManager {
   // Parse URL params
-  getCurrentActor() { /* from ?actor= */ }
+  getCurrentActor() { /* from ?Cast Member= */ }
   getFilter() { /* from ?filter= */ }
   getSort() { /* from ?sort= */ }
   
   // Navigate
   openDetail(actorId) {
-    window.location.href = `actors-grid.html?project=${pid}&actor=${actorId}`;
+    window.location.href = `Cast-grid.html?project=${pid}&Cast Member=${actorId}`;
   }
   
   closeDetail() {
-    window.location.href = `actors-grid.html?project=${pid}`;
+    window.location.href = `Cast-grid.html?project=${pid}`;
   }
   
   nextActor() {
@@ -276,20 +276,20 @@ class NavigationManager {
 ```
 
 ## 📊 Database Schema (No Changes Needed)
-Existing `actors` table already has all required fields:
+Existing `Cast` table already has all required fields:
 - `id`, `project_id`, `name`, `photo_url`, `role`
-- Relations to `scene_actors` for scene count
+- Relations to `scene_cast_members` for scene count
 
 ## 🎯 Success Criteria
 
 ### Functional
-- ✅ Grid shows all actors as polaroid cards
+- ✅ Grid shows all Cast as polaroid cards
 - ✅ Filter works (all/hoofdrol/bijrol/figurant)
 - ✅ Sort works (name/scenes/recent)
 - ✅ Search filters by name
 - ✅ Click card → detail screen
 - ✅ Detail has prev/next navigation
-- ✅ Quick add creates new actor
+- ✅ Quick add creates new Cast Member
 - ✅ Mobile responsive
 
 ### UX
@@ -300,7 +300,7 @@ Existing `actors` table already has all required fields:
 - ✅ Touch-friendly op iPad/mobile
 
 ### Technical
-- ✅ No breaking changes to existing actors functionality
+- ✅ No breaking changes to existing Cast functionality
 - ✅ Clean separation grid ↔ detail
 - ✅ Reusable components
 - ✅ DaisyUI components throughout
@@ -348,9 +348,9 @@ Existing `actors` table already has all required fields:
 
 ## 🔄 Rollback Plan
 If implementation fails or breaks existing functionality:
-1. Delete new files (actors-grid.html, actors-grid.js, etc.)
-2. Rename actors-old.html → actors.html
-3. Rename actors-old.js → actors.js
+1. Delete new files (Cast-grid.html, Cast-grid.js, etc.)
+2. Rename Cast-old.html → Cast.html
+3. Rename Cast-old.js → Cast.js
 4. Reset version to v0.1.0
 5. Delete feature branch
 

@@ -1,4 +1,4 @@
-// =================================================================
+﻿// =================================================================
 // SCENE EDIT SCREEN - Implementatie met EditScreen Component
 // =================================================================
 // Dit is een voorbeeld van hoe de scene drawer gemigreerd kan worden
@@ -233,24 +233,24 @@ export class SceneEditScreen {
      * Render list of actors in this scene
      */
     renderSceneActorsList(scene) {
-        const sceneActors = scene?.scene_actors || [];
+        const sceneCastMembers = scene?.scene_cast_members || [];
         
-        if (sceneActors.length === 0) {
+        if (sceneCastMembers.length === 0) {
             return `
                 <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
-                    No actors assigned to this scene yet.
+                    No cast members assigned to this scene yet.
                     <br>
                     <span class="text-xs mt-1 inline-block">Click "Add Actor" to assign cast members.</span>
                 </div>
             `;
         }
         
-        return sceneActors.map(sa => {
+        return sceneCastMembers.map(sa => {
             const actor = sa.actor;
             if (!actor) return '';
             
             return `
-                <div class="actor-scene-card" data-scene-actor-id="${sa.id}">
+                <div class="cast-member-scene-card" data-scene-actor-id="${sa.id}">
                     <div class="flex items-center gap-3 p-2 bg-base-100 border border-base-300 rounded-lg hover:shadow-md transition-shadow">
                         
                         <!-- Profile image -->
@@ -937,17 +937,17 @@ export class SceneEditScreen {
      */
     async showAddActorModal(scene) {
         // Dynamic import to avoid circular dependencies
-        const { ActorService } = await import('../services/actorService.js');
-        const { SceneActorService } = await import('../services/sceneActorService.js');
-        const { renderActorCard } = await import('../components/actorCardRenderer.js');
+        const { CastMemberService } = await import('../services/castMemberService.js');
+        const { SceneCastMemberService } = await import('../services/sceneCastMemberService.js');
+        const { renderActorCard } = await import('../components/castMemberCardRenderer.js');
         
         try {
             // Get all actors for this project
-            const allActors = await ActorService.getAll(this.projectId);
+            const allCastMembers = await CastMemberService.getAll(this.projectId);
             
             // Filter out actors already in this scene
-            const sceneActorIds = (scene.scene_actors || []).map(sa => sa.actor_id);
-            const availableActors = allActors.filter(actor => !sceneActorIds.includes(actor.id));
+            const sceneActorIds = (scene.scene_cast_members || []).map(sa => sa.cast_member_id);
+            const availableActors = allCastMembers.filter(actor => !sceneActorIds.includes(actor.id));
             
             if (availableActors.length === 0) {
                 alert('All actors are already assigned to this scene.');
@@ -968,11 +968,11 @@ export class SceneEditScreen {
                             type="text" 
                             placeholder="Search actors..." 
                             class="input input-bordered"
-                            id="actorSearchInput"
+                            id="castMemberSearchInput"
                         />
                     </div>
                     
-                    <div id="actorGrid" class="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
+                    <div id="castMemberGrid" class="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
                         <!-- Actor cards will be inserted here -->
                     </div>
                     
@@ -990,12 +990,12 @@ export class SceneEditScreen {
             availableActors.forEach(actor => {
                 const card = renderActorCard(actor, {
                     showCharacter: true,
-                    onClick: async (selectedActor) => {
+                    onClick: async (selectedCastMember) => {
                         // Add actor to scene
                         try {
-                            await SceneActorService.create({
+                            await SceneCastMemberService.create({
                                 scene_id: scene.id,
-                                actor_id: selectedActor.id
+                                cast_member_id: selectedCastMember.id
                             });
                             
                             // Reload scene data
@@ -1015,7 +1015,7 @@ export class SceneEditScreen {
                             modal.remove();
                             
                             // Show feedback
-                            console.log(`Added ${selectedActor.actor_name} to scene`);
+                            console.log(`Added ${selectedCastMember.actor_name} to scene`);
                         } catch (error) {
                             console.error('Error adding actor to scene:', error);
                             alert('Failed to add actor. Please try again.');
@@ -1031,8 +1031,8 @@ export class SceneEditScreen {
                 const searchTerm = e.target.value.toLowerCase();
                 const cards = actorGrid.querySelectorAll('.card');
                 cards.forEach(card => {
-                    const actorName = card.textContent.toLowerCase();
-                    card.style.display = actorName.includes(searchTerm) ? '' : 'none';
+                    const castMemberName = card.textContent.toLowerCase();
+                    card.style.display = castMemberName.includes(searchTerm) ? '' : 'none';
                 });
             });
             
@@ -1057,20 +1057,20 @@ export class SceneEditScreen {
      */
     async handleRemoveActorFromScene(sceneActorId, scene) {
         // Dynamic import
-        const { SceneActorService } = await import('../services/sceneActorService.js');
+        const { SceneCastMemberService } = await import('../services/sceneCastMemberService.js');
         
-        // Get scene actor details for confirmation
-        const sceneActor = scene.scene_actors?.find(sa => sa.id === sceneActorId);
+        // Get scene Cast Member Details for confirmation
+        const sceneActor = scene.scene_cast_members?.find(sa => sa.id === sceneActorId);
         if (!sceneActor) return;
         
-        const actorName = sceneActor.actor?.actor_name || 'this actor';
+        const castMemberName = sceneActor.actor?.actor_name || 'this actor';
         
-        if (!confirm(`Remove ${actorName} from scene ${scene.scene_number}?`)) {
+        if (!confirm(`Remove ${castMemberName} from scene ${scene.scene_number}?`)) {
             return;
         }
         
         try {
-            await SceneActorService.delete(sceneActorId);
+            await SceneCastMemberService.delete(sceneActorId);
             
             // Reload scene data
             const updatedScene = await SceneService.getById(scene.id);
@@ -1084,7 +1084,7 @@ export class SceneEditScreen {
                 this.attachInteractiveListeners();
             }
             
-            console.log(`Removed ${actorName} from scene`);
+            console.log(`Removed ${castMemberName} from scene`);
         } catch (error) {
             console.error('Error removing actor from scene:', error);
             alert('Failed to remove actor. Please try again.');

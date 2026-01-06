@@ -1,4 +1,4 @@
-# Continuity Manager
+﻿# Continuity Manager
 
 Film continuity management system with cast, scene, and location management.
 
@@ -13,17 +13,17 @@ Film continuity management system with cast, scene, and location management.
 
 ## 🚀 What's New
 
-### v0.2.0 - Cast Grid Feature (2026-01-06)
+### v0.2.0 - Cast Member Grid Feature (2026-01-06)
 
-Complete redesign of the actors screen with modern grid interface:
+Complete redesign of the cast screen with modern grid interface:
 
 ✨ **New Features:**
-- Polaroid-style grid view for actors
+- Polaroid-style grid view for cast members
 - Filter by role (Hoofdrol/Bijrol/Figurant)
 - Sort by name, scene count, or recently added
 - Real-time search
 - Quick Add with photo upload
-- Actor detail screen with prev/next navigation
+- Cast member detail screen with prev/next navigation
 - Keyboard shortcuts (← → ESC)
 - Touch swipe navigation for mobile/iPad
 - Toast notifications

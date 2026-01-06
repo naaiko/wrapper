@@ -1,4 +1,4 @@
-// Settings Service - Manages project settings and feature flags
+﻿// Settings Service - Manages project settings and feature flags
 
 /**
  * Settings service for managing project-level feature flags and configuration

@@ -1,4 +1,4 @@
-# Spacing System Design
+﻿# Spacing System Design
 
 ## Tailwind Spacing Scale
 We gebruiken uitsluitend Tailwind's standaard spacing scale voor consistentie:
@@ -23,7 +23,7 @@ We gebruiken uitsluitend Tailwind's standaard spacing scale voor consistentie:
 | Toggle tabs | `h-12` | 3rem | 48px |
 | Navigation | `h-16` | 4rem | 64px |
 
-## Actors Page Layout
+## Cast Page Layout
 
 ### Vertical Spacing Breakdown
 ```

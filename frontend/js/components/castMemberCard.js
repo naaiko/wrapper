@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ACTOR CARD COMPONENT
  * 
  * Polaroid-style card for displaying actors in grid view.
@@ -15,7 +15,7 @@ export class ActorCard {
     static render(actor, onClick) {
         const card = document.createElement('div');
         card.className = 'actor-card card card-compact bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-105 cursor-pointer';
-        card.dataset.actorId = actor.id;
+        card.dataset.castMemberId = actor.id;
         
         // Photo figure (1:1 aspect ratio - square cards for better density)
         const figure = document.createElement('figure');

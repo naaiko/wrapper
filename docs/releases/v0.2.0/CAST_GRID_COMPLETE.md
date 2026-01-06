@@ -1,22 +1,22 @@
-# Cast Grid Feature - Complete Documentation
+﻿# Cast Grid Feature - Complete Documentation
 
 ## Overview
 **Version**: 0.2.0  
 **Branch**: feature-cast-grid  
 **Status**: ✅ Complete - Ready for Testing
 
-The Cast Grid feature transforms the actors screen into a modern, Pinterest-style polaroid grid with Odoo-inspired navigation. This is a complete redesign of the actor management interface optimized for iPad and mobile.
+The Cast Grid feature transforms the Cast screen into a modern, Pinterest-style polaroid grid with Odoo-inspired navigation. This is a complete redesign of the Cast Member management interface optimized for iPad and mobile.
 
 ## Features Implemented
 
 ### ✅ Phase 1: Setup & Backup
 - Created `feature-cast-grid` branch
 - Backed up original files:
-  - `actors.html` → `actors-old.html`
-  - `actors.js` → `actors-old.js`
+  - `Cast.html` → `Cast-old.html`
+  - `Cast.js` → `Cast-old.js`
 - Created comprehensive implementation plan
 
-### ✅ Phase 2: Actor Card Component
+### ✅ Phase 2: Cast Member Card Component
 - **Polaroid-style cards** with photo, name, role badge
 - **Role badges**: Hoofdrol (primary), Bijrol (secondary), Figurant (accent)
 - **Scene count indicator** with icon
@@ -30,24 +30,24 @@ The Cast Grid feature transforms the actors screen into a modern, Pinterest-styl
 - **Filter by role**: All / Hoofdrol / Bijrol / Figurant
 - **Sort options**: Name (A-Z) / Scene Count / Recently Added
 - **Search by name**: Real-time filtering
-- **Quick Add modal**: Create actors with name, role, photo
+- **Quick Add modal**: Create Cast with name, role, photo
 - **FAB button**: Fixed bottom-right
-- **Empty states**: No actors / No results
+- **Empty states**: No Cast / No results
 - **Stagger animation**: Cards fade in with delay
 - **Active filter badges**: Visual feedback
 
 ### ✅ Phase 4: Detail Screen Integration
-- **Prev/Next navigation**: Navigate through filtered actor list
+- **Prev/Next navigation**: Navigate through filtered Cast Member list
 - **Back to grid**: Preserves filter/sort/search state via URL params
-- **URL pattern**: `actors-detail.html?project=X&actor=Y&filter=Z&sort=W&search=Q`
+- **URL pattern**: `Cast-detail.html?project=X&Cast Member=Y&filter=Z&sort=W&search=Q`
 - **Keyboard shortcuts**: ← → for navigation, ESC for back
 - **Same 3-column layout**: Details | Silhouette | Calendar
-- **Actor edit integration**: Preserved ActorEditScreen component
+- **Cast Member edit integration**: Preserved ActorEditScreen component
 - **SVG silhouette loading**: Multi-layer system (bodyshots/accessories/outfit)
 
 ### ✅ Phase 5: Mobile Responsive
 - **Touch-friendly tap targets**: Min 44x44px for all buttons
-- **Swipe navigation**: Swipe left/right to navigate actors on detail screen
+- **Swipe navigation**: Swipe left/right to navigate Cast on detail screen
 - **Responsive breakpoints**:
   - Desktop: 4 columns (250px cards)
   - Tablet: 3 columns (220px cards)
@@ -82,15 +82,15 @@ The Cast Grid feature transforms the actors screen into a modern, Pinterest-styl
 ### New Files
 ```
 frontend/
-  actors.html (NEW - Grid view)
-  actors-detail.html (NEW - Detail view with navigation)
+  Cast.html (NEW - Grid view)
+  Cast-detail.html (NEW - Detail view with navigation)
   css/
-    actors-grid.css (NEW - Grid styles)
-    actors-detail.css (NEW - Detail styles)
+    Cast-grid.css (NEW - Grid styles)
+    Cast-detail.css (NEW - Detail styles)
     toast.css (NEW - Toast notifications)
   js/
-    actors-grid.js (NEW - Grid controller)
-    actors-detail.js (NEW - Detail controller)
+    Cast-grid.js (NEW - Grid controller)
+    Cast-detail.js (NEW - Detail controller)
     components/
       actorCard.js (NEW - Card component)
     utils/
@@ -100,19 +100,19 @@ frontend/
 ### Backed Up Files
 ```
 frontend/
-  actors-old.html (BACKUP - Original actors view)
+  Cast-old.html (BACKUP - Original Cast view)
   js/
-    actors-old.js (BACKUP - Original actors logic)
+    Cast-old.js (BACKUP - Original Cast logic)
 ```
 
 ## Navigation Flow
 
 ```
-Projects → Cast Grid (actors.html)
+Projects → Cast Grid (Cast.html)
             ↓
-         Actor Card Click
+         Cast Member Card Click
             ↓
-    Detail Screen (actors-detail.html)
+    Detail Screen (Cast-detail.html)
       ← Prev  |  Next →  |  Back
             ↓
     Back to Grid (preserves filter/sort)
@@ -122,12 +122,12 @@ Projects → Cast Grid (actors.html)
 
 **Grid URL**:
 ```
-actors.html?project=123&filter=hoofdrol&sort=scenes&search=john
+Cast.html?project=123&filter=hoofdrol&sort=scenes&search=john
 ```
 
 **Detail URL**:
 ```
-actors-detail.html?project=123&actor=456&filter=hoofdrol&sort=scenes&search=john
+Cast-detail.html?project=123&Cast Member=456&filter=hoofdrol&sort=scenes&search=john
 ```
 
 All filter/sort/search state is preserved in URL params for seamless back navigation.
@@ -139,22 +139,22 @@ All filter/sort/search state is preserved in URL params for seamless back naviga
 - `Tab` - Navigate between controls
 
 ### Detail Screen
-- `←` - Previous actor
-- `→` - Next actor  
+- `←` - Previous Cast Member
+- `→` - Next Cast Member  
 - `Esc` - Back to grid
 
 ## Mobile Gestures
 
 ### Detail Screen
-- **Swipe Left** - Next actor
-- **Swipe Right** - Previous actor
+- **Swipe Left** - Next Cast Member
+- **Swipe Right** - Previous Cast Member
 
 ## Components
 
 ### ActorCard
 **Location**: `frontend/js/components/actorCard.js`
 
-Static component that renders actor cards with:
+Static component that renders Cast Member cards with:
 - Photo (or placeholder)
 - Name
 - Role badge (with color coding)
@@ -162,20 +162,20 @@ Static component that renders actor cards with:
 - Click handler for navigation
 
 ### CastGridApp
-**Location**: `frontend/js/actors-grid.js`
+**Location**: `frontend/js/Cast-grid.js`
 
 Main grid controller:
-- Loads actors from Supabase
+- Loads Cast from Supabase
 - Fetches scene counts
 - Handles filter/sort/search
 - Manages quick add modal
 - Renders cards
 
 ### ActorDetailApp
-**Location**: `frontend/js/actors-detail.js`
+**Location**: `frontend/js/Cast-detail.js`
 
 Detail screen controller:
-- Loads filtered actor list (same as grid)
+- Loads filtered Cast Member list (same as grid)
 - Handles prev/next navigation
 - Manages back to grid with state
 - Touch swipe support
@@ -196,22 +196,22 @@ Notification utility:
 ## Testing Checklist
 
 ### Grid Screen
-- [ ] Actors load and display in grid
+- [ ] Cast load and display in grid
 - [ ] Filter by role works (all/hoofdrol/bijrol/figurant)
 - [ ] Sort works (name/scenes/recent)
 - [ ] Search filters by name
-- [ ] Quick add creates actor (with photo URL)
-- [ ] Quick add creates actor (with file upload)
+- [ ] Quick add creates Cast Member (with photo URL)
+- [ ] Quick add creates Cast Member (with file upload)
 - [ ] Photo preview shows in modal
 - [ ] FAB button visible and functional
-- [ ] Empty state shows when no actors
+- [ ] Empty state shows when no Cast
 - [ ] No results state shows when search fails
 - [ ] Responsive grid (4→3→2 columns)
 - [ ] Cards have hover animation
 - [ ] Loading skeletons show during fetch
 
 ### Detail Screen
-- [ ] Actor detail loads correctly
+- [ ] Cast Member detail loads correctly
 - [ ] Prev/Next buttons work
 - [ ] Prev/Next disabled at start/end
 - [ ] Back button returns to grid with state
@@ -246,7 +246,7 @@ Notification utility:
 
 ## Version History
 
-- **v0.1.0** - Base project with original actors screen
+- **v0.1.0** - Base project with original Cast screen
 - **v0.2.0** - Cast Grid feature (this release)
 
 ## Merge Plan
@@ -265,20 +265,20 @@ Notification utility:
 
 If issues are discovered:
 1. Restore original files from backups
-2. Rename `actors-old.html` → `actors.html`
-3. Rename `actors-old.js` → `actors.js`
-4. Delete new files: `actors-grid.js`, `actors-detail.js`, etc.
+2. Rename `Cast-old.html` → `Cast.html`
+3. Rename `Cast-old.js` → `Cast.js`
+4. Delete new files: `Cast-grid.js`, `Cast-detail.js`, etc.
 5. Commit rollback
 
 ## Future Enhancements
 
-- **Bulk operations**: Select multiple actors, delete/edit in batch
+- **Bulk operations**: Select multiple Cast, delete/edit in batch
 - **Drag & drop reorder**: Sortable grid
 - **Advanced filters**: By scene count range, created date range
-- **Tags system**: Categorize actors beyond role
+- **Tags system**: Categorize Cast beyond role
 - **Export cast list**: PDF/CSV export
 - **Print view**: Optimized cast sheet printing
-- **Actor grouping**: Group by shooting day, location, etc.
+- **Cast Member grouping**: Group by shooting day, location, etc.
 
 ---
 

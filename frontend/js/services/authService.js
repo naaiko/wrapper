@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Authentication Service
  * Handles user login, logout, session management, and role-based access control
  */

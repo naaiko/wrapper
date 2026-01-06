@@ -1,4 +1,4 @@
-// =================================================================
+﻿// =================================================================
 // CALENDAR VIEW - Toast UI Calendar Implementation
 // =================================================================
 
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const navActors = document.getElementById('navActors');
     const navTimeline = document.getElementById('navTimeline');
     const navCalendar = document.getElementById('navCalendar');
-    if (navActors) navActors.href = `actors.html?project=${currentProject.id}`;
+    if (navActors) navActors.href = `cast.html?project=${currentProject.id}`;
     if (navTimeline) navTimeline.href = `timeline.html?project=${currentProject.id}`;
     if (navCalendar) navCalendar.href = `calendar.html?project=${currentProject.id}`;
     

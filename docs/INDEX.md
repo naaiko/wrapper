@@ -1,4 +1,4 @@
-# Documentation Index
+﻿# Documentation Index
 
 Welcome to the Continuity Manager documentation! All documentation is organized by release version and category.
 
@@ -47,7 +47,7 @@ Features:
 - Polaroid-style grid view
 - Filter, sort, search functionality
 - Quick add with photo upload
-- Actor detail screen with navigation
+- Cast Member detail screen with navigation
 - Touch swipe and keyboard shortcuts
 - Toast notifications
 
@@ -57,13 +57,13 @@ Features:
 **Initial Release with Version System**
 
 - **[ACTORS_DOCUMENTATION.md](releases/v0.1.0/ACTORS_DOCUMENTATION.md)** - Actor system documentation
-- **[ACTORS_FEATURE_README.md](releases/v0.1.0/ACTORS_FEATURE_README.md)** - Actor feature overview
-- **[SCENE_ACTOR_IMPLEMENTATION.md](releases/v0.1.0/SCENE_ACTOR_IMPLEMENTATION.md)** - Scene-actor relationships
+- **[ACTORS_FEATURE_README.md](releases/v0.1.0/ACTORS_FEATURE_README.md)** - Cast Member feature overview
+- **[SCENE_ACTOR_IMPLEMENTATION.md](releases/v0.1.0/SCENE_ACTOR_IMPLEMENTATION.md)** - Scene-cast member relationships
 - **[SCENE_PROPERTIES_IMPLEMENTATION.md](releases/v0.1.0/SCENE_PROPERTIES_IMPLEMENTATION.md)** - Scene properties system
 
 Features:
 - Base continuity management system
-- Scene and actor management
+- Scene and Cast Member management
 - Location management
 - Calendar integration
 - SVG silhouette system

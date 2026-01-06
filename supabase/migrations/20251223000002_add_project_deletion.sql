@@ -1,4 +1,4 @@
--- Migration: Add Project Deletion Function with Full Cascade
+﻿-- Migration: Add Project Deletion Function with Full Cascade
 -- Created: 2025-12-23
 -- Purpose: Ensure complete project deletion with all related data (no orphans)
 
@@ -25,8 +25,8 @@ BEGIN
     -- Delete all related data explicitly (CASCADE will handle most, but being explicit)
     -- Note: ON DELETE CASCADE is already set up in schema, but we log counts
     
-    -- Delete actor_continuity (via CASCADE from actors)
-    -- Delete scene_actors (via CASCADE from scenes and actors)
+    -- Delete cast_member_continuity (via CASCADE from actors)
+    -- Delete scene_cast_members (via CASCADE from scenes and actors)
     -- Delete locations, settings, etc. (all have CASCADE on project_id)
     
     -- Finally delete the project (CASCADE will handle all references)

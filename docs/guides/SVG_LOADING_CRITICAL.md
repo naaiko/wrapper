@@ -1,4 +1,4 @@
-# SVG LOADING - CRITICAL IMPLEMENTATION GUIDE
+﻿# SVG LOADING - CRITICAL IMPLEMENTATION GUIDE
 
 ## 🚨 WAAROM DIT DOCUMENT BESTAAT
 
@@ -83,7 +83,7 @@ Voor het laden van SVG assets:
 
 ## 🎯 HUIDIGE IMPLEMENTATIE
 
-Zie `frontend/js/actors.js` → `loadSilhouetteSVG()` voor de werkende implementatie.
+Zie `frontend/js/Cast.js` → `loadSilhouetteSVG()` voor de werkende implementatie.
 
 ### Proces:
 1. Fetch `images/silhouette.svg`
@@ -96,7 +96,7 @@ Zie `frontend/js/actors.js` → `loadSilhouetteSVG()` voor de werkende implement
 
 ### CSS:
 - Layers verborgen met `visibility: hidden`
-- Mode classes tonen lagen: `.actor-silhouette.mode-bodyshots .layer-bodyshots { visibility: visible; }`
+- Mode classes tonen lagen: `.Cast Member-silhouette.mode-bodyshots .layer-bodyshots { visibility: visible; }`
 - Child elementen direct stylen: `.layer-bodyshots rect { stroke: red; }`
 
 ## 🔧 DEBUG TIPS

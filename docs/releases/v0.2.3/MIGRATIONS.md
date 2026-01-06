@@ -2,112 +2,121 @@
 
 ## Overview
 
-This release includes N database migrations.
+This release includes **3 required migrations**.
+
+They are located in `supabase/migrations/` and must be run **in order**.
 
 ## Migration Files
 
-Located in `supabase/migrations/`:
+### 1) `20260106000001_add_characters_architecture.sql` (Breaking)
 
-### 1. `YYYYMMDDNNNNNN_migration_name.sql`
+**Purpose**: Introduces the new Character ↔ Cast Member architecture.
 
-**Purpose**: Brief description of what this migration does
+**Changes (high level)**:
+- Creates `characters`, `character_cast_assignments`, `scene_characters`
+- Migrates existing data from legacy structures
+- Removes legacy fields/tables that can’t represent many-to-many relationships
 
-**Changes**:
-- ADD COLUMN column_name type
-- CREATE INDEX index_name
-- ALTER TABLE modifications
-
-**Impact**: 
-- ✅ Backwards compatible / ⚠️ Breaking change
-- ✅ Existing data preserved / ⚠️ Data migration required
-- ✅ Safe to rollback / ⚠️ Rollback requires manual steps
+**Impact**:
+- ⚠️ **Breaking change** (schema and query shape changes)
+- ✅ Existing data migrated automatically (assuming successful run)
+- ⚠️ Rollback requires manual restore (database backup recommended)
 
 **Verification**:
 ```sql
--- Query to verify migration succeeded
-SELECT * FROM table_name LIMIT 10;
+-- Tables exist
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+    AND table_name IN ('characters', 'character_cast_assignments', 'scene_characters');
+
+-- Sanity counts
+SELECT
+    (SELECT COUNT(*) FROM characters) AS characters_count,
+    (SELECT COUNT(*) FROM character_cast_assignments) AS assignments_count,
+    (SELECT COUNT(*) FROM scene_characters) AS scene_characters_count;
+```
+
+### 2) `20260106000002_update_actors_schema.sql` (Pre-rename schema prep)
+
+**Purpose**: Normalize person names and role types before the rename.
+
+**Changes (high level)**:
+- Adds `first_name`, `last_name`
+- Removes `actor_name` (migrates content into first/last)
+- Adds generated `name` (full name)
+- Renames `role` → `role_type` and normalizes values
+
+**Impact**:
+- ✅ Backwards compatible in data intent (but changes column names)
+- ✅ Existing data is migrated
+- ⚠️ Rollback requires re-adding `actor_name` / old role values if needed
+
+**Verification**:
+```sql
+-- Ensure columns exist (before rename to cast_members)
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'actors'
+    AND column_name IN ('first_name', 'last_name', 'name', 'role_type');
+
+-- Ensure actor_name is removed
+SELECT column_name
+FROM information_schema.columns
+WHERE table_name = 'actors'
+    AND column_name = 'actor_name';
+```
+
+### 3) `20260106000003_rename_actors_to_cast_members.sql` (Breaking rename)
+
+**Purpose**: Rename “actor” terminology in the database to “cast member”.
+
+**Changes (high level)**:
+- `actors` → `cast_members`
+- `character_actor_assignments` → `character_cast_assignments`
+- `actor_id` → `cast_member_id`
+- Updates FK constraints/indexes accordingly
+
+**Impact**:
+- ⚠️ **Breaking change** for any code/queries referencing old table names
+- ✅ Data preserved (rename operations)
+- ⚠️ Rollback requires manual reverse-rename
+
+**Verification**:
+```sql
+-- Ensure new tables exist
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+    AND table_name IN ('cast_members', 'character_cast_assignments');
+
+-- Ensure old tables are gone
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+    AND table_name IN ('actors', 'character_actor_assignments');
 ```
 
 ## Execution Order
 
-**IMPORTANT**: Run migrations in this order:
+Run migrations in this exact order:
 
-1. First: `YYYYMMDDNNNNNN_migration_1.sql`
-2. Second: `YYYYMMDDNNNNNN_migration_2.sql`
-
-The numeric prefix ensures correct ordering.
-
-## How to Run
-
-See [RUN_MIGRATIONS.md](RUN_MIGRATIONS.md) for detailed instructions.
-
-### Quick Steps
-
-1. Go to Supabase Dashboard → SQL Editor
-2. Copy contents of migration 1
-3. Run ▶️
-4. Repeat for each migration in order
-5. Verify with verification queries
+1. `20260106000001_add_characters_architecture.sql`
+2. `20260106000002_update_actors_schema.sql`
+3. `20260106000003_rename_actors_to_cast_members.sql`
 
 ## Rollback
 
-If needed, rollback in reverse order:
+⚠️ **Recommended rollback strategy**: restore a database backup taken before migration 1.
 
-```sql
--- Rollback migration 2
-ALTER TABLE table_name DROP COLUMN column_name;
+If you must rollback manually, do it in reverse order and expect additional cleanup:
 
--- Rollback migration 1
-DROP INDEX IF EXISTS index_name;
-```
+1. Reverse-rename `cast_members` back to `actors`, `character_cast_assignments` back to `character_actor_assignments`, and rename columns back.
+2. Reintroduce removed legacy fields/tables if needed.
+3. Drop `characters`/`character_cast_assignments`/`scene_characters` after preserving data.
 
-## Dependencies
+## Status
 
-**Required for features**:
-- Feature 1 needs migration 1
-- Feature 2 needs migration 2
-
-**Breaking changes**: None / List any breaking changes
-
-**API changes**: 
-- Service changes
-- Component changes
-
-## Schema After Migrations
-
-```sql
-CREATE TABLE table_name (
-    -- Existing columns
-    id UUID PRIMARY KEY,
-    
-    -- New columns (v0.2.3)
-    new_column TEXT,  -- NEW
-    
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- New indexes
-CREATE INDEX idx_name ON table_name(column_name); -- NEW
-```
-
-## Testing
-
-After running migrations, test:
-
-1. ✅ Test case 1
-2. ✅ Test case 2
-3. ✅ Existing functionality still works
-4. ✅ No errors in browser console
-
-## Migration History
-
-| Date | Migration | Version | Status |
-|------|-----------|---------|--------|
-| YYYY-MM-DD | YYYYMMDDNNNNNN | v0.2.3 | ✅ Required / ⚠️ Optional |
-
----
-
-**Status**: ✅ Required / ⚠️ Optional for v0.2.3  
-**Total Migrations**: N  
-**Backwards Compatible**: Yes / No  
-**Data Loss Risk**: None / Low / High
+- **Total Migrations**: 3
+- **Backwards Compatible**: No (breaking schema changes)
+- **Data Loss Risk**: Medium without a backup (schema drops/removals)

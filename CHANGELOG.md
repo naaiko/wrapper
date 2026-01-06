@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+ 
+
+### Technical
+
+
+---
+
+## [0.2.3] - 2026-01-06
+
+### Added
+- **Character-Cast Member Architecture** - Separate Characters (story roles) from Cast Members (real people)
+  - Character management modal with assignment workflow
+  - Many-to-many assignments (understudy, stunt, voice, alternate, etc.)
+  - Timeline character badges and character-aware scene loading
+- **Script Import & Parsing** - Import Fountain and plain text screenplays with automatic scene extraction
+  - Scene heading parsing: INT/EXT, location, time of day, continuity
+  - Character detection from dialogue and automatic character creation
+
+### Changed
+- Terminology: Actor → Cast Member across UI and database schema
+
+### Fixed
+- Dropdown menus inside modals: option lists no longer clipped by modal boundaries
+
+### Technical
+- Migrations:
+  - `20260106000001_add_characters_architecture.sql`
+  - `20260106000002_update_actors_schema.sql`
+  - `20260106000003_rename_actors_to_cast_members.sql`
 
 ---
 
@@ -97,14 +128,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-01-06
 
 ### Added - Cast Grid Feature
-- **Polaroid-style grid view** for actors with responsive layout (4→3→2→1 columns)
+- **Polaroid-style grid view** for cast members with responsive layout (4→3→2→1 columns)
 - **ActorCard component** with photo, name, role badge, and scene count
 - **Filter system**: Filter actors by role (All/Hoofdrol/Bijrol/Figurant)
 - **Sort options**: Sort by name (A-Z), scene count, or recently added
 - **Real-time search**: Filter actors by name with instant results
 - **Quick Add modal**: Create actors with name, role, and photo (URL or file upload)
 - **Photo upload**: Support for both URL input and local file picker with live preview
-- **Actor detail screen** with prev/next navigation through filtered list
+- **Cast member detail screen** with prev/next navigation through filtered list
 - **Keyboard shortcuts**: ← → for navigation, ESC to return to grid
 - **Touch swipe navigation**: Swipe left/right to navigate actors on mobile/iPad
 - **Toast notification system**: Success/error feedback for user actions
@@ -114,7 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **URL state preservation**: Filter/sort/search state maintained in URL for back navigation
 
 ### Changed
-- Transformed actors screen from list view to modern grid layout
+- Transformed cast screen from list view to modern grid layout
 - Enhanced mobile responsiveness with touch-friendly tap targets (min 44x44px)
 - Improved hover animations with lift effect and shadow
 - Updated to responsive breakpoints for optimal viewing on all devices
@@ -195,7 +226,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MINOR** (0.X.0) - New functionality, backwards compatible
 - **PATCH** (0.0.X) - Bug fixes, small improvements
 
-[Unreleased]: https://github.com/naaiko/wrapper/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/naaiko/wrapper/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/naaiko/wrapper/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/naaiko/wrapper/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/naaiko/wrapper/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/naaiko/wrapper/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/naaiko/wrapper/releases/tag/v0.1.0

@@ -1,4 +1,4 @@
-// =================================================================
+﻿// =================================================================
 // SCENE EDIT SCREEN - Implementatie met EditScreen Component
 // =================================================================
 // Dit is een voorbeeld van hoe de scene drawer gemigreerd kan worden
@@ -70,7 +70,7 @@ export class SceneEditScreen {
                 <!-- DaisyUI Tabs -->
                 <div role="tablist" class="tabs tabs-boxed mb-2">
                     <button type="button" role="tab" class="tab tab-active" data-tab="scene-info">Scene Info</button>
-                    <button type="button" role="tab" class="tab" data-tab="cast">Cast</button>
+                    <button type="button" role="tab" class="tab" data-tab="characters">Characters</button>
                 </div>
             </div>
             
@@ -110,8 +110,8 @@ export class SceneEditScreen {
                     ` : ''}
                 </div>
             
-                <div id="castTab" class="tab-panel hidden">
-                    ${this.renderCastSection(scene)}
+                <div id="charactersTab" class="tab-panel hidden">
+                    ${this.renderCharactersSection(scene)}
                 </div>
             </div>
         `;
@@ -200,18 +200,55 @@ export class SceneEditScreen {
     }
     
     /**
-     * Render cast section
+     * Render characters section
      */
-    renderCastSection(scene) {
+    renderCharactersSection(scene) {
+        // Use the transformed characters array from timeline (already flattened)
+        const characters = scene?.characters || [];
+        
         return `
             <div class="edit-screen__form-row">
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text font-semibold">Cast Members</span>
+                        <span class="label-text font-semibold">Characters in This Scene</span>
                     </label>
-                    <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
-                        Cast management coming soon...
-                    </div>
+                    ${characters.length > 0 ? `
+                        <div class="space-y-2">
+                            ${characters.map(charData => {
+                                // charData structure from timeline: { id, character: {...}, actor_assignments: [...] }
+                                const character = charData.character || charData;
+                                const actorAssignments = charData.actor_assignments || character.character_cast_assignments || [];
+                                const primaryActor = actorAssignments.find(a => a.assignment_type === 'actor');
+                                
+                                return `
+                                    <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        <div class="flex-1">
+                                            <div class="font-medium">${character?.name || 'Unknown'}</div>
+                                            ${primaryActor ? `
+                                                <div class="text-xs text-base-content/70 mt-1">
+                                                    <span class="badge badge-xs badge-primary">actor</span>
+                                                    ${primaryActor.actor?.actor_name || primaryActor.actor?.name || 'Unknown'}
+                                                </div>
+                                            ` : `
+                                                <div class="text-xs text-warning mt-1">No actor assigned</div>
+                                            `}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : `
+                        <div class="text-sm text-base-content/60 p-4 text-center border border-dashed border-base-300 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <p>No characters in this scene</p>
+                            <p class="text-xs mt-1">Characters are extracted from script imports</p>
+                        </div>
+                    `}
                 </div>
             </div>
         `;
@@ -263,6 +300,13 @@ export class SceneEditScreen {
      */
     initializeDropdowns(scene) {
         const features = settingsService.getAllFeatures();
+        
+        // Debug log to check scene data
+        console.log('SceneEditScreen.initializeDropdowns - scene data:', scene);
+        console.log('  - location_id:', scene?.location_id);
+        console.log('  - int_ext:', scene?.int_ext);
+        console.log('  - time:', scene?.time);
+        console.log('  - conditions:', scene?.conditions);
         
         // Initialize tab switching
         this.initializeTabs();
@@ -363,7 +407,7 @@ export class SceneEditScreen {
                 // Map tab IDs to panel IDs
                 const panelMap = {
                     'scene-info': 'sceneInfoTab',
-                    'cast': 'castTab'
+                    'characters': 'charactersTab'
                 };
                 
                 const targetPanel = document.getElementById(panelMap[tabId]);

@@ -1,4 +1,4 @@
-# Release Process Guide
+﻿# Release Process Guide
 
 This document describes the mandatory release process for this project. Every version change **MUST** be accompanied by proper release notes.
 
@@ -227,7 +227,7 @@ git tag -a v0.2.1 -m "Release version 0.2.1"
 # 2. Add to CHANGELOG.md
 ## [0.3.0] - 2026-01-15
 ### Added
-- Bulk actor operations
+- Bulk Cast Member operations
 - Advanced filtering system
 - Export to PDF
 

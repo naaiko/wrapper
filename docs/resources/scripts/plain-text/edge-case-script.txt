@@ -1,0 +1,89 @@
+EXTREME EDGE CASE SCRIPT
+
+This script tests various edge cases for the parser.
+
+
+SCENE WITHOUT LOCATION
+
+Someone talks.
+
+PERSON
+I'm talking but there's no scene heading.
+
+1. INT. BEDROOM - DAY
+(scene with number prefix)
+
+ALEX wakes up.
+
+2A. EXT. STREET - CONTINUOUS
+(scene with letter suffix)
+
+ALEX runs outside.
+
+SAME SCENE - DIFFERENT ANGLE
+
+Still outside.
+
+3  INT/EXT. CAR - MOVING - DAY
+(compound INT/EXT with extra descriptor)
+
+ALEX drives.
+
+ALEX
+Where am I going?
+
+Good question.
+
+4. FLASHBACK - INT. CLASSROOM - DAY (1995)
+(flashback with year)
+
+Young ALEX sits at a desk.
+
+TEACHER
+Pay attention!
+
+BACK TO PRESENT
+
+5. INT. ALEX'S APARTMENT - NIGHT - DREAM SEQUENCE
+(multiple descriptors)
+
+Everything is weird and surreal.
+
+ALEX
+This doesn't make sense.
+
+Nothing does in dreams.
+
+6. I/E WAREHOUSE - DUSK
+(abbreviated INT/EXT)
+
+ALEX enters.
+
+MYSTERIOUS VOICE (O.S.)
+Welcome.
+
+ALEX
+Who's there?
+
+No answer.
+
+OMITTED
+
+7. EXT. ROOFTOP - SUNRISE - MONTAGE
+
+ALEX trains.
+ALEX practices.
+ALEX improves.
+
+8. INT. FINAL LOCATION - DAY
+
+ALEX is ready.
+
+ALEX
+Let's do this.
+
+FADE OUT.
+
+CREDITS SEQUENCE
+
+THE END

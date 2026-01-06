@@ -1,10 +1,15 @@
-// =================================================================
+﻿// =================================================================
 // IMPORTS
 // =================================================================
 
 import Sortable from 'sortablejs';
 import { AddSceneScreen } from './screens/addSceneScreen.js';
+import { SceneService } from './services/sceneService.js';
+import { LocationService } from './services/locationService.js';
 import { SceneEditScreen } from './screens/sceneEditScreen.js';
+import { ScriptImportScreen } from './screens/ScriptImportScreen.js';
+import { LocationsConfigModal } from './components/locationsConfigModal.js';
+import { CharactersConfigModal } from './components/charactersConfigModal.js';
 import settingsService from './services/settingsService.js';
 import { loadOnboardingSteps } from './services/onboardingService.js';
 import { version } from './version.js';
@@ -16,8 +21,12 @@ import { version } from './version.js';
 const CURRENT_PROJECT_KEY = 'continuityManager_currentProject';
 let addSceneScreen = null;
 let sceneEditScreen = null;
+let scriptImportScreen = null;
+let locationsConfigModal = null;
+let charactersConfigModal = null;
 let sortableInstance = null;
 let currentZoom = 1.0; // Zoom level: 0.5 (50%) to 2.0 (200%)
+let locations = []; // Project locations
 
 // Queue system for scene order updates
 let updateQueue = [];
@@ -69,14 +78,45 @@ async function getCurrentProject() {
  */
 async function getProjectScenes(projectId) {
     try {
+        // OPTIMIZED: Single query with all necessary joins instead of N+1 queries
         const { data, error } = await supabase
             .from('scenes')
-            .select('*')
+            .select(`
+                *,
+                scene_characters(
+                    id,
+                    character:characters(
+                        id,
+                        name,
+                        character_cast_assignments(
+                            assignment_type,
+                            cast_member:cast_members(id, name)
+                        )
+                    )
+                )
+            `)
             .eq('project_id', projectId)
             .order('story_order');
         
         if (error) throw error;
-        return data || [];
+        
+        const scenes = data || [];
+        
+        // Transform nested data structure for backwards compatibility
+        scenes.forEach(scene => {
+            // Flatten scene_characters to characters array
+            if (scene.scene_characters) {
+                scene.characters = scene.scene_characters.map(sc => ({
+                    ...sc,
+                    actor_assignments: sc.character?.character_cast_assignments || []
+                }));
+                delete scene.scene_characters; // Clean up temp property
+            } else {
+                scene.characters = [];
+            }
+        });
+        
+        return scenes;
     } catch (error) {
         console.error('Error fetching scenes:', error);
         return [];
@@ -246,7 +286,7 @@ function initializeAddSceneScreen() {
     
     addSceneScreen = new AddSceneScreen({
         projectId: currentProject.id,
-        locations: [],
+        locations: locations,
         times: currentProject.times || [],
         conditions: currentProject.conditions || [],
         continuityOptions: settingsService.getContinuityOptions(),
@@ -261,6 +301,34 @@ function initializeAddSceneScreen() {
     });
 }
 
+/**
+ * Initialize ScriptImportScreen component
+ */
+function initializeScriptImportScreen() {
+    if (!currentProject || !currentProject.id) {
+        console.error('Cannot initialize ScriptImportScreen: currentProject not loaded');
+        return;
+    }
+    
+    try {
+        scriptImportScreen = new ScriptImportScreen({
+            projectId: currentProject.id,
+            
+            onComplete: async (createdScenes) => {
+                // Reload scenes from database
+                scenes = await getProjectScenes(currentProject.id);
+                
+                // Re-render timeline
+                renderTimeline();
+            }
+        });
+        console.log('[TIMELINE] ScriptImportScreen initialized successfully');
+    } catch (error) {
+        console.error('[TIMELINE] Error initializing ScriptImportScreen:', error);
+        scriptImportScreen = null;
+    }
+}
+
 function initializeSceneEditScreen() {
     if (!currentProject || !currentProject.id) {
         console.error('Cannot initialize SceneEditScreen: currentProject not loaded');
@@ -269,7 +337,7 @@ function initializeSceneEditScreen() {
     
     sceneEditScreen = new SceneEditScreen({
         projectId: currentProject.id,
-        locations: [],
+        locations: locations,
         times: currentProject.times || [],
         conditions: currentProject.conditions || [],
         continuityOptions: settingsService.getContinuityOptions(),
@@ -350,11 +418,19 @@ function switchMode(mode) {
     renderTimeline();
 }
 
+// Expose switchMode to window for inline onclick handlers
+window.switchMode = switchMode;
+
 /**
  * Main render function - delegates to appropriate view renderer.
  */
 function renderTimeline() {
     const container = document.getElementById('sceneContainer');
+    
+    if (!container) {
+        console.error('Scene container not found');
+        return;
+    }
     
     if (currentMode === 'story') {
         renderStoryOrder(container);
@@ -385,8 +461,29 @@ function renderStoryOrder(container) {
         return;
     }
     
-    // Build HTML with horizontal cards
-    const html = sortedScenes.map(scene => `
+    // OPTIMIZED: Use DocumentFragment for faster DOM manipulation
+    // Build HTML with horizontal cards (keep as template string for clarity)
+    const html = sortedScenes.map(scene => {
+        // Build characters badges
+        const characters = scene.characters || [];
+        const displayChars = characters.slice(0, 3);
+        const remaining = characters.length - displayChars.length;
+        
+        const charactersHtml = characters.length > 0 ? `
+            <div class="flex items-center gap-1 flex-wrap mt-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-base-content/40 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                ${displayChars.map(sc => {
+                    const hasActor = sc.character?.actor_assignments?.length > 0;
+                    const badgeClass = hasActor ? 'badge-primary' : 'badge-ghost';
+                    return `<div class="badge badge-xs ${badgeClass}">${sc.character?.name || 'Unknown'}</div>`;
+                }).join('')}
+                ${remaining > 0 ? `<div class="badge badge-xs badge-ghost">+${remaining}</div>` : ''}
+            </div>
+        ` : '';
+        
+        return `
         <div 
             class="card bg-base-100 shadow-md flex-shrink-0 w-80 min-h-[200px] scene-card cursor-move" 
             draggable="true"
@@ -404,6 +501,7 @@ function renderStoryOrder(container) {
                             </h3>
                         </div>
                         <p class="text-sm text-base-content/70">${scene.description}</p>
+                        ${charactersHtml}
                     </div>
                     <div class="flex flex-col gap-2 items-end">
                         <div class="badge badge-outline">Story #${scene.story_order}</div>
@@ -419,7 +517,8 @@ function renderStoryOrder(container) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
     
     // Add the "add scene" placeholder at the end
     const addPlaceholder = `
@@ -673,6 +772,10 @@ function enableManualScroll() {
             '.btn',
             'button',
             '#topNavigation',
+            '.modal',
+            '.modal-box',
+            '.dropdown',
+            '.dropdown-content',
             'a',
             'input',
             'textarea',
@@ -851,6 +954,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load scenes from database
     scenes = await getProjectScenes(currentProject.id);
     
+    // Load locations from database
+    locations = await LocationService.getAll(currentProject.id);
+    console.log('Locations loaded:', locations.length);
+    
     // If no scenes exist, create demo data
     if (scenes.length === 0) {
         scenes = await createDemoScenes(currentProject.id);
@@ -860,7 +967,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const navActors = document.getElementById('navActors');
     const navTimeline = document.getElementById('navTimeline');
     const navCalendar = document.getElementById('navCalendar');
-    if (navActors) navActors.href = `actors.html?project=${currentProject.id}`;
+    if (navActors) navActors.href = `cast.html?project=${currentProject.id}`;
     if (navTimeline) navTimeline.href = `timeline.html?project=${currentProject.id}`;
     if (navCalendar) navCalendar.href = `calendar.html?project=${currentProject.id}`;
     
@@ -872,11 +979,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize screen components
     initializeAddSceneScreen();
     initializeSceneEditScreen();
+    initializeScriptImportScreen();
+    
+    // Initialize config modals
+    locationsConfigModal = new LocationsConfigModal(currentProject.id);
+    locationsConfigModal.onLocationsChanged = async (newLocations) => {
+        locations = newLocations;
+        // Update SceneEditScreen with new locations
+        if (sceneEditScreen) {
+            sceneEditScreen.locations = locations;
+        }
+    };
+    
+    charactersConfigModal = new CharactersConfigModal(currentProject.id);
     
     // Setup event listeners
-    document.getElementById('addSceneBtn').addEventListener('click', () => {
-        addSceneScreen.open();
-    });
+    const addBtn = document.getElementById('addSceneBtn');
+    const importBtn = document.getElementById('importScriptBtn');
+    const locationsBtn = document.getElementById('locationsConfigBtn');
+    const actorsBtn = document.getElementById('castMembersConfigBtn');
+    
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            addSceneScreen.open();
+        });
+    }
+    
+    if (importBtn) {
+        importBtn.addEventListener('click', () => {
+            if (scriptImportScreen) {
+                scriptImportScreen.open();
+            } else {
+                console.error('ScriptImportScreen not initialized');
+            }
+        });
+    } else {
+        console.error('Import script button not found');
+    }
+    
+    if (locationsBtn) {
+        locationsBtn.addEventListener('click', () => {
+            if (locationsConfigModal) {
+                locationsConfigModal.open();
+            }
+        });
+    }
+    
+    if (actorsBtn) {
+        actorsBtn.addEventListener('click', () => {
+            if (charactersConfigModal) {
+                charactersConfigModal.open();
+            }
+        });
+    }
 
     // Check if this is a new project (trigger onboarding after a short delay to ensure intro.js is loaded)
     setTimeout(() => {

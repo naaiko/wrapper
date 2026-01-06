@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VERSION MANAGEMENT
  * 
  * Centralized version control for the application.

@@ -1,7 +1,7 @@
-/* Actors Management Screen Styles */
+﻿/* Actors Management Screen Styles */
 
 /* Actor Silhouette - Must fit within flex parent */
-.actor-silhouette {
+.cast-member-silhouette {
     width: 100%;
     height: 100%;
     max-width: 100%;
@@ -174,15 +174,15 @@
 }
 
 /* Mode classes - show specific layer when mode is active */
-.actor-silhouette.mode-bodyshots .layer-bodyshots {
+.cast-member-silhouette.mode-bodyshots .layer-bodyshots {
     visibility: visible;
 }
 
-.actor-silhouette.mode-accessories .layer-accesories {
+.cast-member-silhouette.mode-accessories .layer-accesories {
     visibility: visible;
 }
 
-.actor-silhouette.mode-outfit .layer-outfit {
+.cast-member-silhouette.mode-outfit .layer-outfit {
     visibility: visible;
 }
 
@@ -226,7 +226,7 @@
 }
 
 /* Legacy styles for photo preview overlay */
-.actor-photo-preview {
+.cast-member-photo-preview {
     position: absolute;
     top: 2rem;
     left: 2rem;
@@ -238,11 +238,11 @@
     z-index: 2;
 }
 
-.actor-photo-preview.hidden {
+.cast-member-photo-preview.hidden {
     display: none;
 }
 
-.actor-photo-preview img {
+.cast-member-photo-preview img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -519,12 +519,12 @@
         height: 300px;
     }
 
-    .actor-silhouette-container {
+    .cast-member-silhouette-container {
         width: 150px;
         height: 300px;
     }
 
-    .actor-silhouette {
+    .cast-member-silhouette {
         width: 150px;
         height: 300px;
     }

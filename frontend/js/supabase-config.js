@@ -1,4 +1,4 @@
-// Supabase Configuration
+﻿// Supabase Configuration
 // IMPORTANT: In production, move these to environment variables
 
 const SUPABASE_URL = 'https://jdjwkidtslnqvfednuga.supabase.co';

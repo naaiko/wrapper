@@ -1,11 +1,11 @@
-// =================================================================
+﻿// =================================================================
 // ACTOR EDIT SCREEN - Implementation with EditScreen Component
 // =================================================================
 // Follows the same architecture as SceneEditScreen
 // Uses the universal EditScreen component for consistency
 
 import { EditScreen } from '../components/editScreen.js';
-import { ActorService } from '../services/actorService.js';
+import { CastMemberService } from '../services/castMemberService.js';
 import { renderSceneCard } from '../components/sceneCardRenderer.js';
 import settingsService from '../services/settingsService.js';
 
@@ -21,7 +21,7 @@ export class ActorEditScreen {
         // Create the edit screen
         this.editScreen = new EditScreen({
             id: 'actorEditScreen',
-            title: 'Edit Actor',
+            title: 'Edit Cast Member',
             height: '90vh',
             renderFormContent: (actor) => this.renderForm(actor),
             renderContextContent: (actor) => this.renderContext(actor),
@@ -309,21 +309,21 @@ export class ActorEditScreen {
      * Render scenes tab
      */
     renderScenesInfo(actor) {
-        const sceneActors = actor?.scene_actors || [];
+        const sceneCastMembers = actor?.scene_cast_members || [];
         
-        if (sceneActors.length === 0) {
+        if (sceneCastMembers.length === 0) {
             return `
                 <div class="text-sm text-base-content/60 p-8 text-center border border-dashed border-base-300 rounded-lg">
                     This actor is not assigned to any scenes yet.
                     <br>
-                    <span class="text-xs mt-2 inline-block">Assign actors to scenes from the Scene Edit Screen.</span>
+                    <span class="text-xs mt-2 inline-block">Assign Cast Members to scenes from the Scene Edit Screen.</span>
                 </div>
             `;
         }
         
         return `
-            <div class="space-y-2" id="actorScenesListInEdit">
-                ${sceneActors.map(sa => {
+            <div class="space-y-2" id="castMemberScenesListInEdit">
+                ${sceneCastMembers.map(sa => {
                     const scene = sa.scene;
                     if (!scene) return '';
                     
@@ -355,7 +355,7 @@ export class ActorEditScreen {
                 <div class="font-semibold text-sm">${actor.actor_name || 'Actor'}</div>
                 <div class="text-xs text-base-content/60">as ${actor.character_name || 'Character'}</div>
                 <div class="text-xs text-base-content/40 mt-1">
-                    ${actor.scene_actors?.length || 0} scene${(actor.scene_actors?.length || 0) !== 1 ? 's' : ''}
+                    ${actor.scene_cast_members?.length || 0} scene${(actor.scene_cast_members?.length || 0) !== 1 ? 's' : ''}
                 </div>
             </div>
         `;
@@ -432,11 +432,11 @@ export class ActorEditScreen {
      */
     async renderSceneCards(actor) {
         const container = document.getElementById('actorScenesListInEdit');
-        if (!container || !actor.scene_actors) return;
+        if (!container || !actor.scene_cast_members) return;
         
         const settings = settingsService.getAllFeatures();
         
-        actor.scene_actors.forEach(sa => {
+        actor.scene_cast_members.forEach(sa => {
             const scene = sa.scene;
             if (!scene) return;
             
@@ -470,7 +470,7 @@ export class ActorEditScreen {
             
             // Update via service
             const updates = { [field]: updateValue || null };
-            await ActorService.update(actor.id, updates);
+            await CastMemberService.update(actor.id, updates);
             
             // Update local data
             actor[field] = updateValue;
@@ -489,7 +489,7 @@ export class ActorEditScreen {
             }
             
         } catch (error) {
-            console.error('Error updating actor:', error);
+            console.error('Error Updating cast member:', error);
             alert('Failed to save changes. Please try again.');
         }
     }
@@ -509,14 +509,14 @@ export class ActorEditScreen {
      */
     addSecondaryActions() {
         this.editScreen.addSecondaryAction(
-            'Delete Actor',
+            'Delete Cast Member',
             `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>`,
             'error',
             async (actor) => {
                 if (confirm(`Delete ${actor.actor_name}? This cannot be undone.`)) {
-                    await ActorService.delete(actor.id);
+                    await CastMemberService.delete(actor.id);
                     
                     if (this.onActorDeleted) {
                         this.onActorDeleted(actor.id);
@@ -531,13 +531,13 @@ export class ActorEditScreen {
     /**
      * Open the edit screen
      */
-    async open(actorId) {
+    async open(castMemberId) {
         try {
-            // Load actor with scene_actors
-            const actor = await ActorService.getById(actorId);
+            // Load actor with scene_cast_members
+            const actor = await CastMemberService.getById(castMemberId);
             
             if (!actor) {
-                console.error('Actor not found for id:', actorId);
+                console.error('Actor not found for id:', castMemberId);
                 return;
             }
             

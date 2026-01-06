@@ -1,4 +1,4 @@
-# Version Management System
+﻿# Version Management System
 
 ## 🚨 IMPORTANT: Release Notes Are Mandatory
 
@@ -140,13 +140,13 @@ console.log(version.full); // "1.0.0"
 ```
 
 ### Badge op Pagina
-Kijk linksonder op elke pagina (Timeline, Calendar, Actors).
+Kijk linksonder op elke pagina (Timeline, Calendar, Cast).
 
 ## Voorbeeld Changelog
 
 ```
 v1.2.0 - 2026-01-05
-  ✨ MINOR: Added actor management screen
+  ✨ MINOR: Added Cast Member management screen
   🐛 PATCH: Fixed timeline drag-and-drop
   ⚡ PATCH: Improved calendar performance
 
@@ -172,7 +172,7 @@ v1.0.0 - 2026-01-03
 - `package.json` - npm package versie
 - `frontend/timeline.html` - Badge inject
 - `frontend/calendar.html` - Badge inject
-- `frontend/actors.html` - Badge inject
+- `frontend/Cast.html` - Badge inject
 - `frontend/js/timeline.js` - Import voor logging
 - `frontend/js/calendar-toastui.js` - Import voor logging
-- `frontend/js/actors.js` - Import voor logging
+- `frontend/js/Cast.js` - Import voor logging

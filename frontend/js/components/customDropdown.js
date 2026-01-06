@@ -1,4 +1,4 @@
-// =================================================================
+﻿// =================================================================
 // CUSTOM DROPDOWN - Herbruikbaar DaisyUI-Styled Dropdown Component
 // =================================================================
 // Dit component biedt een volledig custom dropdown met DaisyUI styling
@@ -46,6 +46,7 @@ export class CustomDropdown {
         this.align = options.align || 'left'; // left, right
         this.dropdownPosition = options.dropdownPosition || 'bottom'; // 'bottom', 'top', 'auto'
         this.dropdownWidth = options.dropdownWidth || 'auto'; // 'match' (match button), 'auto' (fit content), or specific width like '300px'
+        this.portal = options.portal !== undefined ? options.portal : 'auto'; // 'auto' (detect), 'body', 'modal', 'dialog', false (no portal)
         this.onChange = options.onChange || null;
         this.onCreate = options.onCreate || null;
         this.onDelete = options.onDelete || null;
@@ -64,6 +65,9 @@ export class CustomDropdown {
         this.menu = null;
         this.hiddenInput = null;
         this.searchInput = null;
+
+        // Rendering strategy
+        this.usePopover = false;
     }
     
     /**
@@ -81,9 +85,76 @@ export class CustomDropdown {
         this.button = this.container.querySelector('.custom-dropdown__button');
         this.hiddenInput = this.container.querySelector('.custom-dropdown__hidden-input');
         
-        // Extract menu and append to body for proper positioning (portal pattern)
         this.menu = this.container.querySelector('.custom-dropdown__menu');
-        document.body.appendChild(this.menu);
+        
+        if (!this.menu) {
+            console.error(`[CustomDropdown] Menu not found for ${this.containerId}`);
+            return;
+        }
+        
+        // Determine portal target
+        let portalTarget = null;
+        if (this.portal === 'auto') {
+            // Auto-detect: portal to modal-box if inside one, otherwise to body
+            const modalBox = this.container.closest('.modal-box');
+            portalTarget = modalBox || document.body;
+        } else if (this.portal === 'body') {
+            portalTarget = document.body;
+        } else if (this.portal === 'modal') {
+            portalTarget = this.container.closest('.modal-box');
+            if (!portalTarget) {
+                console.warn(`[CustomDropdown] portal='modal' but no .modal-box found, falling back to body`);
+                portalTarget = document.body;
+            }
+        } else if (this.portal === 'dialog') {
+            // Portal to the closest <dialog> to stay in the top-layer while escaping modal-box overflow
+            portalTarget = this.container.closest('dialog');
+            if (!portalTarget) {
+                console.warn(`[CustomDropdown] portal='dialog' but no <dialog> found, falling back to modal-box/body`);
+                const modalBox = this.container.closest('.modal-box');
+                portalTarget = modalBox || document.body;
+            }
+        }
+        // else portal === false, keep in container
+        
+        // Portal menu if target is set
+        if (portalTarget) {
+            // Ensure non-body portal containers create a positioning context for absolute children
+            if (portalTarget !== document.body) {
+                const computedPosition = window.getComputedStyle(portalTarget).position;
+                if (computedPosition === 'static') {
+                    portalTarget.style.position = 'relative';
+                }
+
+                if (portalTarget.tagName === 'DIALOG') {
+                    const computedOverflow = window.getComputedStyle(portalTarget).overflow;
+                    if (computedOverflow !== 'visible') {
+                        portalTarget.style.overflow = 'visible';
+                    }
+                }
+            }
+
+            portalTarget.appendChild(this.menu);
+            this.portalTarget = portalTarget;
+
+            // If we're inside a <dialog>, prefer the Popover API to escape clipping and top-layer stacking.
+            // This matches the behavior users expect from native <select> menus.
+            this.usePopover = portalTarget.tagName === 'DIALOG'
+                && typeof this.menu.showPopover === 'function'
+                && typeof this.menu.hidePopover === 'function';
+            if (this.usePopover) {
+                this.menu.setAttribute('popover', 'manual');
+            }
+
+            const targetName = portalTarget === document.body
+                ? 'body'
+                : (portalTarget.tagName === 'DIALOG' ? 'dialog' : 'modal-box');
+            console.log(`[CustomDropdown] Menu portaled to ${targetName} for ${this.containerId}`);
+        } else {
+            this.portalTarget = null;
+            this.usePopover = false;
+            console.log(`[CustomDropdown] Menu kept in container for ${this.containerId}`);
+        }
         
         this.searchInput = this.searchable ? this.menu.querySelector('.custom-dropdown__search') : null;
         
@@ -133,8 +204,8 @@ export class CustomDropdown {
                     </svg>
                 </button>
                 
-                <!-- Dropdown Menu (will be portaled to body) -->
-                <div class="custom-dropdown__menu hidden bg-base-100 rounded-box border border-base-300 shadow-lg" role="listbox" style="position: fixed; z-index: 9999; width: fit-content; min-width: 200px; max-width: 450px;">
+                <!-- Dropdown Menu -->
+                <div class="custom-dropdown__menu hidden bg-base-100 rounded-box border border-base-300 shadow-lg" role="listbox" style="${this.portal !== false ? 'position: absolute; z-index: 9999;' : 'position: absolute; z-index: 50; width: 100%; margin-top: 4px;'}">
                     ${this.searchable ? `
                         <div class="p-2 border-b border-base-300">
                             <input 
@@ -283,84 +354,85 @@ export class CustomDropdown {
     open() {
         if (this.disabled) return;
         
+        console.log(`[CustomDropdown] Opening dropdown for ${this.containerId}`);
+        
         this.isOpen = true;
         this.menu.classList.remove('hidden');
+        if (this.usePopover) {
+            try {
+                this.menu.showPopover();
+            } catch (e) {
+                // Ignore if already open or unsupported edge-cases
+            }
+        }
         this.button.setAttribute('aria-expanded', 'true');
         
-        // Position menu relative to button
-        requestAnimationFrame(() => {
-            const buttonRect = this.button.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const viewportWidth = window.innerWidth;
-            
-            // Determine if menu should open upward or downward
-            let openUpward = this.dropdownPosition === 'top';
-            if (this.dropdownPosition === 'auto') {
-                const spaceBelow = viewportHeight - buttonRect.bottom;
-                const spaceAbove = buttonRect.top;
-                openUpward = spaceAbove > spaceBelow;
-            }
-            
-            // Set chevron rotation - flip to opposite direction when open
-            const chevron = this.button.querySelector('.custom-dropdown__chevron');
-            if (openUpward) {
-                chevron.style.transform = 'rotate(0deg)'; // Point down when open upward
-            } else {
-                chevron.style.transform = 'rotate(180deg)'; // Point up when open downward
-            }
-            
-            // Calculate position
-            let top, left;
-            
-            if (openUpward) {
-                // Open above button - need to measure menu height first
-                const menuHeight = this.menu.offsetHeight;
-                top = buttonRect.top - menuHeight - 4;
-            } else {
-                // Open below button
-                top = buttonRect.bottom + 4;
-            }
-            
-            left = buttonRect.left;
-            
-            // Handle right alignment
-            if (this.align === 'right') {
-                // For auto width, we need to measure the menu first
-                if (this.dropdownWidth === 'auto') {
-                    const menuWidth = this.menu.offsetWidth;
-                    left = buttonRect.right - menuWidth;
-                } else if (this.dropdownWidth === 'match') {
-                    left = buttonRect.left;
-                } else {
-                    // Custom width
-                    const menuWidth = parseInt(this.dropdownWidth);
-                    left = buttonRect.right - menuWidth;
+        // Rotate chevron up when open
+        const chevron = this.button.querySelector('.custom-dropdown__chevron');
+        chevron.style.transform = 'rotate(180deg)';
+        
+        // Position menu if portaled
+        if (this.portalTarget) {
+            requestAnimationFrame(() => {
+                const buttonRect = this.button.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                
+                const portalIsBodyOrDialog = this.portalTarget === document.body
+                    || this.portalTarget?.tagName === 'DIALOG';
+
+                // Get portal container rect for relative positioning (only used for non-body/non-dialog)
+                const portalRect = (this.portalTarget === document.body || portalIsBodyOrDialog)
+                    ? { top: 0, left: 0 }
+                    : this.portalTarget.getBoundingClientRect();
+                
+                // Determine if menu should open upward or downward
+                let openUpward = this.dropdownPosition === 'top';
+                if (this.dropdownPosition === 'auto') {
+                    const spaceBelow = viewportHeight - buttonRect.bottom;
+                    const spaceAbove = buttonRect.top;
+                    openUpward = spaceAbove > spaceBelow && spaceAbove > 300;
                 }
-            }
-            
-            // Set width for 'match' mode
-            if (this.dropdownWidth === 'match') {
-                this.menu.style.width = `${buttonRect.width}px`;
-            } else {
-                this.menu.style.minWidth = `${buttonRect.width}px`;
-            }
-            
-            // Calculate available space and set max-height
-            let maxHeight;
-            if (openUpward) {
-                const spaceAbove = buttonRect.top - 16;
-                maxHeight = Math.max(200, spaceAbove);
-            } else {
-                const spaceBelow = viewportHeight - buttonRect.bottom - 16;
-                maxHeight = Math.max(200, spaceBelow);
-            }
-            
-            // Apply styles
-            this.menu.style.top = `${top}px`;
-            this.menu.style.left = `${left}px`;
-            this.menu.style.maxHeight = `${maxHeight}px`;
-            this.menu.style.overflowY = 'auto';
-        });
+                
+                // Calculate position
+                let top, left;
+                
+                if (openUpward) {
+                    const menuHeight = this.menu.offsetHeight;
+                    top = portalIsBodyOrDialog
+                        ? (buttonRect.top - menuHeight - 4)
+                        : (buttonRect.top - portalRect.top - menuHeight - 4);
+                } else {
+                    top = portalIsBodyOrDialog
+                        ? (buttonRect.bottom + 4)
+                        : (buttonRect.bottom - portalRect.top + 4);
+                }
+                
+                left = portalIsBodyOrDialog
+                    ? buttonRect.left
+                    : (buttonRect.left - portalRect.left);
+
+                // Use fixed positioning for body/dialog portals to avoid clipping/stacking issues in <dialog> modals
+                if (portalIsBodyOrDialog) {
+                    this.menu.style.position = 'fixed';
+                } else {
+                    this.menu.style.position = 'absolute';
+                }
+                this.menu.style.zIndex = '9999';
+                // Avoid accidental width constraints from popover UA styles
+                this.menu.style.inset = 'auto';
+                
+                // Set width
+                if (this.dropdownWidth === 'match') {
+                    this.menu.style.width = `${buttonRect.width}px`;
+                } else {
+                    this.menu.style.minWidth = `${buttonRect.width}px`;
+                }
+                
+                // Apply position
+                this.menu.style.top = `${top}px`;
+                this.menu.style.left = `${left}px`;
+            });
+        }
         
         // Focus search input if available
         if (this.searchInput) {
@@ -377,16 +449,19 @@ export class CustomDropdown {
      */
     close() {
         this.isOpen = false;
+        if (this.usePopover) {
+            try {
+                this.menu.hidePopover();
+            } catch (e) {
+                // Ignore if already closed or unsupported edge-cases
+            }
+        }
         this.menu.classList.add('hidden');
         this.button.setAttribute('aria-expanded', 'false');
         
-        // Reset chevron based on dropdown position
+        // Reset chevron to point down
         const chevron = this.button.querySelector('.custom-dropdown__chevron');
-        if (this.dropdownPosition === 'top') {
-            chevron.style.transform = 'rotate(180deg)'; // Point up when closed for upward dropdown
-        } else {
-            chevron.style.transform = 'rotate(0deg)'; // Point down when closed for downward dropdown
-        }
+        chevron.style.transform = 'rotate(0deg)';
         
         // Reset search
         if (this.searchInput) {

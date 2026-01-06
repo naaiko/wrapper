@@ -1,11 +1,11 @@
-// =================================================================
+﻿// =================================================================
 // ACTOR DETAIL VIEW - With Grid Navigation
 // =================================================================
 
-import { ActorService } from './services/actorService.js';
+import { CastMemberService } from './services/castMemberService.js';
 import { CustomDropdown } from './components/customDropdown.js';
 import { SVGProcessor } from './utils/svgProcessor.js';
-import { ActorEditScreen } from './screens/actorEditScreen.js';
+import { ActorEditScreen } from './screens/castMemberEditScreen.js';
 import { LocationService } from './services/locationService.js';
 import settingsService from './services/settingsService.js';
 import { version } from './version.js';
@@ -16,12 +16,12 @@ import { version } from './version.js';
 class ActorDetailApp {
     constructor() {
         this.projectId = null;
-        this.actorId = null;
+        this.castMemberId = null;
         this.actors = []; // Filtered list from grid
-        this.currentActor = null;
+        this.currentCastMember = null;
         this.currentIndex = 0;
         this.actorEditScreen = null;
-        this.actorCalendar = null;
+        this.castMemberCalendar = null;
         
         // URL params from grid
         this.gridFilter = 'all';
@@ -30,10 +30,10 @@ class ActorDetailApp {
         
         // DOM elements
         this.toggleViewBtn = document.getElementById('toggleViewBtn');
-        this.btnPrevActor = document.getElementById('btnPrevActor');
-        this.btnNextActor = document.getElementById('btnNextActor');
-        this.actorNameTitle = document.getElementById('actorNameTitle');
-        this.actorDetailsPanel = document.getElementById('actorDetailsPanel');
+        this.btnPrevCastMember = document.getElementById('btnPrevCastMember');
+        this.btnNextCastMember = document.getElementById('btnNextCastMember');
+        this.castMemberNameTitle = document.getElementById('castMemberNameTitle');
+        this.castMemberDetailsPanel = document.getElementById('castMemberDetailsPanel');
         
         this.init();
     }
@@ -45,16 +45,16 @@ class ActorDetailApp {
             // Get URL params
             const urlParams = new URLSearchParams(window.location.search);
             this.projectId = urlParams.get('project');
-            this.actorId = urlParams.get('actor');
+            this.castMemberId = urlParams.get('actor');
             this.gridFilter = urlParams.get('filter') || 'all';
             this.gridSort = urlParams.get('sort') || 'name';
             this.gridSearch = urlParams.get('search') || '';
             
-            console.log('[ACTOR DETAIL] Params:', { projectId: this.projectId, actorId: this.actorId, filter: this.gridFilter });
+            console.log('[ACTOR DETAIL] Params:', { projectId: this.projectId, castMemberId: this.castMemberId, filter: this.gridFilter });
             
-            if (!this.projectId || !this.actorId) {
+            if (!this.projectId || !this.castMemberId) {
                 console.error('[ACTOR DETAIL] Missing required params - redirecting to grid');
-                window.location.href = `actors.html?project=${this.projectId}`;
+                window.location.href = `cast.html?project=${this.projectId}`;
                 return;
             }
             
@@ -72,11 +72,11 @@ class ActorDetailApp {
             console.log('[ACTOR DETAIL] Loaded actors:', this.actors.length);
             
             // Find current actor and show detail
-            const actor = this.actors.find(a => a.id == this.actorId);
+            const actor = this.actors.find(a => a.id == this.castMemberId);
             console.log('[ACTOR DETAIL] Found actor:', actor ? actor.name || actor.actor_name : 'NOT FOUND');
             
             if (actor) {
-                this.currentActor = actor;
+                this.currentCastMember = actor;
                 this.currentIndex = this.actors.indexOf(actor);
                 console.log('[ACTOR DETAIL] Showing actor detail...');
                 await this.showActorDetail(actor);
@@ -97,7 +97,7 @@ class ActorDetailApp {
             console.error('[ACTOR DETAIL] Error stack:', error.stack);
             console.error('[ACTOR DETAIL] Current state:', {
                 projectId: this.projectId,
-                actorId: this.actorId,
+                castMemberId: this.castMemberId,
                 actorsLoaded: this.actors?.length || 0
             });
             // Don't redirect immediately - let user see the error
@@ -112,8 +112,8 @@ class ActorDetailApp {
         });
         
         // Prev/Next navigation
-        this.btnPrevActor.addEventListener('click', () => this.navigatePrev());
-        this.btnNextActor.addEventListener('click', () => this.navigateNext());
+        this.btnPrevCastMember.addEventListener('click', () => this.navigatePrev());
+        this.btnNextCastMember.addEventListener('click', () => this.navigateNext());
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -153,7 +153,7 @@ class ActorDetailApp {
             console.log('[ACTOR DETAIL] Loading actors from service...');
             
             // Load all actors
-            let actors = await ActorService.getAll(this.projectId);
+            let actors = await CastMemberService.getAll(this.projectId);
             console.log('[ACTOR DETAIL] Raw actors from service:', actors.length, actors[0]);
             
             // Normalize data structure (same as actors-grid.js)
@@ -212,12 +212,12 @@ class ActorDetailApp {
     
     updateNavigationButtons() {
         // Disable prev if at start
-        this.btnPrevActor.disabled = this.currentIndex <= 0;
-        this.btnPrevActor.classList.toggle('btn-disabled', this.currentIndex <= 0);
+        this.btnPrevCastMember.disabled = this.currentIndex <= 0;
+        this.btnPrevCastMember.classList.toggle('btn-disabled', this.currentIndex <= 0);
         
         // Disable next if at end
-        this.btnNextActor.disabled = this.currentIndex >= this.actors.length - 1;
-        this.btnNextActor.classList.toggle('btn-disabled', this.currentIndex >= this.actors.length - 1);
+        this.btnNextCastMember.disabled = this.currentIndex >= this.actors.length - 1;
+        this.btnNextCastMember.classList.toggle('btn-disabled', this.currentIndex >= this.actors.length - 1);
     }
     
     navigatePrev() {
@@ -234,17 +234,17 @@ class ActorDetailApp {
         }
     }
     
-    navigateToActor(actorId) {
+    navigateToActor(castMemberId) {
         // Update URL with new actor ID
         const params = new URLSearchParams({
             project: this.projectId,
-            actor: actorId,
+            actor: castMemberId,
             filter: this.gridFilter,
             sort: this.gridSort,
             search: this.gridSearch
         });
         
-        window.location.href = `actors-detail.html?${params.toString()}`;
+        window.location.href = `cast-detail.html?${params.toString()}`;
     }
     
     backToGrid() {
@@ -255,14 +255,14 @@ class ActorDetailApp {
             search: this.gridSearch
         });
         
-        window.location.href = `actors.html?${params.toString()}`;
+        window.location.href = `cast.html?${params.toString()}`;
     }
     
     async showActorDetail(actor) {
         // Update title
-        this.actorNameTitle.textContent = actor.name;
+        this.castMemberNameTitle.textContent = actor.name;
         
-        // Render actor details panel (left column)
+        // Render Cast Member Details panel (left column)
         this.renderActorDetails(actor);
         
         // Update silhouette zones (middle column)
@@ -276,7 +276,7 @@ class ActorDetailApp {
     }
     
     renderActorDetails(actor) {
-        const panel = this.actorDetailsPanel;
+        const panel = this.castMemberDetailsPanel;
         
         panel.innerHTML = `
             <div class="space-y-4">
@@ -337,9 +337,9 @@ class ActorDetailApp {
     
     switchSilhouetteMode(mode) {
         console.log('[ACTOR DETAIL] switchSilhouetteMode called with:', mode);
-        const silhouette = document.querySelector('.actor-silhouette');
+        const silhouette = document.querySelector('.cast-member-silhouette');
         console.log('[ACTOR DETAIL] Current class:', silhouette.getAttribute('class'));
-        silhouette.setAttribute('class', `actor-silhouette mode-${mode}`);
+        silhouette.setAttribute('class', `cast-member-silhouette mode-${mode}`);
         console.log('[ACTOR DETAIL] New class:', silhouette.getAttribute('class'));
     }
     
@@ -357,7 +357,7 @@ class ActorDetailApp {
             }
             
             // Get container
-            const svgContainer = document.querySelector('.actor-silhouette');
+            const svgContainer = document.querySelector('.cast-member-silhouette');
             svgContainer.innerHTML = '';
             svgContainer.setAttribute('viewBox', sourceSVG.getAttribute('viewBox') || '0 0 373 852');
             
@@ -613,21 +613,21 @@ class ActorDetailApp {
                 locations: locations,
                 times: [], // Use defaults
                 conditions: [], // Use defaults
-                onActorUpdated: async (actorId) => {
+                onActorUpdated: async (castMemberId) => {
                     // Reload current actor
-                    const updated = await ActorService.getById(actorId);
+                    const updated = await CastMemberService.getById(castMemberId);
                     if (updated) {
-                        this.currentActor = updated;
+                        this.currentCastMember = updated;
                         // Update in local list
-                        const index = this.actors.findIndex(a => a.id === actorId);
+                        const index = this.actors.findIndex(a => a.id === castMemberId);
                         if (index !== -1) {
                             this.actors[index] = updated;
                         }
                         await this.showActorDetail(updated);
                     }
                 },
-                onActorDeleted: async (actorId) => {
-                    // Navigate to next actor or back to grid
+                onActorDeleted: async (castMemberId) => {
+                    // Navigate to Next cast member or back to grid
                     if (this.actors.length > 1) {
                         const newIndex = Math.min(this.currentIndex, this.actors.length - 2);
                         this.navigateToActor(this.actors[newIndex].id);
@@ -659,11 +659,11 @@ class ActorDetailApp {
         const handleSwipe = () => {
             const swipeDistance = touchEndX - touchStartX;
             
-            // Swipe left = next actor
+            // Swipe left = Next cast member
             if (swipeDistance < -threshold) {
                 this.navigateNext();
             }
-            // Swipe right = previous actor
+            // Swipe right = Previous cast member
             else if (swipeDistance > threshold) {
                 this.navigatePrev();
             }

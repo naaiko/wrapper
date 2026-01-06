@@ -1,19 +1,19 @@
-# Actors Management Feature - Setup Guide
+﻿# Cast Management Feature - Setup Guide
 
-## Branch: `actors-management`
+## Branch: `Cast-management`
 
 Deze branch bevat de nieuwe acteurs-beheerfunctie voor het bijhouden van continuïteit in make-up en kledij op filmsets.
 
 ## Wat is toegevoegd
 
 ### Database
-- **actors** tabel - Acteurs met fysieke eigenschappen
-- **actor_continuity** tabel - Scene-specifieke continuïteit (makeup, kledij, haar, etc.)
+- **Cast** tabel - Acteurs met fysieke eigenschappen
+- **cast_member_continuity** tabel - Scene-specifieke continuïteit (makeup, kledij, haar, etc.)
 
 ### Frontend Schermen
-- **actors.html** - Acteurs beheerscherm met CRUD functionaliteit
-- **actors.css** - Visuele styling met DaisyUI
-- **actors.js** - Hoofdapplicatie logica
+- **Cast.html** - Acteurs beheerscherm met CRUD functionaliteit
+- **Cast.css** - Visuele styling met DaisyUI
+- **Cast.js** - Hoofdapplicatie logica
 - **actorService.js** - Business logic laag voor database operaties
 
 ### Kenmerken
@@ -34,7 +34,7 @@ Voer de volgende SQL uit in Supabase SQL Editor:
 
 ```bash
 # Navigeer naar: https://supabase.com/dashboard/project/YOUR_PROJECT/editor
-# Kopieer de inhoud van: frontend/docs/migration-add-actors.sql
+# Kopieer de inhoud van: frontend/docs/migration-add-Cast.sql
 # Plak en voer uit
 ```
 
@@ -60,23 +60,23 @@ await ActorService.createDemoActors(projectId);
 ## Navigatie
 
 De acteurs screen is toegankelijk via:
-- **Timeline** → Actors button in navbar
-- **Calendar** → Actors button in navbar
-- **Direct URL**: `actors.html?project=YOUR_PROJECT_ID`
+- **Timeline** → Cast button in navbar
+- **Calendar** → Cast button in navbar
+- **Direct URL**: `Cast.html?project=YOUR_PROJECT_ID`
 
 ## Bestandsstructuur
 
 ```
 frontend/
-├── actors.html                          # Acteurs beheerscherm
+├── Cast.html                          # Acteurs beheerscherm
 ├── css/
-│   └── actors.css                       # Acteurs styling
+│   └── Cast.css                       # Acteurs styling
 ├── js/
-│   ├── actors.js                        # Main app logic
+│   ├── Cast.js                        # Main app logic
 │   └── services/
 │       └── actorService.js              # Database service
 └── docs/
-    └── migration-add-actors.sql         # Database migratie
+    └── migration-add-Cast.sql         # Database migratie
 
 ACTORS_DOCUMENTATION.md                  # Uitgebreide documentatie
 ```
@@ -89,7 +89,7 @@ Een eenvoudige SVG silhouet wordt gebruikt als placeholder:
 - Vervangen door echte foto via `profile_image_url`
 - "Create-a-Sim" gevoel voor character building
 
-### Actor Cards
+### Cast Member Cards
 - Grid layout (1-4 kolommen afhankelijk van schermgrootte)
 - Hover effecten voor interactiviteit
 - Quick-view badges voor fysieke eigenschappen
@@ -116,14 +116,14 @@ Om de feature te testen:
 
 1. Checkout de branch:
    ```bash
-   git checkout actors-management
+   git checkout Cast-management
    ```
 
 2. Voer de database migratie uit in Supabase
 
-3. Open `actors.html?project=YOUR_PROJECT_ID` in browser
+3. Open `Cast.html?project=YOUR_PROJECT_ID` in browser
 
-4. Klik op "Add Actor" om eerste acteur toe te voegen
+4. Klik op "Add Cast Member" om eerste acteur toe te voegen
 
 5. Test:
    - Acteur aanmaken met en zonder foto
@@ -145,7 +145,7 @@ Volgt professionele continuïteit praktijken uit:
 Voor vragen of problemen:
 - Zie [ACTORS_DOCUMENTATION.md](ACTORS_DOCUMENTATION.md) voor uitgebreide documentatie
 - Check de demo data in `actorService.js`
-- Review de database schema in `migration-add-actors.sql`
+- Review de database schema in `migration-add-Cast.sql`
 
 ## Merge naar Main
 
@@ -153,7 +153,7 @@ Wanneer getest en goedgekeurd:
 
 ```bash
 git checkout main
-git merge actors-management
+git merge Cast-management
 git push origin main
 ```
 

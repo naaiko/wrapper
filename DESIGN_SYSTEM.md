@@ -587,5 +587,109 @@ document.body.appendChild(dock);
 
 ---
 
-**Last Updated**: v0.2.1  
+## Dropdown Pattern with Quick-Add
+
+### Design Principle
+
+**All dropdowns in the application should use the `CustomDropdown` component** instead of native `<select>` elements. This provides:
+- Consistent DaisyUI styling across all browsers (no OS-native differences)
+- Search functionality for long lists
+- **Quick-add option** at the bottom of the dropdown for creating new items
+- Keyboard navigation support
+- Better mobile experience
+
+### Implementation Pattern
+
+```javascript
+import { CustomDropdown } from './components/customDropdown.js';
+
+// Example: Actor assignment dropdown with quick-add
+const actorOptions = actors.map(actor => ({
+    value: actor.id,
+    label: actor.name
+}));
+
+const dropdown = new CustomDropdown({
+    containerId: 'actorDropdownContainer',
+    name: 'actor_id',
+    options: actorOptions,
+    value: currentActorId || '',
+    placeholder: 'Select actor...',
+    searchable: true,           // Enable search for long lists
+    allowCreate: true,          // Enable quick-add button
+    createLabel: '+ Add new actor...',  // Label for quick-add
+    size: 'xs',                 // xs, sm, md, lg
+    onChange: (value) => handleActorChange(value),
+    onCreate: () => openActorModal()  // Open modal for quick-add
+});
+
+dropdown.render();
+```
+
+### HTML Container
+
+```html
+<!-- Dropdown will be rendered here -->
+<div id="actorDropdownContainer"></div>
+```
+
+### Quick-Add Pattern
+
+The quick-add button should:
+1. Appear at the bottom of the dropdown menu
+2. Be separated by a border (`border-t border-base-300`)
+3. Open a modal for creating the new item
+4. After creation, automatically refresh dropdown options
+5. Optionally pre-select the newly created item
+
+```javascript
+// Example: Quick-add implementation
+onCreate: async () => {
+    // Open creation modal
+    const modal = new ActorsConfigModal(projectId);
+    
+    // Refresh dropdown when new item is added
+    modal.onActorsChanged = async (actors) => {
+        const newOptions = actors.map(a => ({
+            value: a.id,
+            label: a.name
+        }));
+        dropdown.updateOptions(newOptions);
+    };
+    
+    modal.open();
+}
+```
+
+### Use Cases
+
+✅ **When to use CustomDropdown**:
+- Actor selection (with quick-add actor)
+- Location selection (with quick-add location)
+- Character selection (with quick-add character)
+- Any dropdown with >5 options (benefits from search)
+- Any dropdown where users might need to add new items
+
+❌ **When native select is OK**:
+- Small fixed lists (INT/EXT, Day/Night)
+- Settings with <5 predefined options
+- No need for quick-add functionality
+
+### Visual Style
+
+The dropdown matches the DaisyUI input style:
+- Button styled like `input input-bordered`
+- Menu uses `menu menu-sm` with `bg-base-100 rounded-box`
+- Quick-add button has `text-primary` color
+- Delete buttons (if enabled) use `text-error`
+
+### Examples in Codebase
+
+- **Location Dropdown**: [sceneEditScreen.js](frontend/js/sceneEditScreen.js) (lines 303-317)
+- **Actor Assignment**: [charactersConfigModal.js](frontend/js/components/charactersConfigModal.js)
+- **CustomDropdown Component**: [customDropdown.js](frontend/js/components/customDropdown.js)
+
+---
+
+**Last Updated**: v0.2.3  
 **Status**: ✅ Active Design System

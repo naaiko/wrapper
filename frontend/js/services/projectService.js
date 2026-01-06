@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Enhanced Project Service
  * Handles project CRUD with role-based access control and proper deletion
  */
