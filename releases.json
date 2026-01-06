@@ -1,6 +1,42 @@
 {
   "releases": [
     {
+      "version": "0.2.2",
+      "date": "2026-01-06",
+      "name": "Cast Grid UI Refinements",
+      "type": "patch",
+      "branch": "feature-cast-grid",
+      "commits": ["09af3ed", "8b7f488"],
+      "commitMessage": "feat(cast-grid): square cards, compact dock, placeholder card\n\n- Cards now use 1:1 aspect ratio for better space efficiency\n- Dock spacing compacted to match calendar (gap-2, px-4)\n- Added dashed placeholder card with primary color\n- Removed standalone FAB button (redundant with dock)\n- Fixed prepare-release.ps1 PowerShell syntax (removed emojis for compatibility)",
+      "features": [
+        "Square actor cards (1:1 aspect ratio) for better screen density",
+        "Dashed 'add actor' placeholder card with primary color",
+        "Compact dock spacing matching calendar design",
+        "Universal navigation pattern (top-right nav + bottom dock)"
+      ],
+      "bugfixes": [
+        "Import navigation as ES6 module",
+        "Add missing Supabase config script to actors.html",
+        "Calendar container height and tui availability check"
+      ],
+      "technical": [
+        "Design system documentation (DESIGN_SYSTEM.md)",
+        "Versioning system with VERSION/NEXT_VERSION files",
+        "Automated release preparation script (prepare-release.ps1)",
+        "Migration file naming convention (YYYYMMDDNNNNNN)",
+        "Release template system for consistency",
+        "Removed standalone FAB button"
+      ],
+      "breaking": [],
+      "deprecated": [],
+      "documentation": [
+        "DESIGN_SYSTEM.md - Universal navigation patterns",
+        "VERSIONING.md - Automated release workflow",
+        "docs/releases/.template/ - Release templates",
+        "docs/releases/v0.2.0/MIGRATIONS.md - Database migration docs"
+      ]
+    },
+    {
       "version": "0.2.1",
       "date": "2026-01-06",
       "name": "Release Browser & Documentation Organization",
