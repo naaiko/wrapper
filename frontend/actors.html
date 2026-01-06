@@ -209,8 +209,9 @@
     <script src="js/supabase-config.js"></script>
 
     <!-- Navigation Script -->
-    <script src="js/components/navigation.js"></script>
-    <script>
+    <script type="module">
+        import { createNavigation } from './js/components/navigation.js';
+        
         const urlParams = new URLSearchParams(window.location.search);
         let projectId = urlParams.get('project');
         
