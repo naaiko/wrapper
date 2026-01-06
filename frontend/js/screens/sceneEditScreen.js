@@ -79,7 +79,7 @@ export class SceneEditScreen {
                 <div id="sceneInfoTab" class="tab-panel">
                     ${this.renderShootingDatesSection(scene)}
                     
-                    <!-- First Row: Scene Number, INT/EXT, Location, Continuity -->
+                    <!-- First Row: Scene Number, Script Day, INT/EXT, Location, Continuity -->
                     <div class="edit-screen__form-row edit-screen__form-row--grid">
                         <!-- Scene Number -->
                         <div class="form-control edit-screen__col-span-${sceneNumCols}">
@@ -93,6 +93,20 @@ export class SceneEditScreen {
                                 class="input input-bordered" 
                                 placeholder="e.g., 1, 2A"
                                 required 
+                            />
+                        </div>
+                        
+                        <!-- Script Day (SD) -->
+                        <div class="form-control edit-screen__col-span-${sceneNumCols}">
+                            <label class="label">
+                                <span class="label-text font-semibold">SD</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="script_day"
+                                value="${scene?.script_day || ''}"
+                                class="input input-bordered" 
+                                placeholder="e.g., 1, 2"
                             />
                         </div>
                         
@@ -714,6 +728,14 @@ export class SceneEditScreen {
         if (sceneNumberInput) {
             sceneNumberInput.addEventListener('change', (e) => {
                 this.handleChange('scene_number', e.target.value, scene);
+            });
+        }
+        
+        // Script day input
+        const scriptDayInput = document.querySelector('input[name="script_day"]');
+        if (scriptDayInput) {
+            scriptDayInput.addEventListener('change', (e) => {
+                this.handleChange('script_day', e.target.value || null, scene);
             });
         }
         

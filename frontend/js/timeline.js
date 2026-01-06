@@ -958,10 +958,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     locations = await LocationService.getAll(currentProject.id);
     console.log('Locations loaded:', locations.length);
     
-    // If no scenes exist, create demo data
-    if (scenes.length === 0) {
-        scenes = await createDemoScenes(currentProject.id);
-    }
+    // Start with empty project (no automatic demo scenes)
     
     // Update tab navigation with project ID
     const navActors = document.getElementById('navActors');
