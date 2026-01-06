@@ -21,8 +21,8 @@
 export const version = {
     major: 0,
     minor: 2,
-    patch: 3,
-    hotfix: 5,
+    patch: 5,
+    hotfix: 0,
     
     get full() {
         return this.hotfix > 0 
