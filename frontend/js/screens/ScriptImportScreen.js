@@ -213,8 +213,23 @@ export class ScriptImportScreen {
         try {
             // Determine folder based on extension
             const folder = scriptName.endsWith('.fountain') ? 'fountain' : 'plain-text';
-            // Use absolute path from site root
-            const scriptPath = `/docs/resources/scripts/${folder}/${scriptName}`;
+            // Resolve asset base (allows override when hosted under subpaths or CDN)
+            const assetBase = window.__ASSET_BASE_URL
+                || document.querySelector('meta[name="assets-base-url"]')?.getAttribute('content')
+                || (() => {
+                    const { origin, pathname } = window.location;
+                    const parts = pathname.split('/').filter(Boolean);
+                    const frontendIdx = parts.indexOf('frontend');
+                    if (frontendIdx !== -1) {
+                        const baseParts = parts.slice(0, frontendIdx);
+                        const basePath = '/' + (baseParts.length ? baseParts.join('/') + '/' : '');
+                        return origin + basePath;
+                    }
+                    return origin + '/';
+                })();
+
+            const baseWithSlash = assetBase.endsWith('/') ? assetBase : `${assetBase}/`;
+            const scriptPath = `${baseWithSlash}docs/resources/scripts/${folder}/${scriptName}`;
             
             const response = await fetch(scriptPath);
             if (!response.ok) {

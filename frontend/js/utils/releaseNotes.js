@@ -17,11 +17,24 @@
 
 class ReleaseNotes {
     static getBaseUrl() {
+        // 1) Explicit global override
+        if (window.__RELEASES_BASE_URL) {
+            return window.__RELEASES_BASE_URL.endsWith('/')
+                ? window.__RELEASES_BASE_URL
+                : `${window.__RELEASES_BASE_URL}/`;
+        }
+
+        // 2) Meta tag override
+        const metaBase = document.querySelector('meta[name="releases-base-url"]')?.getAttribute('content');
+        if (metaBase) {
+            return metaBase.endsWith('/') ? metaBase : `${metaBase}/`;
+        }
+
+        // 3) Derive from current location by stripping /frontend segment if present
         const { origin, pathname } = window.location;
-        const parts = pathname.split('/').filter(Boolean); // remove empties
+        const parts = pathname.split('/').filter(Boolean);
         const frontendIdx = parts.indexOf('frontend');
         if (frontendIdx !== -1) {
-            // path before 'frontend'
             const baseParts = parts.slice(0, frontendIdx);
             const basePath = '/' + (baseParts.length ? baseParts.join('/') + '/' : '');
             return origin + basePath;
