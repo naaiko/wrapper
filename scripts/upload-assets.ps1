@@ -9,7 +9,28 @@ Param(
 
 $ErrorActionPreference = "Stop"
 
+# Load .env file if it exists
+$envPath = Join-Path $PSScriptRoot "..\\.env"
+if (Test-Path $envPath) {
+  Write-Host "Loading credentials from .env file..." -ForegroundColor Cyan
+  Get-Content $envPath | ForEach-Object {
+    if ($_ -match '^([^#][^=]+)=(.*)$') {
+      $key = $matches[1].Trim()
+      $value = $matches[2].Trim()
+      Set-Item -Path "Env:$key" -Value $value
+    }
+  }
+}
+
 Write-Host "Supabase asset upload -> Storage bucket '$Bucket'" -ForegroundColor Cyan
+
+# Use env vars if already loaded from .env or set manually
+if (-not $SupabaseUrl -and $env:SUPABASE_URL) {
+  $SupabaseUrl = $env:SUPABASE_URL
+}
+if (-not $ServiceRoleKey -and $env:SUPABASE_SECRET_KEY) {
+  $ServiceRoleKey = $env:SUPABASE_SECRET_KEY
+}
 
 if (-not $SupabaseUrl) {
   $SupabaseUrl = Read-Host "SUPABASE_URL (bv. https://xxxxx.supabase.co)"
