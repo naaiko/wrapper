@@ -69,6 +69,7 @@ export class FountainAdapter {
         const scenes = [];
         let currentScene = null;
         let sceneIndex = 0;
+        let sceneStartPos = 0;
         
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
@@ -77,10 +78,19 @@ export class FountainAdapter {
             if (token.type === 'scene_heading') {
                 // Save previous scene if exists
                 if (currentScene) {
+                    // Extract raw text for this scene from original source
+                    const sceneEndPos = rawText.indexOf(token.text);
+                    if (sceneEndPos > sceneStartPos) {
+                        currentScene.rawText = rawText.substring(sceneStartPos, sceneEndPos).trim();
+                        console.log('[FountainAdapter] Extracted rawText for scene:', currentScene.scene_number, 'length:', currentScene.rawText.length);
+                    } else {
+                        console.warn('[FountainAdapter] Failed to extract rawText for scene:', currentScene.scene_number);
+                    }
                     scenes.push(this.finalizeScene(currentScene));
                 }
                 
-                // Start new scene
+                // Start new scene - find position in raw text
+                sceneStartPos = rawText.indexOf(token.text);
                 currentScene = this.createSceneFromToken(token, sceneIndex++, rawText);
             }
             // Add content to current scene
@@ -89,8 +99,10 @@ export class FountainAdapter {
             }
         }
         
-        // Don't forget last scene
+        // Don't forget last scene - grab remaining text
         if (currentScene) {
+            currentScene.rawText = rawText.substring(sceneStartPos).trim();
+            console.log('[FountainAdapter] Last scene rawText length:', currentScene.rawText.length);
             scenes.push(this.finalizeScene(currentScene));
         }
         
@@ -165,8 +177,26 @@ export class FountainAdapter {
         // Calculate confidence score
         scene.sourceMeta.confidence = SceneNormalizer.calculateConfidence(scene);
         
-        // Trim raw text
-        scene.rawText = scene.rawText.trim();
+        console.log('[FountainAdapter] Finalizing scene:', scene.scene_number, 'rawText before HTML conversion:', scene.rawText?.length || 0, 'chars');
+        
+        // Convert raw text to HTML using fountain.js
+        if (scene.rawText && scene.rawText.trim()) {
+            try {
+                const output = window.fountain.parse(scene.rawText, false);
+                // Use the generated HTML script content
+                if (output && output.html && output.html.script) {
+                    scene.rawText = output.html.script;
+                    console.log('[FountainAdapter] Converted to HTML, length:', scene.rawText.length);
+                } else {
+                    console.warn('[FountainAdapter] No HTML output from fountain.parse for scene:', scene.scene_number);
+                }
+            } catch (e) {
+                console.warn('[FountainAdapter] Failed to convert scene to HTML:', e);
+                // Keep raw text as fallback
+            }
+        } else {
+            console.warn('[FountainAdapter] No rawText to convert for scene:', scene.scene_number);
+        }
         
         return scene;
     }

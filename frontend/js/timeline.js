@@ -461,6 +461,20 @@ function renderStoryOrder(container) {
         return;
     }
     
+    // Helper: Extract first N lines from scene text
+    function getScriptPreview(scene, maxLines = 15) {
+        const html = scene.raw_text || scene.rawText || scene.description || '';
+        
+        // If it's HTML, wrap it in a div and limit display via CSS
+        if (html.includes('<')) {
+            return html;
+        }
+        
+        // Fallback for plain text
+        const lines = html.split('\n').slice(0, maxLines);
+        return lines.map(line => line.replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n');
+    }
+    
     // OPTIMIZED: Use DocumentFragment for faster DOM manipulation
     // Build HTML with horizontal cards (keep as template string for clarity)
     const html = sortedScenes.map(scene => {
@@ -485,7 +499,7 @@ function renderStoryOrder(container) {
         
         return `
         <div 
-            class="card bg-base-100 shadow-md flex-shrink-0 w-80 min-h-[200px] scene-card cursor-move" 
+            class="card bg-base-100 shadow-md flex-shrink-0 scene-card cursor-move" 
             draggable="true"
             data-scene-id="${scene.id}"
         >
@@ -512,6 +526,12 @@ function renderStoryOrder(container) {
                         </button>
                     </div>
                 </div>
+                
+                <!-- Final Draft-style Script Preview -->
+                <div class="scene-card__script-preview">
+                    <div class="scene-card__script-text">${getScriptPreview(scene)}</div>
+                </div>
+                
                 <div class="text-xs text-base-content/60 mt-2">
                     Shooting: Day ${scene.shooting_days.join(', Day ')}
                 </div>
@@ -545,10 +565,6 @@ function renderStoryOrder(container) {
     if (sortableInstance) {
         sortableInstance.destroy();
     }
-    
-    console.log('[SORTABLE] Creating Sortable instance on container:', container);
-    console.log('[SORTABLE] Container classes:', container?.className);
-    console.log('[SORTABLE] Container scroll properties - scrollWidth:', container?.scrollWidth, 'clientWidth:', container?.clientWidth);
     
     // Create new Sortable instance with optimized performance settings
     sortableInstance = Sortable.create(container, {
@@ -750,18 +766,12 @@ function enableManualScroll() {
     const container = document.getElementById('sceneContainer');
     const viewport = document.querySelector('.flex-1.px-4.pt-20'); // Main viewport
     
-    console.log('[MANUAL SCROLL] Initializing manual scroll');
-    console.log('[MANUAL SCROLL] Container:', container);
-    console.log('[MANUAL SCROLL] Container scrollWidth:', container?.scrollWidth, 'clientWidth:', container?.clientWidth);
-    
     let isScrolling = false;
     let startX;
     let scrollLeft;
     
     // Handle mousedown on entire document to catch all empty space
     document.addEventListener('mousedown', (e) => {
-        console.log('[MANUAL SCROLL] Mousedown event', e.target);
-        
         // Check if clicking on excluded elements
         const excludedSelectors = [
             '.scene-card',
@@ -785,11 +795,9 @@ function enableManualScroll() {
         const isExcluded = excludedSelectors.some(selector => e.target.closest(selector));
         
         if (isExcluded) {
-            console.log('[MANUAL SCROLL] Clicked on excluded element - ignoring');
             return;
         }
         
-        console.log('[MANUAL SCROLL] Starting manual scroll on empty space');
         isScrolling = true;
         startX = e.pageX - container.offsetLeft;
         scrollLeft = container.scrollLeft;
@@ -799,7 +807,6 @@ function enableManualScroll() {
     
     document.addEventListener('mouseleave', () => {
         if (isScrolling) {
-            console.log('[MANUAL SCROLL] Mouse left document');
             isScrolling = false;
             document.body.style.cursor = 'default';
         }
@@ -807,7 +814,6 @@ function enableManualScroll() {
     
     document.addEventListener('mouseup', () => {
         if (isScrolling) {
-            console.log('[MANUAL SCROLL] Mouse up');
             isScrolling = false;
             document.body.style.cursor = 'default';
         }
@@ -819,12 +825,6 @@ function enableManualScroll() {
         const x = e.pageX - container.offsetLeft;
         const walk = (x - startX) * 1.5; // Scroll speed multiplier
         container.scrollLeft = scrollLeft - walk;
-        console.log('[MANUAL SCROLL] Scrolling - scrollLeft:', container.scrollLeft);
-    });
-    
-    // Test regular scroll
-    container.addEventListener('scroll', () => {
-        console.log('[SCROLL EVENT] Container scrolled - scrollLeft:', container.scrollLeft);
     });
 }
 

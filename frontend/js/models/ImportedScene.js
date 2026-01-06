@@ -38,11 +38,12 @@ export class ImportedScene {
      * Convert to database-compatible scene object
      */
     toDatabaseObject(projectId) {
-        return {
+        const dbObj = {
             project_id: projectId,
             scene_number: this.scene_number,
             description: this.description,
             story_order: this.story_order,
+            raw_text: this.rawText || null,
             ...(this.int_ext && { int_ext: this.int_ext }),
             ...(this.location && { location: this.location }),
             ...(this.time && { time: this.time }),
@@ -50,6 +51,8 @@ export class ImportedScene {
             shooting_days: [],
             shooting_dates: []
         };
+        console.log('[ImportedScene] toDatabaseObject for scene:', this.scene_number, 'raw_text length:', dbObj.raw_text?.length || 0);
+        return dbObj;
     }
     
     /**

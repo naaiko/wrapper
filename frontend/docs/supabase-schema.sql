@@ -18,6 +18,7 @@ CREATE TABLE scenes (
     description TEXT,
     story_order INTEGER NOT NULL,
     shooting_days INTEGER[] DEFAULT '{}',
+    raw_text TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(project_id, story_order)
 );

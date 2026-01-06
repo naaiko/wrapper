@@ -112,7 +112,8 @@ export class SceneService {
             ...(sceneData.script_day && { script_day: sceneData.script_day }),
             ...(sceneData.pages && { pages: sceneData.pages }),
             ...(sceneData.split_group_id && { split_group_id: sceneData.split_group_id }),
-            ...(sceneData.shooting_days_count != null && { shooting_days_count: sceneData.shooting_days_count })
+            ...(sceneData.shooting_days_count != null && { shooting_days_count: sceneData.shooting_days_count }),
+            ...(sceneData.raw_text && { raw_text: sceneData.raw_text })
         }));
         
         // Single database transaction for all scenes

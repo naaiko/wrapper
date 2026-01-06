@@ -20,12 +20,106 @@
     transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
+    
+    /* Large cards - 2/3 viewport height, wider width, uniform size */
+    width: 32rem !important;
+    min-width: 32rem !important;
+    height: 66vh;
+    min-height: 66vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.scene-card .card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* =================================================================
+   FINAL DRAFT SCRIPT PREVIEW - PROFESSIONAL SCREENPLAY FORMAT
+   ================================================================= */
+
+/* Preview container - simple paper with fade */
+.scene-card__script-preview {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    margin-top: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Fade at bottom to show more content below */
+.scene-card__script-preview::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
+    pointer-events: none;
+}
+
+/* Script text - Final Draft standard format with print margins */
+.scene-card__script-text {
+    font-family: 'Courier Prime', 'Courier New', 'Courier', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #000000;
+    margin: 0;
+    padding: 1.5rem 2rem;
+    white-space: normal;
+    word-wrap: break-word;
+    background: transparent;
+    flex: 1 1 0;
+    overflow: hidden;
+}
+
+/* Preserve Fountain HTML formatting */
+.scene-card__script-text h3,
+.scene-card__script-text h2 {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: bold;
+    margin: 0 0 0.5em 0;
+    text-transform: uppercase;
+}
+
+.scene-card__script-text p {
+    margin: 0 0 1em 0;
+}
+
+.scene-card__script-text .character {
+    margin-left: 2em;
+    font-weight: normal;
+}
+
+.scene-card__script-text .dialogue {
+    margin-left: 1.5em;
+    margin-right: 1.5em;
+}
+
+.scene-card__script-text .parenthetical {
+    margin-left: 2em;
+    font-style: normal;
+}
+
+.scene-card__script-text .action {
+    margin-bottom: 1em;
 }
 
 /* Add Scene Card - Dashed Outline with Hover Effect */
 .add-scene-placeholder {
-    width: 320px; /* Same as w-80 */
-    min-height: 200px; /* Same as scene cards */
+    width: 32rem; /* Match scene card width */
+    min-height: 66vh; /* Match scene cards */
     border: 3px dashed oklch(var(--p) / 0.3);
     border-radius: 1rem;
     background: transparent;
