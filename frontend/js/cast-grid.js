@@ -498,14 +498,17 @@ class CastGridApp {
     }
     
     updateFilterDropdown() {
-        const filterDropdown = document.querySelector('.dropdown-content.menu');
-        if (!filterDropdown) return;
+        // Find the filter dropdown specifically (the one containing filter-option elements)
+        const filterDropdown = document.querySelector('.filter-option')?.closest('ul.dropdown-content.menu');
+        if (!filterDropdown) {
+            console.error('[CAST GRID] Filter dropdown not found');
+            return;
+        }
         
-        // Keep the "All Actors" option, replace the rest with assignment types
-        const allOption = filterDropdown.querySelector('[data-filter="all"]');
+        // Clear and rebuild
         filterDropdown.innerHTML = '';
         
-        // Add "All Actors" option back
+        // Add "All Actors" option
         const allLi = document.createElement('li');
         allLi.innerHTML = `<a data-filter="all" class="filter-option active">All Actors</a>`;
         filterDropdown.appendChild(allLi);
@@ -516,6 +519,8 @@ class CastGridApp {
             li.innerHTML = `<a data-filter="${type.id}" class="filter-option">${type.label}</a>`;
             filterDropdown.appendChild(li);
         });
+        
+        console.log(`[CAST GRID] Updated filter dropdown with ${this.assignmentTypes.length} types:`, this.assignmentTypes);
         
         // Re-attach event listeners
         this.filterOptions = document.querySelectorAll('.filter-option');
