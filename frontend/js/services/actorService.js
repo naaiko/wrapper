@@ -51,6 +51,7 @@ export class ActorService {
                 character_name: actorData.character_name,
                 first_name: actorData.first_name || null,
                 last_name: actorData.last_name || null,
+                role: actorData.role || null,
                 email: actorData.email || null,
                 phone: actorData.phone || null,
                 height: actorData.height || null,

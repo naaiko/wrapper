@@ -69,48 +69,16 @@
     </svg>
     
     <div class="min-h-screen bg-base-200 h-screen overflow-hidden">
-        <!-- Top Bar with Back Button and Navigation -->
-        <div class="fixed top-0 left-0 right-0 z-50 bg-base-100 shadow-lg">
-            <div class="navbar">
-                <div class="flex-1">
-                    <button id="backToGridBtn" class="btn btn-ghost gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        <span class="hidden sm:inline">Back to Cast</span>
-                    </button>
-                    <div class="divider divider-horizontal mx-2"></div>
-                    <h1 id="actorNameTitle" class="text-xl font-bold truncate max-w-xs">
-                        <div class="skeleton h-6 w-32"></div>
-                    </h1>
-                </div>
-                <div class="flex-none gap-2">
-                    <!-- Prev/Next Navigation -->
-                    <div class="join">
-                        <button id="btnPrevActor" class="btn btn-ghost btn-sm join-item" title="Previous actor (←)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        <button id="btnNextActor" class="btn btn-ghost btn-sm join-item" title="Next actor (→)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="divider divider-horizontal mx-0"></div>
-                    <div id="topNavigation">
-                        <!-- Navigation injected by navigation.js -->
-                    </div>
-                </div>
-            </div>
+        <!-- Navigation (Top Right) -->
+        <div class="fixed top-4 right-4 z-50" id="topNavigation">
+            <!-- Navigation will be injected here by navigation.js -->
         </div>
 
         <!-- Main Content Container: fits between navigation and dock -->
-        <div class="h-screen pt-20 pb-4 px-4">
+        <div class="h-screen pt-20 pb-20 px-4">
             <div class="grid grid-cols-12 gap-6 h-full">
                 <!-- Left Column (4 cols) - Actor Details -->
-                <div class="col-span-12 md:col-span-4 bg-base-100 rounded-lg p-6 overflow-y-auto h-full">
+                <div class="col-span-4 bg-base-100 rounded-lg p-6 overflow-y-auto h-full">
                     <div id="actorDetailsPanel">
                         <!-- Actor details will be rendered here -->
                         <div class="flex flex-col gap-4">
@@ -122,7 +90,7 @@
                 </div>
 
                 <!-- Middle Column (4 cols) - Silhouette + Toggle -->
-                <div class="col-span-12 md:col-span-4 flex flex-col gap-4 h-full min-h-0">
+                <div class="col-span-4 flex flex-col gap-4 h-full min-h-0">
                     <!-- Silhouette container - takes all available space -->
                     <div class="flex-1 min-h-0 flex items-end justify-center">
                         <svg class="actor-silhouette mode-bodyshots" viewBox="0 0 373 852" role="img" aria-label="Actor silhouette with layers">
@@ -141,7 +109,7 @@
                 </div>
 
                 <!-- Right Column (4 cols) - Calendar -->
-                <div class="col-span-12 md:col-span-4 bg-base-100 rounded-lg p-6 flex flex-col h-full min-h-0">
+                <div class="col-span-4 bg-base-100 rounded-lg p-6 flex flex-col h-full min-h-0">
                     <div class="flex-shrink-0 flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">Scenes Calendar</h3>
                         <div class="flex items-center gap-2">
@@ -164,6 +132,41 @@
                 </div>
             </div>
         </div>
+
+        <!-- Dock (Bottom Center) -->
+        <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div class="bg-base-100 shadow-2xl rounded-2xl px-4 py-2 flex items-center gap-2">
+                <!-- Grid/Detail Toggle -->
+                <button id="toggleViewBtn" class="btn btn-ghost btn-sm btn-circle" aria-label="Toggle Grid/Detail" title="Back to Grid">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                    </svg>
+                </button>
+                
+                <div class="divider divider-horizontal mx-0"></div>
+                
+                <!-- Previous Actor Button -->
+                <button id="btnPrevActor" class="btn btn-ghost btn-sm btn-circle" aria-label="Previous actor">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                </button>
+                
+                <!-- Actor Name Display -->
+                <div class="px-4">
+                    <h1 id="actorNameTitle" class="text-sm font-semibold whitespace-nowrap">
+                        <div class="skeleton h-5 w-32"></div>
+                    </h1>
+                </div>
+                
+                <!-- Next Actor Button -->
+                <button id="btnNextActor" class="btn btn-ghost btn-sm btn-circle" aria-label="Next actor">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Confirmation Dialog (reusable) -->
@@ -179,9 +182,13 @@
         <div id="confirmBackdrop" class="modal-backdrop"></div>
     </dialog>
 
+    <!-- Supabase Configuration -->
+    <script src="js/supabase-config.js"></script>
+
     <!-- Navigation Script -->
-    <script src="js/components/navigation.js"></script>
-    <script>
+    <script type="module">
+        import { createNavigation } from './js/components/navigation.js';
+        
         const urlParams = new URLSearchParams(window.location.search);
         let projectId = urlParams.get('project');
         

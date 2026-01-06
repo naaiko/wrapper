@@ -29,7 +29,7 @@ class ActorDetailApp {
         this.gridSearch = '';
         
         // DOM elements
-        this.backToGridBtn = document.getElementById('backToGridBtn');
+        this.toggleViewBtn = document.getElementById('toggleViewBtn');
         this.btnPrevActor = document.getElementById('btnPrevActor');
         this.btnNextActor = document.getElementById('btnNextActor');
         this.actorNameTitle = document.getElementById('actorNameTitle');
@@ -39,46 +39,75 @@ class ActorDetailApp {
     }
     
     async init() {
-        // Get URL params
-        const urlParams = new URLSearchParams(window.location.search);
-        this.projectId = urlParams.get('project');
-        this.actorId = urlParams.get('actor');
-        this.gridFilter = urlParams.get('filter') || 'all';
-        this.gridSort = urlParams.get('sort') || 'name';
-        this.gridSearch = urlParams.get('search') || '';
-        
-        if (!this.projectId || !this.actorId) {
-            window.location.href = `actors.html?project=${this.projectId}`;
-            return;
+        try {
+            console.log('[ACTOR DETAIL] Initializing...');
+            
+            // Get URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            this.projectId = urlParams.get('project');
+            this.actorId = urlParams.get('actor');
+            this.gridFilter = urlParams.get('filter') || 'all';
+            this.gridSort = urlParams.get('sort') || 'name';
+            this.gridSearch = urlParams.get('search') || '';
+            
+            console.log('[ACTOR DETAIL] Params:', { projectId: this.projectId, actorId: this.actorId, filter: this.gridFilter });
+            
+            if (!this.projectId || !this.actorId) {
+                console.error('[ACTOR DETAIL] Missing required params - redirecting to grid');
+                window.location.href = `actors.html?project=${this.projectId}`;
+                return;
+            }
+            
+            // Setup event listeners
+            console.log('[ACTOR DETAIL] Setting up event listeners...');
+            this.setupEventListeners();
+            
+            // Load silhouette SVG
+            console.log('[ACTOR DETAIL] Loading silhouette SVG...');
+            await this.loadSilhouetteSVG();
+            
+            // Load actors list (respecting grid filter)
+            console.log('[ACTOR DETAIL] Loading actors...');
+            await this.loadActors();
+            console.log('[ACTOR DETAIL] Loaded actors:', this.actors.length);
+            
+            // Find current actor and show detail
+            const actor = this.actors.find(a => a.id == this.actorId);
+            console.log('[ACTOR DETAIL] Found actor:', actor ? actor.name || actor.actor_name : 'NOT FOUND');
+            
+            if (actor) {
+                this.currentActor = actor;
+                this.currentIndex = this.actors.indexOf(actor);
+                console.log('[ACTOR DETAIL] Showing actor detail...');
+                await this.showActorDetail(actor);
+            } else {
+                // Actor not found or filtered out - go back to grid
+                console.error('[ACTOR DETAIL] Actor not found in filtered list - redirecting to grid');
+                this.backToGrid();
+                return;
+            }
+            
+            // Initialize edit screen
+            console.log('[ACTOR DETAIL] Initializing edit screen...');
+            await this.initializeActorEditScreen();
+            console.log('[ACTOR DETAIL] Initialization complete!');
+            
+        } catch (error) {
+            console.error('[ACTOR DETAIL] ❌ ERROR during initialization:', error);
+            console.error('[ACTOR DETAIL] Error stack:', error.stack);
+            console.error('[ACTOR DETAIL] Current state:', {
+                projectId: this.projectId,
+                actorId: this.actorId,
+                actorsLoaded: this.actors?.length || 0
+            });
+            // Don't redirect immediately - let user see the error
+            alert('Error loading actor detail. Check console for details.');
         }
-        
-        // Setup event listeners
-        this.setupEventListeners();
-        
-        // Load silhouette SVG
-        await this.loadSilhouetteSVG();
-        
-        // Load actors list (respecting grid filter)
-        await this.loadActors();
-        
-        // Find current actor and show detail
-        const actor = this.actors.find(a => a.id == this.actorId);
-        if (actor) {
-            this.currentActor = actor;
-            this.currentIndex = this.actors.indexOf(actor);
-            await this.showActorDetail(actor);
-        } else {
-            // Actor not found or filtered out - go back to grid
-            this.backToGrid();
-        }
-        
-        // Initialize edit screen
-        await this.initializeActorEditScreen();
     }
     
     setupEventListeners() {
-        // Back to grid
-        this.backToGridBtn.addEventListener('click', () => {
+        // Toggle view (back to grid)
+        this.toggleViewBtn.addEventListener('click', () => {
             this.backToGrid();
         });
         
@@ -121,17 +150,35 @@ class ActorDetailApp {
     
     async loadActors() {
         try {
+            console.log('[ACTOR DETAIL] Loading actors from service...');
+            
             // Load all actors
             let actors = await ActorService.getAll(this.projectId);
+            console.log('[ACTOR DETAIL] Raw actors from service:', actors.length, actors[0]);
+            
+            // Normalize data structure (same as actors-grid.js)
+            actors = actors.map(actor => ({
+                ...actor,
+                name: actor.first_name && actor.last_name 
+                    ? `${actor.first_name} ${actor.last_name}`
+                    : actor.actor_name || 'Unnamed Actor',
+                photo_url: actor.profile_image_url,
+                role: actor.role || null
+            }));
+            console.log('[ACTOR DETAIL] Normalized actors:', actors.length, actors[0]);
             
             // Apply same filter as grid
             if (this.gridFilter !== 'all') {
+                const beforeFilter = actors.length;
                 actors = actors.filter(a => a.role?.toLowerCase() === this.gridFilter.toLowerCase());
+                console.log('[ACTOR DETAIL] After filter:', beforeFilter, '→', actors.length);
             }
             
             // Apply search
             if (this.gridSearch) {
+                const beforeSearch = actors.length;
                 actors = actors.filter(a => a.name.toLowerCase().includes(this.gridSearch.toLowerCase()));
+                console.log('[ACTOR DETAIL] After search:', beforeSearch, '→', actors.length);
             }
             
             // Apply same sort as grid
@@ -149,11 +196,15 @@ class ActorDetailApp {
             });
             
             this.actors = actors;
+            console.log('[ACTOR DETAIL] Final actors list:', this.actors.length);
             
             // Update prev/next button states
             this.updateNavigationButtons();
             
         } catch (error) {
+            console.error('[ACTOR DETAIL] ❌ Error loading actors:', error);
+            console.error('[ACTOR DETAIL] Error stack:', error.stack);
+            throw error;
             console.error('[ACTOR DETAIL] Error loading actors:', error);
             this.actors = [];
         }
@@ -285,61 +336,271 @@ class ActorDetailApp {
     }
     
     switchSilhouetteMode(mode) {
+        console.log('[ACTOR DETAIL] switchSilhouetteMode called with:', mode);
         const silhouette = document.querySelector('.actor-silhouette');
-        silhouette.className = `actor-silhouette mode-${mode}`;
+        console.log('[ACTOR DETAIL] Current class:', silhouette.getAttribute('class'));
+        silhouette.setAttribute('class', `actor-silhouette mode-${mode}`);
+        console.log('[ACTOR DETAIL] New class:', silhouette.getAttribute('class'));
     }
     
     async loadSilhouetteSVG() {
         try {
+            console.log('[ACTOR DETAIL] Loading silhouette SVG...');
             const response = await fetch('images/silhouette.svg');
             const svgText = await response.text();
             const parser = new DOMParser();
-            const doc = parser.parseFromString(svgText, 'image/svg+xml');
+            const sourceSVG = parser.parseFromString(svgText, 'image/svg+xml').querySelector('svg');
             
-            // Extract symbols
-            const baseSymbol = doc.getElementById('silhouette');
-            const bodyshotsSymbol = doc.getElementById('bodyshots');
-            const accessoriesSymbol = doc.getElementById('accessories');
-            const outfitSymbol = doc.getElementById('outfit');
-            
-            if (!baseSymbol) {
-                console.error('[ACTOR DETAIL] Silhouette base layer not found');
+            if (!sourceSVG) {
+                console.error('[ACTOR DETAIL] Failed to parse silhouette SVG');
                 return;
             }
             
-            // Inject into page silhouette
-            const silhouette = document.querySelector('.actor-silhouette');
-            silhouette.innerHTML = '';
+            // Get container
+            const svgContainer = document.querySelector('.actor-silhouette');
+            svgContainer.innerHTML = '';
+            svgContainer.setAttribute('viewBox', sourceSVG.getAttribute('viewBox') || '0 0 373 852');
             
-            // Clone base
-            const base = baseSymbol.cloneNode(true);
-            base.removeAttribute('id');
-            silhouette.appendChild(base);
+            // Add SVG defs for masks (plus cutout)
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
             
-            // Add layers as groups
-            if (bodyshotsSymbol) {
-                const bodyshots = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                bodyshots.className = 'layer-bodyshots';
-                bodyshots.innerHTML = bodyshotsSymbol.innerHTML;
-                silhouette.appendChild(bodyshots);
-            }
+            // Create mask with plus cutout
+            const mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
+            mask.setAttribute('id', 'plus-cutout-mask');
             
-            if (accessoriesSymbol) {
-                const accessories = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                accessories.className = 'layer-accessories';
-                accessories.innerHTML = accessoriesSymbol.innerHTML;
-                silhouette.appendChild(accessories);
-            }
+            // White background (visible area)
+            const maskBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            maskBg.setAttribute('x', '0');
+            maskBg.setAttribute('y', '0');
+            maskBg.setAttribute('width', '100%');
+            maskBg.setAttribute('height', '100%');
+            maskBg.setAttribute('fill', 'white');
+            mask.appendChild(maskBg);
             
-            if (outfitSymbol) {
-                const outfit = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                outfit.className = 'layer-outfit';
-                outfit.innerHTML = outfitSymbol.innerHTML;
-                silhouette.appendChild(outfit);
-            }
+            // Black plus (cutout area)
+            const plusVertical = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            plusVertical.setAttribute('x', '-3');
+            plusVertical.setAttribute('y', '-20');
+            plusVertical.setAttribute('width', '6');
+            plusVertical.setAttribute('height', '40');
+            plusVertical.setAttribute('fill', 'black');
+            plusVertical.setAttribute('rx', '2');
+            
+            const plusHorizontal = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            plusHorizontal.setAttribute('x', '-20');
+            plusHorizontal.setAttribute('y', '-3');
+            plusHorizontal.setAttribute('width', '40');
+            plusHorizontal.setAttribute('height', '6');
+            plusHorizontal.setAttribute('fill', 'black');
+            plusHorizontal.setAttribute('rx', '2');
+            
+            const plusGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            plusGroup.setAttribute('id', 'plus-symbol');
+            plusGroup.appendChild(plusVertical);
+            plusGroup.appendChild(plusHorizontal);
+            
+            mask.appendChild(plusGroup);
+            defs.appendChild(mask);
+            svgContainer.appendChild(defs);
+            
+            // Map source groups to CSS class names
+            const layerMapping = {
+                'Silhouet': 'layer-silhouet',
+                'Bodyshots': 'layer-bodyshots',
+                'Accesories': 'layer-accesories',  // Note: 'accesories' with single 's' to match CSS
+                'Outfit': 'layer-outfit'
+            };
+            
+            // Process each layer
+            Object.entries(layerMapping).forEach(([sourceId, className]) => {
+                const sourceGroup = sourceSVG.querySelector(`g[id="${sourceId}"]`);
+                if (!sourceGroup) return;
+                
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', className);
+                
+                // Order bodyshots by size (largest first)
+                let children = Array.from(sourceGroup.children);
+                if (sourceId === 'Bodyshots') {
+                    const sizeOrder = ['fullbodyshot', 'shouldershot', 'headshot', 'handshot'];
+                    children = sizeOrder.map(id => sourceGroup.querySelector(`[id="${id}"]`)).filter(Boolean);
+                }
+                
+                // Clone children
+                children.forEach(child => {
+                    const clonedChild = child.cloneNode(true);
+                    
+                    // Remove inline styles
+                    clonedChild.removeAttribute('class');
+                    clonedChild.removeAttribute('fill');
+                    clonedChild.removeAttribute('stroke');
+                    clonedChild.removeAttribute('stroke-width');
+                    clonedChild.removeAttribute('stroke-miterlimit');
+                    
+                    // Add overlays for bodyshots
+                    if (sourceId === 'Bodyshots') {
+                        const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        overlay.setAttribute('class', 'bodyshot-overlay');
+                        
+                        ['x', 'y', 'width', 'height', 'rx', 'ry'].forEach(attr => {
+                            const val = clonedChild.getAttribute(attr);
+                            if (val) overlay.setAttribute(attr, val);
+                        });
+                        
+                        overlay.setAttribute('mask', 'url(#plus-cutout-mask)');
+                        overlay.style.opacity = '0';
+                        overlay.style.pointerEvents = 'none';
+                        
+                        const x = parseFloat(clonedChild.getAttribute('x') || 0);
+                        const y = parseFloat(clonedChild.getAttribute('y') || 0);
+                        const width = parseFloat(clonedChild.getAttribute('width') || 0);
+                        const height = parseFloat(clonedChild.getAttribute('height') || 0);
+                        const centerX = x + width / 2;
+                        const centerY = y + height / 2;
+                        
+                        overlay.setAttribute('data-center-x', centerX);
+                        overlay.setAttribute('data-center-y', centerY);
+                        
+                        g.appendChild(overlay);
+                    }
+                    
+                    // Add overlays for accessories
+                    if (sourceId === 'Accesories') {
+                        const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        overlay.setAttribute('class', 'accessory-overlay');
+                        
+                        ['cx', 'cy', 'r'].forEach(attr => {
+                            const val = clonedChild.getAttribute(attr);
+                            if (val) overlay.setAttribute(attr, val);
+                        });
+                        
+                        overlay.setAttribute('mask', 'url(#plus-cutout-mask)');
+                        overlay.style.opacity = '0';
+                        overlay.style.pointerEvents = 'none';
+                        
+                        const cx = parseFloat(clonedChild.getAttribute('cx') || 0);
+                        const cy = parseFloat(clonedChild.getAttribute('cy') || 0);
+                        overlay.setAttribute('data-center-x', cx);
+                        overlay.setAttribute('data-center-y', cy);
+                        
+                        g.appendChild(overlay);
+                    }
+                    
+                    g.appendChild(clonedChild);
+                });
+                
+                svgContainer.appendChild(g);
+            });
+            
+            // Setup hover effects after loading
+            this.setupSilhouetteInteractions();
+            
+            console.log('[ACTOR DETAIL] Silhouette loaded successfully');
             
         } catch (error) {
             console.error('[ACTOR DETAIL] Error loading silhouette:', error);
+        }
+    }
+    
+    setupSilhouetteInteractions() {
+        console.log('[ACTOR DETAIL] Setting up silhouette interactions...');
+        
+        // Setup layer mode toggle
+        const layerModeBtns = document.querySelectorAll('.layer-mode-btn');
+        console.log('[ACTOR DETAIL] Found layer mode buttons:', layerModeBtns.length);
+        
+        layerModeBtns.forEach((btn, index) => {
+            console.log(`[ACTOR DETAIL] Button ${index}:`, btn.dataset.mode);
+            btn.addEventListener('click', () => {
+                console.log('[ACTOR DETAIL] Button clicked:', btn.dataset.mode);
+                layerModeBtns.forEach(b => b.classList.remove('tab-active'));
+                btn.classList.add('tab-active');
+                const mode = btn.dataset.mode;
+                console.log('[ACTOR DETAIL] Switching to mode:', mode);
+                this.switchSilhouetteMode(mode);
+            });
+        });
+        
+        // Setup bodyshot hover effects
+        const bodyshotsLayer = document.querySelector('.layer-bodyshots');
+        if (bodyshotsLayer) {
+            const rects = bodyshotsLayer.querySelectorAll('rect:not(.bodyshot-overlay)');
+            const overlays = bodyshotsLayer.querySelectorAll('.bodyshot-overlay');
+            const plusSymbol = document.querySelector('#plus-symbol');
+            
+            rects.forEach((rect, index) => {
+                const overlay = overlays[index];
+                if (!overlay) return;
+                
+                rect.addEventListener('mouseenter', () => {
+                    bodyshotsLayer.classList.add('has-hover');
+                    overlay.style.opacity = '1';
+                    
+                    const centerX = overlay.getAttribute('data-center-x');
+                    const centerY = overlay.getAttribute('data-center-y');
+                    if (plusSymbol && centerX && centerY) {
+                        plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
+                    }
+                });
+                
+                rect.addEventListener('mouseleave', () => {
+                    overlay.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        const isAnyHovered = Array.from(rects).some(r => r.matches(':hover'));
+                        if (!isAnyHovered) {
+                            bodyshotsLayer.classList.remove('has-hover');
+                        }
+                    }, 10);
+                });
+                
+                // Click handler - open photo upload dialog
+                rect.addEventListener('click', () => {
+                    console.log('[ACTOR DETAIL] Bodyshot zone clicked:', rect.id);
+                    // TODO: Implement photo upload for this zone
+                });
+            });
+        }
+        
+        // Setup accessory hover effects
+        const accessoriesLayer = document.querySelector('.layer-accesories');
+        if (accessoriesLayer) {
+            const circles = accessoriesLayer.querySelectorAll('circle:not(.accessory-overlay)');
+            const overlays = accessoriesLayer.querySelectorAll('.accessory-overlay');
+            const plusSymbol = document.querySelector('#plus-symbol');
+            
+            circles.forEach((circle, index) => {
+                const overlay = overlays[index];
+                if (!overlay) return;
+                
+                circle.addEventListener('mouseenter', () => {
+                    accessoriesLayer.classList.add('has-hover');
+                    overlay.style.opacity = '1';
+                    
+                    const centerX = overlay.getAttribute('data-center-x');
+                    const centerY = overlay.getAttribute('data-center-y');
+                    if (plusSymbol && centerX && centerY) {
+                        plusSymbol.setAttribute('transform', `translate(${centerX}, ${centerY})`);
+                    }
+                });
+                
+                circle.addEventListener('mouseleave', () => {
+                    overlay.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        const isAnyHovered = Array.from(circles).some(c => c.matches(':hover'));
+                        if (!isAnyHovered) {
+                            accessoriesLayer.classList.remove('has-hover');
+                        }
+                    }, 10);
+                });
+                
+                // Click handler
+                circle.addEventListener('click', () => {
+                    console.log('[ACTOR DETAIL] Accessory zone clicked:', circle.id);
+                    // TODO: Implement photo upload for this zone
+                });
+            });
         }
     }
     

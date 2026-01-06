@@ -184,3 +184,58 @@ html {
 .sticky {
     transition: box-shadow 0.2s ease-in-out;
 }
+/* =================================================================
+   ADD ACTOR PLACEHOLDER CARD (Dashed Border)
+   Matches timeline add scene card pattern
+   ================================================================= */
+
+.add-actor-placeholder {
+    /* Match actor card total height (square photo + card-body) */
+    min-height: 350px;
+    border: 3px dashed oklch(var(--p) / 0.3); /* Primary color (green) */
+    border-radius: 1rem;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Plus icon in center */
+.add-actor-placeholder__icon {
+    font-size: 4rem;
+    color: oklch(var(--p) / 0.3); /* Primary color */
+    transition: all 0.25s ease-in-out;
+    position: relative;
+    z-index: 2;
+}
+
+/* Background fill that fades in on hover */
+.add-actor-placeholder__fill {
+    position: absolute;
+    inset: 0;
+    background: oklch(var(--p) / 0); /* Primary color with 0 opacity */
+    transition: background 0.25s ease-in-out;
+    z-index: 1;
+}
+
+/* Hover state - similar to actor card hover */
+.add-actor-placeholder:hover {
+    border-color: oklch(var(--p) / 0.75); /* Primary color darker */
+    filter: drop-shadow(0 0 10px oklch(var(--p) / 0.3));
+    transform: scale(1.05);
+}
+
+.add-actor-placeholder:hover .add-actor-placeholder__icon {
+    color: oklch(var(--p) / 0.75); /* Primary color darker */
+    transform: scale(1.1);
+}
+
+.add-actor-placeholder:hover .add-actor-placeholder__fill {
+    background: oklch(var(--p) / 0.15); /* Primary color with slight opacity */
+}

@@ -7,7 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planning
+### 🚧 v0.2.2 - In Progress (feature/v0.2.2-design-system)
+
+#### Added
+- Square actor cards with aspect-ratio 1:1 for better screen density
+- Dashed "add actor" placeholder card with primary color
+- Universal navigation pattern (top-right nav + bottom dock)
+- Design system documentation (DESIGN_SYSTEM.md)
+- Versioning system with automated changelog generation
+- Release preparation automation script
+- Template files for new releases
+
+#### Changed
+- Actor cards from 3:4 to 1:1 aspect ratio (square)
+- Migration file naming to YYYYMMDDNNNNNN convention
+- All migration references to use supabase/migrations/ paths
+
+#### Technical
+- Created VERSION and NEXT_VERSION tracking files
+- Created scripts/prepare-release.ps1 for automation
+- Created docs/releases/.template/ for consistency
+- Renamed migrations with proper naming convention
+- Established universal button styling patterns
+
+### Planning (Future)
 - Advanced search in release notes
 - Release comparison view
 
@@ -85,8 +108,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced `ActorService` with scene count queries
 - Implemented URL state management for filters
 - Added keyboard and touch event handlers
-- **Database migration required**: Added `first_name` and `last_name` columns to actors table
-- Migration file: `docs/releases/v0.2.0/migration-add-first-last-name.sql`
+- **Database migrations required**: 
+  - `supabase/migrations/20251226000001_add_actor_first_last_name.sql` - Adds first_name and last_name columns
+  - `supabase/migrations/20251226000002_add_actor_role.sql` - Adds role column for classification
 - Created `ActorCard` component for reusable polaroid cards
 - Implemented `CastGridApp` controller for grid management
 - Built `ActorDetailApp` controller with navigation logic

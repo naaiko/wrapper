@@ -23,78 +23,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-base-200">
-    <!-- Top Navigation -->
-    <div class="fixed top-0 left-0 right-0 z-50 bg-base-100 shadow-lg">
-        <div class="navbar">
-            <div class="flex-1">
-                <a href="projects.html" class="btn btn-ghost normal-case text-xl">
-                    Cast Grid
-                </a>
-            </div>
-            <div class="flex-none" id="topNavigation">
-                <!-- Navigation injected by navigation.js -->
-            </div>
-        </div>
+    <!-- Navigation (Top Right) -->
+    <div class="fixed top-4 right-4 z-50" id="topNavigation">
+        <!-- Navigation injected by navigation.js -->
     </div>
 
     <!-- Main Content -->
-    <div class="pt-20 pb-24 min-h-screen">
-        <!-- Controls Bar -->
-        <div class="bg-base-100 sticky top-20 z-40 shadow-md">
-            <div class="container mx-auto px-4 py-4">
-                <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                    <!-- Search -->
-                    <div class="form-control flex-1 max-w-md">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            placeholder="Search actors..." 
-                            class="input input-bordered w-full"
-                        />
-                    </div>
-                    
-                    <!-- Filter & Sort -->
-                    <div class="flex gap-2 flex-wrap">
-                        <!-- Filter -->
-                        <div class="dropdown dropdown-end">
-                            <label tabindex="0" class="btn btn-outline gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                                </svg>
-                                <span id="filterLabel">All Actors</span>
-                            </label>
-                            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
-                                <li><a data-filter="all" class="filter-option active">All Actors</a></li>
-                                <li><a data-filter="hoofdrol" class="filter-option">Hoofdrol</a></li>
-                                <li><a data-filter="bijrol" class="filter-option">Bijrol</a></li>
-                                <li><a data-filter="figurant" class="filter-option">Figurant</a></li>
-                            </ul>
-                        </div>
-                        
-                        <!-- Sort -->
-                        <div class="dropdown dropdown-end">
-                            <label tabindex="0" class="btn btn-outline gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                                </svg>
-                                <span id="sortLabel">Name</span>
-                            </label>
-                            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
-                                <li><a data-sort="name" class="sort-option active">Name (A-Z)</a></li>
-                                <li><a data-sort="scenes" class="sort-option">Scene Count</a></li>
-                                <li><a data-sort="recent" class="sort-option">Recently Added</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Active Filters Display -->
-                <div id="activeFilters" class="mt-3 flex gap-2 flex-wrap hidden">
-                    <!-- Active filter badges will be inserted here -->
-                </div>
-            </div>
-        </div>
-        
+    <div class="pt-4 pb-24 min-h-screen">
         <!-- Grid Container -->
         <div class="container mx-auto px-4 py-6">
             <div id="castGrid" class="cast-grid">
@@ -129,15 +64,6 @@
                 </button>
             </div>
         </div>
-    </div>
-
-    <!-- FAB - Add Actor -->
-    <div class="fixed bottom-8 right-8 z-50">
-        <button id="addActorBtn" class="btn btn-primary btn-circle btn-lg shadow-xl hover:shadow-2xl">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-            </svg>
-        </button>
     </div>
 
     <!-- Quick Add Modal -->
@@ -204,6 +130,72 @@
             <button>close</button>
         </form>
     </dialog>
+
+    <!-- Dock (Bottom Center) -->
+    <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+        <div class="bg-base-100 shadow-2xl rounded-2xl px-4 py-3 flex items-center gap-2">
+            <!-- Search -->
+            <div class="form-control">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Search actors..." 
+                    class="input input-bordered input-sm w-64"
+                />
+            </div>
+            
+            <div class="divider divider-horizontal mx-0 my-0"></div>
+            
+            <!-- Filter -->
+            <div class="dropdown dropdown-top dropdown-end">
+                <label tabindex="0" class="btn btn-sm gap-2 bg-base-300/50 hover:bg-base-300 border-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    <span id="filterLabel" class="text-xs">All Actors</span>
+                </label>
+                <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 mb-2">
+                    <li><a data-filter="all" class="filter-option active">All Actors</a></li>
+                    <li><a data-filter="hoofdrol" class="filter-option">Hoofdrol</a></li>
+                    <li><a data-filter="bijrol" class="filter-option">Bijrol</a></li>
+                    <li><a data-filter="figurant" class="filter-option">Figurant</a></li>
+                </ul>
+            </div>
+            
+            <!-- Sort -->
+            <div class="dropdown dropdown-top dropdown-end">
+                <label tabindex="0" class="btn btn-sm gap-2 bg-base-300/50 hover:bg-base-300 border-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                    <span id="sortLabel" class="text-xs">Name</span>
+                </label>
+                <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 mb-2">
+                    <li><a data-sort="name" class="sort-option active">Name (A-Z)</a></li>
+                    <li><a data-sort="scenes" class="sort-option">Scene Count</a></li>
+                    <li><a data-sort="recent" class="sort-option">Recently Added</a></li>
+                </ul>
+            </div>
+            
+            <div class="divider divider-horizontal mx-0 my-0"></div>
+            
+            <!-- Clear Filters -->
+            <button id="clearFiltersBtn" class="btn btn-sm btn-circle bg-base-300/50 hover:bg-base-300 border-none" title="Clear filters">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <div class="divider divider-horizontal mx-0 my-0"></div>
+            
+            <!-- Add Actor Button -->
+            <button id="fabAddActor" class="btn btn-primary btn-sm btn-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
+        </div>
+    </div>
 
     <!-- Supabase Config -->
     <script src="js/supabase-config.js"></script>

@@ -17,9 +17,9 @@ export class ActorCard {
         card.className = 'actor-card card card-compact bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-105 cursor-pointer';
         card.dataset.actorId = actor.id;
         
-        // Photo figure (3:4 aspect ratio for polaroid feel)
+        // Photo figure (1:1 aspect ratio - square cards for better density)
         const figure = document.createElement('figure');
-        figure.className = 'aspect-[3/4] bg-base-300 overflow-hidden';
+        figure.className = 'aspect-square bg-base-300 overflow-hidden';
         
         if (actor.photo_url) {
             const img = document.createElement('img');
@@ -111,7 +111,7 @@ export class ActorCard {
         const card = document.createElement('div');
         card.className = 'card card-compact bg-base-100 shadow-xl';
         card.innerHTML = `
-            <figure class="aspect-[3/4] bg-base-300">
+            <figure class="aspect-square bg-base-300">
                 <div class="skeleton w-full h-full"></div>
             </figure>
             <div class="card-body gap-2">

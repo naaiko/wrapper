@@ -26,21 +26,28 @@ Cast Grid Feature - Complete redesign of actors screen with modern polaroid-styl
 
 - **[CAST_GRID_COMPLETE.md](CAST_GRID_COMPLETE.md)** - Complete feature documentation with testing checklist
 - **[CAST_GRID_IMPLEMENTATION_PLAN.md](CAST_GRID_IMPLEMENTATION_PLAN.md)** - 8-phase implementation plan
+- **[MIGRATIONS.md](MIGRATIONS.md)** - Complete database migrations documentation
+- **[RUN_MIGRATIONS.md](RUN_MIGRATIONS.md)** - Step-by-step migration instructions
 
 ## Database Migration
 
-**⚠️ REQUIRED**: This release requires a database migration to add `first_name` and `last_name` columns.
+**⚠️ REQUIRED**: This release requires database migrations to add `first_name`, `last_name`, and `role` columns.
 
-**Migration File**: [migration-add-first-last-name.sql](migration-add-first-last-name.sql)
+**Migration Files**:
+1. [20251226000001_add_actor_first_last_name.sql](../../../supabase/migrations/20251226000001_add_actor_first_last_name.sql) - Adds first_name and last_name columns
+2. [20251226000002_add_actor_role.sql](../../../supabase/migrations/20251226000002_add_actor_role.sql) - Adds role column for classification
 
 **How to run**:
 1. Go to your Supabase project: `https://supabase.com/dashboard/project/YOUR_PROJECT/editor`
-2. Copy the contents of `migration-add-first-last-name.sql`
-3. Paste into SQL Editor
-4. Click "Run"
-5. Verify results show `first_name` and `last_name` columns populated
+2. Copy the contents of `20251226000001_add_actor_first_last_name.sql`
+3. Paste into SQL Editor and click "Run"
+4. Copy the contents of `20251226000002_add_actor_role.sql`
+5. Paste into SQL Editor and click "Run"
+6. Verify results show all columns created
 
-Without this migration, the Cast Grid will fail to create new actors.
+**Run migrations in order**: 20251226000001 → 20251226000002
+
+Without these migrations, the Cast Grid will show empty data and fail to create new actors.
 
 ## Technical Details
 

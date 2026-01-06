@@ -179,11 +179,22 @@ class CastGridApp {
             // Load actors with scene count
             const actors = await ActorService.getAll(this.projectId);
             
-            // Load scene counts for each actor
+            // Load scene counts for each actor and normalize data structure
             const actorsWithCounts = await Promise.all(
                 actors.map(async (actor) => {
                     const sceneCount = await this.getActorSceneCount(actor.id);
-                    return { ...actor, scene_count: sceneCount };
+                    
+                    // Normalize data structure for ActorCard component
+                    return {
+                        ...actor,
+                        scene_count: sceneCount,
+                        // Map database fields to expected component fields
+                        name: actor.first_name && actor.last_name 
+                            ? `${actor.first_name} ${actor.last_name}`
+                            : actor.actor_name || 'Unnamed Actor',
+                        photo_url: actor.profile_image_url,
+                        role: actor.role || null // Will be null until migration adds role column
+                    };
                 })
             );
             
@@ -269,6 +280,10 @@ class CastGridApp {
         this.emptyState.classList.add('hidden');
         this.noResultsState.classList.add('hidden');
         
+        // Add "add actor" placeholder card first
+        const addPlaceholder = this.createAddActorPlaceholder();
+        this.gridContainer.appendChild(addPlaceholder);
+        
         // Render actors
         this.filteredActors.forEach(actor => {
             const card = ActorCard.render(actor, (clickedActor) => {
@@ -276,6 +291,22 @@ class CastGridApp {
             });
             this.gridContainer.appendChild(card);
         });
+    }
+    
+    createAddActorPlaceholder() {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'add-actor-placeholder';
+        placeholder.innerHTML = `
+            <div class="add-actor-placeholder__fill"></div>
+            <div class="add-actor-placeholder__icon">+</div>
+        `;
+        
+        // Add click listener to open quick add modal
+        placeholder.addEventListener('click', () => {
+            this.quickAddModal.showModal();
+        });
+        
+        return placeholder;
     }
     
     renderSkeletons() {
@@ -313,15 +344,32 @@ class CastGridApp {
         }
         
         try {
-            // Create actor with photo URL if provided
+            // Split name into first and last name (simple split on space)
+            const nameParts = name.split(' ');
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ') || '';
+            
+            // Create actor with proper field names
             const newActor = await ActorService.create(this.projectId, {
-                name: name,
+                actor_name: name,
+                character_name: name, // Default to same as actor name
+                first_name: firstName,
+                last_name: lastName || null,
                 role: role || null,
-                photo_url: photoUrl || null
+                profile_image_url: photoUrl || null
             });
             
-            // Add to local state with scene count 0
-            const actorWithCount = { ...newActor, scene_count: 0 };
+            // Normalize data structure for display
+            const actorWithCount = {
+                ...newActor,
+                scene_count: 0,
+                name: newActor.first_name && newActor.last_name 
+                    ? `${newActor.first_name} ${newActor.last_name}`
+                    : newActor.actor_name,
+                photo_url: newActor.profile_image_url,
+                role: newActor.role
+            };
+            
             this.actors.push(actorWithCount);
             
             // Close modal and reset form
@@ -333,7 +381,7 @@ class CastGridApp {
             this.filterAndRender();
             
             // Show success toast
-            Toast.success(`Actor "${newActor.name}" created successfully!`);
+            Toast.success(`Actor "${actorWithCount.name}" created successfully!`);
             
         } catch (error) {
             console.error('[CAST GRID] Error creating actor:', error);
