@@ -1,25 +1,25 @@
 # Release v0.2.3 Documentation
 
-**Release Date**: YYYY-MM-DD  
-**Type**: Minor/Patch/Major  
-**Branch**: feature/v0.2.3-feature-name
+**Release Date**: TBD  
+**Type**: Patch  
+**Branch**: script-parser
 
 ## Overview
 
-Brief description of this release.
+Script parsing and analysis features for shooting schedules.
 
 ## Features
 
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
+- [ ] Script parser implementation
+- [ ] Scene extraction from PDF/text
+- [ ] Script analysis tools
+- [ ] Script import workflow
 
 ## Database Migrations
 
-**⚠️ REQUIRED/OPTIONAL**: This release requires/does not require database migrations.
+**⚠️ TBD**: Migration requirements will be determined during development.
 
-**Migration Files**:
-1. [YYYYMMDDNNNNNN_migration_name.sql](../../supabase/migrations/YYYYMMDDNNNNNN_migration_name.sql) - Description
+**Migration Files**: None yet
 
 **How to run**: See [RUN_MIGRATIONS.md](RUN_MIGRATIONS.md)
 
