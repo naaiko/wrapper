@@ -19,6 +19,8 @@ export class ScriptImportService {
      * @returns {ScriptImportResult}
      */
     static async parseScript(text, format = 'auto') {
+        console.log('[SCRIPT IMPORT] Starting parse:', { textLength: text.length, format });
+        
         if (!text || text.trim().length === 0) {
             throw new Error('Script text is empty');
         }
@@ -29,15 +31,19 @@ export class ScriptImportService {
         // Auto-detect format if needed
         if (format === 'auto') {
             format = this.detectFormat(text);
+            console.log('[SCRIPT IMPORT] Detected format:', format);
         }
         
         // Select parser
         let scenes = [];
         
         try {
+            console.log('[SCRIPT IMPORT] Using parser:', format);
+            
             if (format === 'fountain') {
                 const parser = new FountainAdapter();
                 scenes = await parser.parse(text);
+                console.log('[SCRIPT IMPORT] Fountain parser returned:', scenes.length, 'scenes');
                 
                 // Extract metadata
                 const metadata = FountainAdapter.extractMetadata(text);
@@ -47,12 +53,13 @@ export class ScriptImportService {
             else if (format === 'plaintext') {
                 const parser = new PlainTextParser();
                 scenes = parser.parse(text);
+                console.log('[SCRIPT IMPORT] PlainText parser returned:', scenes.length, 'scenes');
             }
             else {
                 throw new Error(`Unknown format: ${format}`);
             }
         } catch (error) {
-            console.error('Parsing error:', error);
+            console.error('[SCRIPT IMPORT] Parsing error:', error);
             throw new Error(`Failed to parse script: ${error.message}`);
         }
         

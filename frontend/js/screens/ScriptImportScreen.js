@@ -213,7 +213,8 @@ export class ScriptImportScreen {
         try {
             // Determine folder based on extension
             const folder = scriptName.endsWith('.fountain') ? 'fountain' : 'plain-text';
-            const scriptPath = `../docs/resources/scripts/${folder}/${scriptName}`;
+            // Use absolute path from site root
+            const scriptPath = `/docs/resources/scripts/${folder}/${scriptName}`;
             
             const response = await fetch(scriptPath);
             if (!response.ok) {
@@ -222,8 +223,12 @@ export class ScriptImportScreen {
             
             const content = await response.text();
             
-            // Create File object from content
-            const file = new File([content], scriptName, { type: 'text/plain' });
+            // Create File object from content with correct size
+            const blob = new Blob([content], { type: 'text/plain' });
+            const file = new File([blob], scriptName, { 
+                type: 'text/plain',
+                lastModified: Date.now()
+            });
             
             // Use existing file handling
             this.handleFileSelected(file);
@@ -289,12 +294,16 @@ export class ScriptImportScreen {
      */
     async handleParse() {
         if (!this.scriptText) {
+            console.warn('[SCRIPT IMPORT] No script text available');
             return;
         }
+        
+        console.log('[SCRIPT IMPORT] Starting parse with text length:', this.scriptText.length);
         
         // Get selected format
         const formatInput = document.querySelector('input[name="format"]:checked');
         const format = formatInput ? formatInput.value : 'auto';
+        console.log('[SCRIPT IMPORT] Selected format:', format);
         
         // Show loading overlay
         this.showLoadingOverlay('Parsing script...');
@@ -308,6 +317,7 @@ export class ScriptImportScreen {
         try {
             // Parse script
             this.importResult = await ScriptImportService.parseScript(this.scriptText, format);
+            console.log('[SCRIPT IMPORT] Parse successful:', this.importResult);
             
             // Hide loading overlay
             this.hideLoadingOverlay();
@@ -316,10 +326,13 @@ export class ScriptImportScreen {
             this.showPreview();
             
         } catch (error) {
-            console.error('Parse error:', error);
+            console.error('[SCRIPT IMPORT] Parse error:', error);
             
             // Hide loading overlay
             this.hideLoadingOverlay();
+            
+            // Show error message
+            this.showError(`Failed to parse script: ${error.message}`);
             
             // Re-enable button
             if (btn) {
@@ -843,5 +856,28 @@ export class ScriptImportScreen {
         if (overlay) {
             overlay.remove();
         }
+    }
+
+    /**
+     * Show a transient error toast
+     */
+    showError(message) {
+        // Remove any existing toast
+        const existing = document.getElementById('scriptImportErrorToast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'scriptImportErrorToast';
+        toast.className = 'toast toast-end z-[200]';
+        toast.innerHTML = `
+            <div class="alert alert-error shadow-lg">
+                <span>${message}</span>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Auto-dismiss after 4s
+        setTimeout(() => toast.remove(), 4000);
     }
 }
