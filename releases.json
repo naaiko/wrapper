@@ -1,6 +1,38 @@
 {
   "releases": [
     {
+      "version": "0.2.5",
+      "date": "2026-01-06",
+      "name": "Script Day + Empty Project Start",
+      "type": "minor",
+      "branch": "main",
+      "commits": ["0f57726", "12a87b4", "a6184d2", "1fbe81b", "81f33c1"],
+      "commitMessage": "feat: Add script day (SD) field and remove automatic demo scenes",
+      "features": [
+        "Added script_day (SD) field to scenes - displayed between scene number and INT/EXT",
+        "Scene cards display SD badge when script_day is set (timeline and calendar views)",
+        "Add/Edit scene forms include SD input field with optimized 1-column layout",
+        "Projects now start completely empty (no automatic demo scenes)"
+      ],
+      "bugfixes": [
+        "Fixed form layout - all fields fit on one row with proper widths",
+        "Shortened 'Scene #' label to '#' to prevent wrapping in narrow column"
+      ],
+      "technical": [
+        "Added script_day TEXT column to scenes table",
+        "SceneService supports script_day in create and createBulk operations",
+        "Removed automatic demo scene creation in timeline.js",
+        "Form layout: # (1 col), SD (1 col), INT/EXT (2 cols), Location (5 cols), Continuity (3 cols)"
+      ],
+      "breaking": [
+        "New projects start empty instead of with 3 demo scenes"
+      ],
+      "deprecated": [],
+      "documentation": [
+        "Database migration required: ALTER TABLE scenes ADD COLUMN IF NOT EXISTS script_day TEXT;"
+      ]
+    },
+    {
       "version": "0.2.4",
       "date": "2026-01-06",
       "name": "Script Preview",
