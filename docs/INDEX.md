@@ -41,6 +41,7 @@ Documentation organized by version number:
 
 - **[CAST_GRID_COMPLETE.md](releases/v0.2.0/CAST_GRID_COMPLETE.md)** - Complete feature documentation
 - **[CAST_GRID_IMPLEMENTATION_PLAN.md](releases/v0.2.0/CAST_GRID_IMPLEMENTATION_PLAN.md)** - 8-phase implementation plan
+- **[migration-add-first-last-name.sql](releases/v0.2.0/migration-add-first-last-name.sql)** - ⚠️ Required database migration
 
 Features:
 - Polaroid-style grid view
@@ -49,6 +50,8 @@ Features:
 - Actor detail screen with navigation
 - Touch swipe and keyboard shortcuts
 - Toast notifications
+
+**Database Migration Required**: Run `migration-add-first-last-name.sql` in Supabase SQL Editor
 
 ### [v0.1.0](releases/v0.1.0/) - 2026-01-05
 **Initial Release with Version System**

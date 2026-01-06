@@ -27,6 +27,21 @@ Cast Grid Feature - Complete redesign of actors screen with modern polaroid-styl
 - **[CAST_GRID_COMPLETE.md](CAST_GRID_COMPLETE.md)** - Complete feature documentation with testing checklist
 - **[CAST_GRID_IMPLEMENTATION_PLAN.md](CAST_GRID_IMPLEMENTATION_PLAN.md)** - 8-phase implementation plan
 
+## Database Migration
+
+**⚠️ REQUIRED**: This release requires a database migration to add `first_name` and `last_name` columns.
+
+**Migration File**: [migration-add-first-last-name.sql](migration-add-first-last-name.sql)
+
+**How to run**:
+1. Go to your Supabase project: `https://supabase.com/dashboard/project/YOUR_PROJECT/editor`
+2. Copy the contents of `migration-add-first-last-name.sql`
+3. Paste into SQL Editor
+4. Click "Run"
+5. Verify results show `first_name` and `last_name` columns populated
+
+Without this migration, the Cast Grid will fail to create new actors.
+
 ## Technical Details
 
 - Native CSS Grid (no external libraries)

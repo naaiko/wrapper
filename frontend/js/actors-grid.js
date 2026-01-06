@@ -99,9 +99,15 @@ class CastGridApp {
         });
         
         // Add actor button
-        this.addActorBtn.addEventListener('click', () => {
-            this.quickAddModal.showModal();
-        });
+        if (!this.addActorBtn) {
+            console.error('[CAST GRID] Add actor button not found!');
+        } else {
+            console.log('[CAST GRID] Add actor button found, adding click listener');
+            this.addActorBtn.addEventListener('click', () => {
+                console.log('[CAST GRID] Add actor button clicked');
+                this.quickAddModal.showModal();
+            });
+        }
         
         // Quick add form
         this.quickAddForm.addEventListener('submit', async (e) => {

@@ -78,6 +78,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to responsive breakpoints for optimal viewing on all devices
 
 ### Technical
+- Created `actors-grid.js` module with CastGridApp class
+- Created `ActorCard` component for reusable actor cards
+- Created `actors-grid.css` for grid-specific styling
+- Created `Toast` utility for notifications
+- Enhanced `ActorService` with scene count queries
+- Implemented URL state management for filters
+- Added keyboard and touch event handlers
+- **Database migration required**: Added `first_name` and `last_name` columns to actors table
+- Migration file: `docs/releases/v0.2.0/migration-add-first-last-name.sql`
 - Created `ActorCard` component for reusable polaroid cards
 - Implemented `CastGridApp` controller for grid management
 - Built `ActorDetailApp` controller with navigation logic
