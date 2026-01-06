@@ -197,6 +197,61 @@ if (!$DryRun) {
     Set-Content "VERSION" $nextVersion
     Write-Host "[OK] VERSION updated" -ForegroundColor Green
     
+    # Update version.js
+    Write-Host "[UPDATE] Updating frontend/js/version.js..." -ForegroundColor Cyan
+    $versionJsPath = "frontend\js\version.js"
+    if (Test-Path $versionJsPath) {
+        $versionJsContent = Get-Content $versionJsPath -Raw
+        $versionParts = $nextVersion.Split('.')
+        $versionJsContent = $versionJsContent -replace "major: \d+,", "major: $($versionParts[0]),"
+        $versionJsContent = $versionJsContent -replace "minor: \d+,", "minor: $($versionParts[1]),"
+        $versionJsContent = $versionJsContent -replace "patch: \d+,", "patch: $($versionParts[2]),"
+        Set-Content $versionJsPath $versionJsContent -NoNewline
+        Write-Host "[OK] version.js updated" -ForegroundColor Green
+    }
+    
+    # Update releases.json
+    Write-Host "[UPDATE] Updating releases.json..." -ForegroundColor Cyan
+    $releasesJsonPath = "releases.json"
+    if (Test-Path $releasesJsonPath) {
+        $releasesJson = Get-Content $releasesJsonPath -Raw | ConvertFrom-Json
+        
+        # Get current branch
+        $currentBranch = git rev-parse --abbrev-ref HEAD
+        
+        # Get recent commits
+        $lastTag = "v$currentVersion"
+        $recentCommits = git log "$lastTag..HEAD" --pretty=format:"%h" 2>$null
+        if (!$recentCommits) {
+            $recentCommits = @(git log --pretty=format:"%h" -n 1)
+        }
+        
+        # Create new release entry
+        $newRelease = @{
+            version = $nextVersion
+            date = Get-Date -Format "yyyy-MM-dd"
+            name = (Get-Content "$nextVersionFolder\README.md" -Raw) -replace '(?s).*# v[\d.]+\s+-\s+(.+?)\n.*', '$1'
+            type = if ($versionParts[1] -ne $currentVersion.Split('.')[1]) { "minor" } elseif ($versionParts[0] -ne $currentVersion.Split('.')[0]) { "major" } else { "patch" }
+            branch = $currentBranch
+            commits = @($recentCommits)
+            commitMessage = $changelogSection
+            features = @($features)
+            bugfixes = @($fixes)
+            technical = @($technical)
+            breaking = @()
+            deprecated = @()
+            documentation = @()
+        }
+        
+        # Insert at beginning of releases array
+        $releases = @($newRelease) + $releasesJson.releases
+        $releasesJson.releases = $releases
+        
+        # Save updated JSON
+        $releasesJson | ConvertTo-Json -Depth 10 | Set-Content $releasesJsonPath
+        Write-Host "[OK] releases.json updated" -ForegroundColor Green
+    }
+    
     # Create git tag
     Write-Host "[TAG] Creating git tag v$nextVersion..." -ForegroundColor Cyan
     git tag "v$nextVersion" 2>$null
