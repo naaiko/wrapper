@@ -61,6 +61,9 @@ class CastGridApp {
         // Update filter dropdown with assignment types
         this.updateFilterDropdown();
         
+        // Update assignment type dropdown in Add Actor modal
+        this.updateAssignmentTypeDropdown();
+        
         // Load characters for dropdown
         await this.loadCharacters();
         
@@ -435,7 +438,7 @@ class CastGridApp {
         const firstName = document.getElementById('castMemberFirstNameInput').value.trim();
         const lastName = document.getElementById('castMemberLastNameInput').value.trim();
         const characterId = this.characterDropdown?.value || null;
-        const roleType = document.getElementById('castMemberRoleTypeSelect').value;
+        const assignmentType = document.getElementById('castMemberAssignmentTypeSelect').value;
         const photoUrl = document.getElementById('castMemberPhotoInput').value.trim();
         
         if (!firstName || !lastName) {
@@ -450,14 +453,15 @@ class CastGridApp {
             const newCastMember = await CastMemberService.create(this.projectId, {
                 first_name: firstName,
                 last_name: lastName,
-                role_type: roleType || null,
+                role_type: null,  // Deprecated - kept for backwards compatibility
                 profile_image_url: photoUrl || null
             });
             
-            // If character selected, create assignment
+            // If character selected, create assignment with assignment type
             if (characterId) {
                 try {
-                    await CharacterService.assignActor(characterId, newCastMember.id, 'actor');
+                    const typeToUse = assignmentType || 'actor';  // Default to 'actor' if not specified
+                    await CharacterService.assignActor(characterId, newCastMember.id, typeToUse);
                 } catch (assignError) {
                     console.error('[CAST GRID] Error assigning character:', assignError);
                     Toast.warning(`Cast member created but character assignment failed`);
@@ -534,6 +538,22 @@ class CastGridApp {
         });
     }
     
+    updateAssignmentTypeDropdown() {
+        const select = document.getElementById('castMemberAssignmentTypeSelect');
+        if (!select) return;
+        
+        // Keep the placeholder option, replace the rest
+        select.innerHTML = '<option value="">Select assignment type...</option>';
+        
+        // Add assignment types
+        this.assignmentTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.id;
+            option.textContent = type.label;
+            select.appendChild(option);
+        });
+    }
+    
     openSettingsModal() {
         this.renderAssignmentTypesList();
         this.castSettingsModal.showModal();
@@ -563,6 +583,7 @@ class CastGridApp {
                 await settingsService.updateAssignmentTypes(this.projectId, this.assignmentTypes);
                 this.renderAssignmentTypesList();
                 this.updateFilterDropdown();
+                this.updateAssignmentTypeDropdown();  // Update Add Actor dropdown too
                 input.value = '';
                 Toast.success('Assignment type added');
             } catch (error) {
@@ -611,6 +632,7 @@ class CastGridApp {
                     await settingsService.updateAssignmentTypes(this.projectId, this.assignmentTypes);
                     this.renderAssignmentTypesList();
                     this.updateFilterDropdown();
+                    this.updateAssignmentTypeDropdown();  // Update Add Actor dropdown too
                     Toast.success('Assignment type removed');
                 } catch (error) {
                     console.error('Error saving assignment types:', error);

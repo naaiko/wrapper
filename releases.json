@@ -1,6 +1,36 @@
 {
   "releases": [
     {
+      "version": "0.2.5.03",
+      "date": "2026-01-08",
+      "name": "Hotfix: Sync Assignment Types Across UI",
+      "type": "hotfix",
+      "branch": "main",
+      "commits": [],
+      "commitMessage": "fix: Synchronize assignment types between Add Actor and filter dropdown",
+      "features": [
+        "Add Actor modal now uses same configurable assignment types as filter",
+        "Assignment type dropdown in Add Actor form dynamically updates when types are added/removed in settings",
+        "Character assignments now use the selected assignment type from Add Actor form"
+      ],
+      "bugfixes": [
+        "Fixed inconsistency between Add Actor 'role_type' dropdown and filter 'assignment_type' values",
+        "Add Actor form now shows same assignment types as filter dropdown",
+        "Assignment types are now synchronized across all UI components"
+      ],
+      "technical": [
+        "Replaced hardcoded role_type select with dynamic assignment_type select",
+        "Added updateAssignmentTypeDropdown() to populate Add Actor dropdown",
+        "Character assignments now use selected assignment type instead of hardcoded 'actor'",
+        "role_type field deprecated (kept for backwards compatibility, set to null)"
+      ],
+      "breaking": [],
+      "deprecated": [
+        "cast_members.role_type field - now using character_assignments.assignment_type"
+      ],
+      "documentation": []
+    },
+    {
       "version": "0.2.5.02",
       "date": "2026-01-08",
       "name": "Hotfix: Configurable Assignment Types",
