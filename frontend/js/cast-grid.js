@@ -581,6 +581,11 @@ class CastGridApp {
             // Save to database
             try {
                 await settingsService.updateAssignmentTypes(this.projectId, this.assignmentTypes);
+                
+                // Reload settings to ensure sync
+                const updatedSettings = await settingsService.loadSettings(this.projectId);
+                this.assignmentTypes = updatedSettings.assignment_types || settingsService.getDefaultAssignmentTypes();
+                
                 this.renderAssignmentTypesList();
                 this.updateFilterDropdown();
                 this.updateAssignmentTypeDropdown();  // Update Add Actor dropdown too
@@ -630,6 +635,11 @@ class CastGridApp {
                 // Save to database
                 try {
                     await settingsService.updateAssignmentTypes(this.projectId, this.assignmentTypes);
+                    
+                    // Reload settings to ensure sync
+                    const updatedSettings = await settingsService.loadSettings(this.projectId);
+                    this.assignmentTypes = updatedSettings.assignment_types || settingsService.getDefaultAssignmentTypes();
+                    
                     this.renderAssignmentTypesList();
                     this.updateFilterDropdown();
                     this.updateAssignmentTypeDropdown();  // Update Add Actor dropdown too
